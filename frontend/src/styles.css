@@ -1,0 +1,19 @@
+:root {
+  color-scheme: light;
+  font-family:
+    Inter, "Segoe UI", Roboto, Arial, sans-serif;
+  background: #f5f7fb;
+  color: #172033;
+}
+
+body {
+  margin: 0;
+}
+
+button,
+input,
+select,
+textarea {
+  font: inherit;
+}
+

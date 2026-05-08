@@ -1,0 +1,12 @@
+{
+  "name": "@xts/mock-api",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "start": "node src/server.js",
+    "lint": "node --check src/fixtures.js && node --check src/routes.js && node --check src/server.js && node --check test/routes.test.js",
+    "test": "node --test test/*.test.js"
+  }
+}
+

@@ -1,0 +1,26 @@
+.topbar {
+  align-items: center;
+  background: #10233f;
+  color: #ffffff;
+  display: flex;
+  justify-content: space-between;
+  min-height: 56px;
+  padding: 0 24px;
+}
+
+.topbar strong {
+  font-size: 20px;
+  margin-right: 8px;
+}
+
+.environment {
+  color: #b7c6dd;
+  font-size: 13px;
+}
+
+main {
+  margin: 0 auto;
+  max-width: 1180px;
+  padding: 24px;
+}
+

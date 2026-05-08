@@ -1,0 +1,95 @@
+<section class="page-header">
+  <div>
+    <p class="eyebrow">WebClient</p>
+    <h1>Stundenschreibung</h1>
+  </div>
+  <div class="profile" data-testid="profile">
+    @if (profile(); as activeProfile) {
+      <strong>{{ activeProfile.displayName }}</strong>
+      <span>{{ activeProfile.company }}</span>
+    }
+  </div>
+</section>
+
+<section class="panel">
+  <div class="grid">
+    <label>
+      Tagesdatum
+      <input [ngModel]="day().date" (ngModelChange)="day.update(current => ({ ...current, date: $event }))" />
+    </label>
+    <label>
+      Kommt
+      <input [ngModel]="day().startTime" (ngModelChange)="day.update(current => ({ ...current, startTime: $event }))" />
+    </label>
+    <label>
+      Geht
+      <input [ngModel]="day().endTime" (ngModelChange)="day.update(current => ({ ...current, endTime: $event }))" />
+    </label>
+    <label>
+      Pause (Min.)
+      <input
+        type="number"
+        [ngModel]="day().breakMinutes"
+        (ngModelChange)="day.update(current => ({ ...current, breakMinutes: +$event }))"
+      />
+    </label>
+    <label>
+      Leistungsort
+      <select [ngModel]="day().location" (ngModelChange)="day.update(current => ({ ...current, location: $event }))">
+        <option value="remote">remote</option>
+        <option value="on-site">on-site</option>
+      </select>
+    </label>
+  </div>
+</section>
+
+<section class="panel">
+  <div class="section-title">
+    <h2>Leistungspositionen</h2>
+    <div>
+      <select [ngModel]="selectedCostObject()" (ngModelChange)="selectedCostObject.set($event)">
+        @for (item of costObjects(); track item.coIdent) {
+          <option [value]="item.coIdent">{{ item.coIdent }} - {{ item.description }}</option>
+        }
+      </select>
+      <button type="button" (click)="addLine()">Position hinzufügen</button>
+    </div>
+  </div>
+
+  <div class="lines">
+    @for (line of day().lines; track $index) {
+      <div class="line-row">
+        <span>{{ line.coIdent }}</span>
+        <input
+          aria-label="Leistungsbeschreibung"
+          [ngModel]="line.description"
+          (ngModelChange)="updateLine($index, { description: $event })"
+        />
+        <input
+          aria-label="Stunden"
+          type="number"
+          min="0"
+          step="0.25"
+          [ngModel]="line.hours"
+          (ngModelChange)="updateLine($index, { hours: +$event })"
+        />
+      </div>
+    }
+  </div>
+
+  <footer class="summary">
+    <span>Status: {{ day().status }}</span>
+    <strong>{{ totalHours() }} Std.</strong>
+  </footer>
+</section>
+
+<section class="actions">
+  <button type="button" (click)="save()">Entwurf speichern</button>
+  <button type="button" [disabled]="!canSubmit()" (click)="submit()" data-testid="submit-timesheet">
+    Zur Genehmigung freigeben
+  </button>
+  @if (message()) {
+    <span class="message">{{ message() }}</span>
+  }
+</section>
+
