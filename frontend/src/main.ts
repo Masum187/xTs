@@ -5,8 +5,7 @@ import { AppComponent } from "./app/app.component";
 import { routes } from "./app/app.routes";
 
 bootstrapApplication(AppComponent, {
-  providers: [provideRouter(routes)]
+  providers: [provideRouter(routes)],
 }).catch((error: unknown) => {
   console.error(error);
 });
-

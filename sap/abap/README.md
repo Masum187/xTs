@@ -16,4 +16,3 @@ ABAP-Objekte fuer xTS werden reviewbar in GitHub versioniert und ueber SAP-Trans
 - ATC ohne kritische Findings.
 - ABAP Unit fuer fachliche Logik, soweit gekapselt.
 - Manuelle SAP-MM-Testfaelle fuer BANF, Bestellnachlesen und WE-Buchung.
-

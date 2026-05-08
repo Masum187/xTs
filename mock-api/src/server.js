@@ -9,7 +9,7 @@ const server = http.createServer(async (request, response) => {
     response.writeHead(204, {
       "access-control-allow-origin": "*",
       "access-control-allow-methods": "GET,POST,PATCH,OPTIONS",
-      "access-control-allow-headers": "content-type"
+      "access-control-allow-headers": "content-type",
     });
     response.end();
     return;
@@ -20,12 +20,17 @@ const server = http.createServer(async (request, response) => {
     response.writeHead(result.status, result.headers);
     response.end(result.body);
   } catch (error) {
-    response.writeHead(500, { "content-type": "application/json; charset=utf-8" });
-    response.end(JSON.stringify({ error: error instanceof Error ? error.message : "Unknown error" }));
+    response.writeHead(500, {
+      "content-type": "application/json; charset=utf-8",
+    });
+    response.end(
+      JSON.stringify({
+        error: error instanceof Error ? error.message : "Unknown error",
+      }),
+    );
   }
 });
 
 server.listen(port, "127.0.0.1", () => {
   console.log(`xTS mock API listening on http://127.0.0.1:${port}`);
 });
-

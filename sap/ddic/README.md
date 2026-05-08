@@ -19,4 +19,3 @@ Offene technische Pruefung:
 
 - BANF-Feldnamen aus dem Konzept gegen SAP-DDIC validieren.
 - Feldlaengen und Domains fuer Statuswerte finalisieren.
-

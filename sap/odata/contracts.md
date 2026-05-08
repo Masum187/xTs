@@ -12,4 +12,3 @@ Initiale Services:
 - `Z_XTS_REPORTING_SRV`
 
 Die Mock-API unter `mock-api/` bildet den Timesheet-relevanten Startumfang ab.
-

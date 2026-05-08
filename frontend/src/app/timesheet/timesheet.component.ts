@@ -2,7 +2,11 @@ import { Component, computed, signal } from "@angular/core";
 import { FormsModule } from "@angular/forms";
 
 import { canSubmitTimesheet, sumLineHours } from "./timesheet.logic";
-import { EnabledCostObject, EmployeeProfile, TimesheetDay } from "./timesheet.models";
+import {
+  EnabledCostObject,
+  EmployeeProfile,
+  TimesheetDay,
+} from "./timesheet.models";
 import { TimesheetService } from "./timesheet.service";
 
 @Component({
@@ -10,7 +14,7 @@ import { TimesheetService } from "./timesheet.service";
   standalone: true,
   imports: [FormsModule],
   templateUrl: "./timesheet.component.html",
-  styleUrl: "./timesheet.component.css"
+  styleUrl: "./timesheet.component.css",
 })
 export class TimesheetComponent {
   protected readonly profile = signal<EmployeeProfile | null>(null);
@@ -29,12 +33,14 @@ export class TimesheetComponent {
       {
         coIdent: "700000000004",
         description: "Daily Projektabstimmung",
-        hours: 2
-      }
-    ]
+        hours: 2,
+      },
+    ],
   });
 
-  protected readonly totalHours = computed(() => sumLineHours(this.day().lines));
+  protected readonly totalHours = computed(() =>
+    sumLineHours(this.day().lines),
+  );
   protected readonly canSubmit = computed(() => canSubmitTimesheet(this.day()));
 
   constructor(private readonly timesheetService: TimesheetService) {
@@ -42,7 +48,9 @@ export class TimesheetComponent {
   }
 
   protected addLine(): void {
-    const selected = this.costObjects().find((item) => item.coIdent === this.selectedCostObject());
+    const selected = this.costObjects().find(
+      (item) => item.coIdent === this.selectedCostObject(),
+    );
     if (!selected) return;
 
     this.day.update((day) => ({
@@ -52,16 +60,21 @@ export class TimesheetComponent {
         {
           coIdent: selected.coIdent,
           description: "",
-          hours: 0
-        }
-      ]
+          hours: 0,
+        },
+      ],
     }));
   }
 
-  protected updateLine(index: number, patch: Partial<TimesheetDay["lines"][number]>): void {
+  protected updateLine(
+    index: number,
+    patch: Partial<TimesheetDay["lines"][number]>,
+  ): void {
     this.day.update((day) => ({
       ...day,
-      lines: day.lines.map((line, currentIndex) => (currentIndex === index ? { ...line, ...patch } : line))
+      lines: day.lines.map((line, currentIndex) =>
+        currentIndex === index ? { ...line, ...patch } : line,
+      ),
     }));
   }
 
@@ -82,11 +95,10 @@ export class TimesheetComponent {
   private async loadInitialData(): Promise<void> {
     const [profile, costObjects] = await Promise.all([
       this.timesheetService.getProfile(),
-      this.timesheetService.getEnabledCostObjects(this.day().date)
+      this.timesheetService.getEnabledCostObjects(this.day().date),
     ]);
     this.profile.set(profile);
     this.costObjects.set(costObjects);
     this.day.update((day) => ({ ...day, extNr: profile.extNr }));
   }
 }
-

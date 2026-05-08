@@ -13,4 +13,3 @@ SAP-Transporte bleiben fuehrend fuer Deployment.
 ## Dokumentation
 
 Transportnummern werden in `transport-log.md` dokumentiert.
-

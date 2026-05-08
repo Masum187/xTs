@@ -4,11 +4,11 @@ Stand: 2026-05-08
 
 ## Priorisierung
 
-| Prioritaet | Bedeutung |
-| --- | --- |
-| P0 | Muss fuer MVP-Start enthalten sein |
-| P1 | Wichtig fuer produktionsnahen MVP |
-| P2 | Nach MVP oder optional |
+| Prioritaet | Bedeutung                          |
+| ---------- | ---------------------------------- |
+| P0         | Muss fuer MVP-Start enthalten sein |
+| P1         | Wichtig fuer produktionsnahen MVP  |
+| P2         | Nach MVP oder optional             |
 
 ## Epic 1 - Projekt- und Systemgrundlagen
 

@@ -6,7 +6,7 @@ export const employees = [
     lastName: "Schilz",
     company: "QualityTimes",
     sapAccount: "SSCHILZ",
-    active: true
+    active: true,
   },
   {
     extNr: "ROEPER",
@@ -15,21 +15,21 @@ export const employees = [
     lastName: "Roeper",
     company: "QualityTimes",
     sapAccount: "CROEPER",
-    active: true
-  }
+    active: true,
+  },
 ];
 
 export const teams = [
   {
     id: "TRANSFORMATION_MC",
     name: "Transformation MC",
-    active: true
+    active: true,
   },
   {
     id: "ENTW_SUPPORT",
     name: "Entw.-Support",
-    active: true
-  }
+    active: true,
+  },
 ];
 
 export const costObjects = [
@@ -38,15 +38,15 @@ export const costObjects = [
     coIdent: "700000000004",
     type: "OR",
     description: "SAP-Implementierung, Stephan Schilz",
-    active: true
+    active: true,
   },
   {
     id: "000002",
     coIdent: "600000000001",
     type: "KS",
     description: "SAP-Support, Stephan Schilz",
-    active: true
-  }
+    active: true,
+  },
 ];
 
 export const enabledCostObjects = [
@@ -57,7 +57,7 @@ export const enabledCostObjects = [
     description: "SAP-Implementierung, Stephan Schilz",
     validFrom: "2026-02-01",
     validTo: "2026-04-30",
-    remainingHours: 240
+    remainingHours: 240,
   },
   {
     id: "000002",
@@ -66,8 +66,8 @@ export const enabledCostObjects = [
     description: "SAP-Support, Stephan Schilz",
     validFrom: "2026-02-01",
     validTo: "2026-04-30",
-    remainingHours: 120
-  }
+    remainingHours: 120,
+  },
 ];
 
 export const timesheets = [
@@ -83,9 +83,8 @@ export const timesheets = [
       {
         coIdent: "700000000004",
         description: "Daily Projektabstimmung",
-        hours: 2
-      }
-    ]
-  }
+        hours: 2,
+      },
+    ],
+  },
 ];
-

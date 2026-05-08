@@ -47,4 +47,3 @@ In GitHub fuer `main` konfigurieren:
 - Required check: `Quality Gate`.
 - Block force pushes.
 - Block direct pushes.
-

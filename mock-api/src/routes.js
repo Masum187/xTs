@@ -1,4 +1,10 @@
-import { costObjects, employees, enabledCostObjects, teams, timesheets } from "./fixtures.js";
+import {
+  costObjects,
+  employees,
+  enabledCostObjects,
+  teams,
+  timesheets,
+} from "./fixtures.js";
 
 export async function routeRequest(request) {
   const url = new URL(request.url, "http://127.0.0.1");
@@ -47,9 +53,9 @@ export function json(payload, status = 200) {
       "access-control-allow-origin": "*",
       "access-control-allow-methods": "GET,POST,PATCH,OPTIONS",
       "access-control-allow-headers": "content-type",
-      "content-type": "application/json; charset=utf-8"
+      "content-type": "application/json; charset=utf-8",
     },
-    body: JSON.stringify(payload)
+    body: JSON.stringify(payload),
   };
 }
 
@@ -58,6 +64,10 @@ async function readJsonBody(request) {
   for await (const chunk of request) {
     chunks.push(chunk);
   }
-  const body = Buffer.concat(chunks.map((chunk) => (Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk)))).toString("utf8");
+  const body = Buffer.concat(
+    chunks.map((chunk) =>
+      Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk),
+    ),
+  ).toString("utf8");
   return body ? JSON.parse(body) : {};
 }

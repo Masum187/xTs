@@ -17,7 +17,6 @@ import { RouterOutlet } from "@angular/router";
       <router-outlet />
     </main>
   `,
-  styleUrl: "./app.component.css"
+  styleUrl: "./app.component.css",
 })
 export class AppComponent {}
-

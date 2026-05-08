@@ -4,13 +4,13 @@ Dieser Ordner enthaelt die konsolidierte Arbeitsbasis fuer den Entwicklungsstart
 
 ## Dateien
 
-| Datei | Zweck |
-| --- | --- |
+| Datei                         | Zweck                                                                                               |
+| ----------------------------- | --------------------------------------------------------------------------------------------------- |
 | `entwicklungskonzept-v0.1.md` | Fachlich-technisches Zielbild, MVP-Scope, Prozesse, Datenmodell, Services, Screens und Architektur. |
-| `backlog-v0.1.md` | Erstes MVP-Backlog mit Epics, User Stories und Akzeptanzkriterien. |
-| `entscheidungen-v0.1.md` | Entscheidungslog mit den inzwischen fachlich beantworteten Grundsatzfragen. |
-| `development-workflow.md` | GitHub-, Branching-, PR- und lokale Hook-Regeln. |
-| `odata-contracts.md` | OData-nahe Kontraktbasis fuer SAP und Mock-API. |
+| `backlog-v0.1.md`             | Erstes MVP-Backlog mit Epics, User Stories und Akzeptanzkriterien.                                  |
+| `entscheidungen-v0.1.md`      | Entscheidungslog mit den inzwischen fachlich beantworteten Grundsatzfragen.                         |
+| `development-workflow.md`     | GitHub-, Branching-, PR- und lokale Hook-Regeln.                                                    |
+| `odata-contracts.md`          | OData-nahe Kontraktbasis fuer SAP und Mock-API.                                                     |
 
 ## Empfohlene Reihenfolge
 

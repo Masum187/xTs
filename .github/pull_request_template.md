@@ -1,6 +1,6 @@
 ## Summary
 
-- 
+-
 
 ## Checks
 
@@ -12,5 +12,4 @@
 
 Transport number(s), if applicable:
 
-- 
-
+-

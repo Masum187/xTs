@@ -15,15 +15,24 @@
   <div class="grid">
     <label>
       Tagesdatum
-      <input [ngModel]="day().date" (ngModelChange)="day.update(current => ({ ...current, date: $event }))" />
+      <input
+        [ngModel]="day().date"
+        (ngModelChange)="day.update(current => ({ ...current, date: $event }))"
+      />
     </label>
     <label>
       Kommt
-      <input [ngModel]="day().startTime" (ngModelChange)="day.update(current => ({ ...current, startTime: $event }))" />
+      <input
+        [ngModel]="day().startTime"
+        (ngModelChange)="day.update(current => ({ ...current, startTime: $event }))"
+      />
     </label>
     <label>
       Geht
-      <input [ngModel]="day().endTime" (ngModelChange)="day.update(current => ({ ...current, endTime: $event }))" />
+      <input
+        [ngModel]="day().endTime"
+        (ngModelChange)="day.update(current => ({ ...current, endTime: $event }))"
+      />
     </label>
     <label>
       Pause (Min.)
@@ -35,7 +44,10 @@
     </label>
     <label>
       Leistungsort
-      <select [ngModel]="day().location" (ngModelChange)="day.update(current => ({ ...current, location: $event }))">
+      <select
+        [ngModel]="day().location"
+        (ngModelChange)="day.update(current => ({ ...current, location: $event }))"
+      >
         <option value="remote">remote</option>
         <option value="on-site">on-site</option>
       </select>
@@ -47,9 +59,14 @@
   <div class="section-title">
     <h2>Leistungspositionen</h2>
     <div>
-      <select [ngModel]="selectedCostObject()" (ngModelChange)="selectedCostObject.set($event)">
+      <select
+        [ngModel]="selectedCostObject()"
+        (ngModelChange)="selectedCostObject.set($event)"
+      >
         @for (item of costObjects(); track item.coIdent) {
-          <option [value]="item.coIdent">{{ item.coIdent }} - {{ item.description }}</option>
+          <option [value]="item.coIdent">
+            {{ item.coIdent }} - {{ item.description }}
+          </option>
         }
       </select>
       <button type="button" (click)="addLine()">Position hinzufügen</button>
@@ -85,11 +102,15 @@
 
 <section class="actions">
   <button type="button" (click)="save()">Entwurf speichern</button>
-  <button type="button" [disabled]="!canSubmit()" (click)="submit()" data-testid="submit-timesheet">
+  <button
+    type="button"
+    [disabled]="!canSubmit()"
+    (click)="submit()"
+    data-testid="submit-timesheet"
+  >
     Zur Genehmigung freigeben
   </button>
   @if (message()) {
     <span class="message">{{ message() }}</span>
   }
 </section>
-

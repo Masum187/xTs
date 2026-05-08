@@ -16,4 +16,3 @@
 - Bestellung per Job `P -> B`.
 - Genehmigung `F -> G`.
 - Synchrone WE-Buchung mit Fehlerprotokoll.
-

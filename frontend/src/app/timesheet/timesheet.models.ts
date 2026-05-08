@@ -31,4 +31,3 @@ export interface TimesheetDay {
   status: TimesheetStatus;
   lines: TimesheetLine[];
 }
-

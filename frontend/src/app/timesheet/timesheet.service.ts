@@ -1,14 +1,18 @@
 import { Injectable } from "@angular/core";
 
 import { environment } from "../../environments/environment";
-import { EmployeeProfile, EnabledCostObject, TimesheetDay } from "./timesheet.models";
+import {
+  EmployeeProfile,
+  EnabledCostObject,
+  TimesheetDay,
+} from "./timesheet.models";
 
 interface ODataResponse<T> {
   value: T[];
 }
 
 @Injectable({
-  providedIn: "root"
+  providedIn: "root",
 })
 export class TimesheetService {
   private readonly baseUrl = environment.apiBaseUrl;
@@ -19,8 +23,11 @@ export class TimesheetService {
   }
 
   async getEnabledCostObjects(date: string): Promise<EnabledCostObject[]> {
-    const response = await fetch(`${this.baseUrl}/MyEnabledCostObjects?date=${encodeURIComponent(date)}`);
-    const body = await this.readJson<ODataResponse<EnabledCostObject>>(response);
+    const response = await fetch(
+      `${this.baseUrl}/MyEnabledCostObjects?date=${encodeURIComponent(date)}`,
+    );
+    const body =
+      await this.readJson<ODataResponse<EnabledCostObject>>(response);
     return body.value;
   }
 
@@ -28,9 +35,9 @@ export class TimesheetService {
     const response = await fetch(`${this.baseUrl}/TimesheetDays`, {
       method: "POST",
       headers: {
-        "content-type": "application/json"
+        "content-type": "application/json",
       },
-      body: JSON.stringify(day)
+      body: JSON.stringify(day),
     });
     return this.readJson<TimesheetDay>(response);
   }
@@ -42,4 +49,3 @@ export class TimesheetService {
     return (await response.json()) as T;
   }
 }
-

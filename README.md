@@ -6,14 +6,14 @@ Dieses Repository ist als Monorepo aufgebaut, damit Konzept, SAP-Artefakte, ODat
 
 ## Struktur
 
-| Pfad | Zweck |
-| --- | --- |
-| `docs/` | Entwicklungskonzept, Backlog, Entscheidungen und Entwicklungsleitfaden |
-| `frontend/` | Angular + TypeScript WebClient fuer Stundenschreibung |
-| `mock-api/` | Lokale OData-nahe Mock-API fuer Frontend-Entwicklung ohne SAP-Blocker |
-| `sap/` | abapGit-/Transport-/DDIC-/OData-/Qualitaetsdokumentation |
-| `.github/` | Pull Request Templates, Issue Templates und GitHub Actions |
-| `.githooks/` | Lokale Git Hooks fuer Pre-Commit-Checks |
+| Pfad         | Zweck                                                                  |
+| ------------ | ---------------------------------------------------------------------- |
+| `docs/`      | Entwicklungskonzept, Backlog, Entscheidungen und Entwicklungsleitfaden |
+| `frontend/`  | Angular + TypeScript WebClient fuer Stundenschreibung                  |
+| `mock-api/`  | Lokale OData-nahe Mock-API fuer Frontend-Entwicklung ohne SAP-Blocker  |
+| `sap/`       | abapGit-/Transport-/DDIC-/OData-/Qualitaetsdokumentation               |
+| `.github/`   | Pull Request Templates, Issue Templates und GitHub Actions             |
+| `.githooks/` | Lokale Git Hooks fuer Pre-Commit-Checks                                |
 
 ## Schnellstart
 
@@ -52,4 +52,3 @@ npm run start --workspace frontend
 - SAP bleibt fuehrend fuer Kontierung, BANF, Bestellung und Wertefluss.
 - WebClient-Authentifizierung erfolgt ueber AD/OAuth; Mapping auf `ZXTS_WIW_T-EXTNR` ist noch technisch zu klaeren.
 - xTS legt MM-BANF aktiv an, liest MM-Bestellungen per Job nach und bucht nach Genehmigung synchron den Wareneingang.
-

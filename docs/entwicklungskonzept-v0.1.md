@@ -21,21 +21,21 @@ SAP bleibt im Zielbild führend für Kontierungen, Einkaufsbelege, Bestellungen,
 
 Diese Entscheidungen sind als fachlich bestaetigte Basis fuer den Entwicklungsstart gesetzt. Details stehen im Entscheidungslog.
 
-| Thema | Entscheidung v0.1 |
-| --- | --- |
-| Fuehrendes System | SAP ist fuehrend fuer Kontierung, BANF, Bestellung und Wertefluss. |
-| Frontend | Web-Frontend fuer Stundenschreibung; SAP-Dynpros bzw. SAP UI fuer Admin, Planung, Beauftragung, Genehmigung und Reporting im MVP. |
-| Backend | SAP Z-Tabellen plus OData-Services; optionale Java-Middleware erst nach MVP-Validierung. |
-| Planungseinheit | Mitarbeiter + Kontierung + Monat. |
-| Planungshorizont | 12 Monate ab eingegebenem Startmonat. |
-| Beauftragung | Startet aus freigegebenen Planstunden; Aggregation nur pro Mitarbeiter und Kontierung. |
-| BANF / Bestellung | xTS legt MM-BANF aktiv an; MM-Bestellung wird per Job nachgelesen. |
+| Thema                           | Entscheidung v0.1                                                                                                                            |
+| ------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------- |
+| Fuehrendes System               | SAP ist fuehrend fuer Kontierung, BANF, Bestellung und Wertefluss.                                                                           |
+| Frontend                        | Web-Frontend fuer Stundenschreibung; SAP-Dynpros bzw. SAP UI fuer Admin, Planung, Beauftragung, Genehmigung und Reporting im MVP.            |
+| Backend                         | SAP Z-Tabellen plus OData-Services; optionale Java-Middleware erst nach MVP-Validierung.                                                     |
+| Planungseinheit                 | Mitarbeiter + Kontierung + Monat.                                                                                                            |
+| Planungshorizont                | 12 Monate ab eingegebenem Startmonat.                                                                                                        |
+| Beauftragung                    | Startet aus freigegebenen Planstunden; Aggregation nur pro Mitarbeiter und Kontierung.                                                       |
+| BANF / Bestellung               | xTS legt MM-BANF aktiv an; MM-Bestellung wird per Job nachgelesen.                                                                           |
 | Freischaltung Stundenschreibung | Regelbasiert ueber `ZXTS_REGELN_T`; MVP-Start ab vorhandener BANF mit Regelwert `P`, spaeter auch ab Bestellung mit Regelwert `B` steuerbar. |
-| Genehmigung | Genehmigung bzw. Zurueckweisung erfolgt tageweise, wirkt auf alle Stundenpositionen eines Tages. |
-| Folgeprozess nach Genehmigung | Nach Status `G` soll synchron ueber einen ausloesenden Button ein Wareneingang zur zugehoerigen Bestellposition gebucht werden. |
-| Authentifizierung | WebClient via AD/OAuth; Mapping auf `EXTNR`, SAP-User optional. |
-| Budget | Stundenbudget ist fuehrend; Budgetbetrachtung ab Status `P` bzw. BANF erstellt. |
-| Reporting | Im MVP SAP ALV-orientierte Reports; Dashboard-UI spaeter moeglich. |
+| Genehmigung                     | Genehmigung bzw. Zurueckweisung erfolgt tageweise, wirkt auf alle Stundenpositionen eines Tages.                                             |
+| Folgeprozess nach Genehmigung   | Nach Status `G` soll synchron ueber einen ausloesenden Button ein Wareneingang zur zugehoerigen Bestellposition gebucht werden.              |
+| Authentifizierung               | WebClient via AD/OAuth; Mapping auf `EXTNR`, SAP-User optional.                                                                              |
+| Budget                          | Stundenbudget ist fuehrend; Budgetbetrachtung ab Status `P` bzw. BANF erstellt.                                                              |
+| Reporting                       | Im MVP SAP ALV-orientierte Reports; Dashboard-UI spaeter moeglich.                                                                           |
 
 ## 3. MVP-Scope
 
@@ -65,14 +65,14 @@ Diese Entscheidungen sind als fachlich bestaetigte Basis fuer den Entwicklungsst
 
 ## 4. Rollen und Berechtigungen
 
-| Rolle | Aufgaben | SAP-/xTS-Berechtigung |
-| --- | --- | --- |
-| xTS User | Eigene Stunden erfassen, freigeben, Status einsehen | WebClient-Berechtigung via AD/OAuth |
-| Ressourcenmanager / Teamleitung | Mitarbeiter planen, Teamzuordnung pflegen, Kapazitaeten pruefen | `Z_F_BC_xTS_PLANER` |
-| Order Manager / Einkauf | BANF/Bestellung anlegen oder ueberwachen, Einkaufsstatus rueckschreiben | Einkaufs-/SAP-Berechtigungen plus xTS Zugriff |
-| Projektleiter | Stunden genehmigen oder zurueckweisen, Budget und Ist-Verbrauch einsehen | `Z_F_BC_xTS_PROJEKTLEITER` |
-| xTS Administrator | Stammdaten, Regeln, Ampelwerte und Customizing pflegen | `Z_F_BC_xTS_USER` plus Adminrechte |
-| Controlling | Reporting, Budget- und Werteflussauswertung | Reporting-Berechtigung |
+| Rolle                           | Aufgaben                                                                 | SAP-/xTS-Berechtigung                         |
+| ------------------------------- | ------------------------------------------------------------------------ | --------------------------------------------- |
+| xTS User                        | Eigene Stunden erfassen, freigeben, Status einsehen                      | WebClient-Berechtigung via AD/OAuth           |
+| Ressourcenmanager / Teamleitung | Mitarbeiter planen, Teamzuordnung pflegen, Kapazitaeten pruefen          | `Z_F_BC_xTS_PLANER`                           |
+| Order Manager / Einkauf         | BANF/Bestellung anlegen oder ueberwachen, Einkaufsstatus rueckschreiben  | Einkaufs-/SAP-Berechtigungen plus xTS Zugriff |
+| Projektleiter                   | Stunden genehmigen oder zurueckweisen, Budget und Ist-Verbrauch einsehen | `Z_F_BC_xTS_PROJEKTLEITER`                    |
+| xTS Administrator               | Stammdaten, Regeln, Ampelwerte und Customizing pflegen                   | `Z_F_BC_xTS_USER` plus Adminrechte            |
+| Controlling                     | Reporting, Budget- und Werteflussauswertung                              | Reporting-Berechtigung                        |
 
 ## 5. End-to-End-Prozess
 
@@ -178,24 +178,24 @@ MVP-Reports:
 
 ### 6.1 Planung / Beauftragung
 
-| Status | Bedeutung | Aenderbar? | Naechster Schritt |
-| --- | --- | --- | --- |
-| blank | Noch nicht geplant | Ja | Planstunden erfassen |
-| `V` | Vorgemerkt | Ja | Planung freigeben |
-| `F` | Fuer Beauftragung freigegeben | Eingeschraenkt / nein | BANF anlegen |
-| `P` | BANF angelegt | Nein fuer beauftragten Zeitraum | Stundenschreibung freischalten und Bestellung nachlesen |
-| `B` | Bestellung vorhanden | Nein fuer beauftragten Zeitraum | Stundenschreibung fortfuehren / Bestellstatus dokumentieren |
-| `L` | Geloescht | Nein | Ausblenden / historisieren |
+| Status | Bedeutung                     | Aenderbar?                      | Naechster Schritt                                           |
+| ------ | ----------------------------- | ------------------------------- | ----------------------------------------------------------- |
+| blank  | Noch nicht geplant            | Ja                              | Planstunden erfassen                                        |
+| `V`    | Vorgemerkt                    | Ja                              | Planung freigeben                                           |
+| `F`    | Fuer Beauftragung freigegeben | Eingeschraenkt / nein           | BANF anlegen                                                |
+| `P`    | BANF angelegt                 | Nein fuer beauftragten Zeitraum | Stundenschreibung freischalten und Bestellung nachlesen     |
+| `B`    | Bestellung vorhanden          | Nein fuer beauftragten Zeitraum | Stundenschreibung fortfuehren / Bestellstatus dokumentieren |
+| `L`    | Geloescht                     | Nein                            | Ausblenden / historisieren                                  |
 
 ### 6.2 Stundenschreibung
 
-| Status | Bedeutung | Aenderbar durch Mitarbeiter? | Aenderbar durch Projektleiter? |
-| --- | --- | --- | --- |
-| `E` | Erfasst | Ja | Nein |
-| `F` | Zur Genehmigung freigegeben | Nein | Ja |
-| `G` | Genehmigt | Nein | Nein; finaler Status, kein Ruecksetzen im MVP |
-| `A` | Zurueckgewiesen | Ja | Nein |
-| `L` | Geloescht | Nein | Nein |
+| Status | Bedeutung                   | Aenderbar durch Mitarbeiter? | Aenderbar durch Projektleiter?                |
+| ------ | --------------------------- | ---------------------------- | --------------------------------------------- |
+| `E`    | Erfasst                     | Ja                           | Nein                                          |
+| `F`    | Zur Genehmigung freigegeben | Nein                         | Ja                                            |
+| `G`    | Genehmigt                   | Nein                         | Nein; finaler Status, kein Ruecksetzen im MVP |
+| `A`    | Zurueckgewiesen             | Ja                           | Nein                                          |
+| `L`    | Geloescht                   | Nein                         | Nein                                          |
 
 ## 7. Datenmodell v0.1
 
@@ -205,88 +205,88 @@ Die folgenden Tabellen sind aus den Quelldateien abgeleitet und fuer die Entwick
 
 #### `ZXTS_WIW_T` - Mitarbeiterstamm
 
-| Feld | Typ | Bedeutung |
-| --- | --- | --- |
-| `EXTNR` | CHAR(12) | Externe Mitarbeiter-ID / User-Identifier |
-| `NACHNAME` | CHAR(40) | Nachname |
-| `VORNAME` | CHAR(40) | Vorname |
-| `STATUS` | CHAR(1) | Aktiv/Inaktiv |
-| `RESSOURCENMGMT` | CHAR(40) | Ressourcenmanager |
-| `FIRMA` | CHAR(40) | Firma / Dienstleister |
-| `SAP_ACCOUNT` | CHAR(12) | SAP-Username, falls vorhanden |
-| `AENAM` | CHAR(12) | Aenderer |
-| `AEDAT` | DATS | Aenderungsdatum |
-| `AEZEIT` | TIMS | Aenderungszeit |
-| `LKZ` | CHAR(1) | Loeschkennzeichen |
+| Feld             | Typ      | Bedeutung                                |
+| ---------------- | -------- | ---------------------------------------- |
+| `EXTNR`          | CHAR(12) | Externe Mitarbeiter-ID / User-Identifier |
+| `NACHNAME`       | CHAR(40) | Nachname                                 |
+| `VORNAME`        | CHAR(40) | Vorname                                  |
+| `STATUS`         | CHAR(1)  | Aktiv/Inaktiv                            |
+| `RESSOURCENMGMT` | CHAR(40) | Ressourcenmanager                        |
+| `FIRMA`          | CHAR(40) | Firma / Dienstleister                    |
+| `SAP_ACCOUNT`    | CHAR(12) | SAP-Username, falls vorhanden            |
+| `AENAM`          | CHAR(12) | Aenderer                                 |
+| `AEDAT`          | DATS     | Aenderungsdatum                          |
+| `AEZEIT`         | TIMS     | Aenderungszeit                           |
+| `LKZ`            | CHAR(1)  | Loeschkennzeichen                        |
 
 #### `ZXTS_TEAM_T` - Team
 
-| Feld | Typ | Bedeutung |
-| --- | --- | --- |
-| `ID` | CHAR(12) | Team-ID |
-| `TEAMNAME` | CHAR(40) | Name des Teams |
-| `BESCHREIBUNG` | CHAR(40) | Beschreibung |
-| `STATUS` | CHAR(1) | Aktiv/Inaktiv |
-| `AENAM` | CHAR(12) | Aenderer |
-| `AEDAT` | DATS | Aenderungsdatum |
-| `AEZEIT` | TIMS | Aenderungszeit |
-| `LKZ` | CHAR(1) | Loeschkennzeichen |
+| Feld           | Typ      | Bedeutung         |
+| -------------- | -------- | ----------------- |
+| `ID`           | CHAR(12) | Team-ID           |
+| `TEAMNAME`     | CHAR(40) | Name des Teams    |
+| `BESCHREIBUNG` | CHAR(40) | Beschreibung      |
+| `STATUS`       | CHAR(1)  | Aktiv/Inaktiv     |
+| `AENAM`        | CHAR(12) | Aenderer          |
+| `AEDAT`        | DATS     | Aenderungsdatum   |
+| `AEZEIT`       | TIMS     | Aenderungszeit    |
+| `LKZ`          | CHAR(1)  | Loeschkennzeichen |
 
 #### `ZXTS_MATEAM_T` - Mitarbeiter-Team-Zuordnung
 
-| Feld | Typ | Bedeutung |
-| --- | --- | --- |
-| `EXTNR` | CHAR(12) | Mitarbeiter |
-| `DATUM_VON` | DATS | Gueltig ab |
-| `DATUM_BIS` | DATS | Gueltig bis |
-| `TEAM` | CHAR(40) | Team |
-| `AENAM` | CHAR(12) | Aenderer |
-| `AEDAT` | DATS | Aenderungsdatum |
-| `AEZEIT` | TIMS | Aenderungszeit |
-| `LKZ` | CHAR(1) | Loeschkennzeichen |
+| Feld        | Typ      | Bedeutung         |
+| ----------- | -------- | ----------------- |
+| `EXTNR`     | CHAR(12) | Mitarbeiter       |
+| `DATUM_VON` | DATS     | Gueltig ab        |
+| `DATUM_BIS` | DATS     | Gueltig bis       |
+| `TEAM`      | CHAR(40) | Team              |
+| `AENAM`     | CHAR(12) | Aenderer          |
+| `AEDAT`     | DATS     | Aenderungsdatum   |
+| `AEZEIT`    | TIMS     | Aenderungszeit    |
+| `LKZ`       | CHAR(1)  | Loeschkennzeichen |
 
 #### `ZXTS_KONT_T` - Kontierung
 
-| Feld | Typ | Bedeutung |
-| --- | --- | --- |
-| `ID` | CHAR(6) | Interne Kontierungs-ID |
-| `CO_IDENT` | CHAR(30) | Kostenstelle, Innenauftrag, PSP-Element etc. |
-| `CO_OBJEKTTYP` | CHAR(2) | `KS`, `OR`, `PR`, `FB`, `KL` |
-| `BEZEICHNUNG` | CHAR(40) | Bezeichnung aus SAP |
-| `AENAM` | CHAR(12) | Aenderer |
-| `AEDAT` | DATS | Aenderungsdatum |
-| `AEZEIT` | TIMS | Aenderungszeit |
-| `LKZ` | CHAR(1) | Loeschkennzeichen |
+| Feld           | Typ      | Bedeutung                                    |
+| -------------- | -------- | -------------------------------------------- |
+| `ID`           | CHAR(6)  | Interne Kontierungs-ID                       |
+| `CO_IDENT`     | CHAR(30) | Kostenstelle, Innenauftrag, PSP-Element etc. |
+| `CO_OBJEKTTYP` | CHAR(2)  | `KS`, `OR`, `PR`, `FB`, `KL`                 |
+| `BEZEICHNUNG`  | CHAR(40) | Bezeichnung aus SAP                          |
+| `AENAM`        | CHAR(12) | Aenderer                                     |
+| `AEDAT`        | DATS     | Aenderungsdatum                              |
+| `AEZEIT`       | TIMS     | Aenderungszeit                               |
+| `LKZ`          | CHAR(1)  | Loeschkennzeichen                            |
 
 ### 7.2 Planung und Beauftragung
 
 #### `ZXTS_MAPLAN_T` - Mitarbeiterplanung
 
-| Feld | Typ | Bedeutung |
-| --- | --- | --- |
-| `ID` | CHAR(10) | Planungsdatensatz |
-| `EXTNR` | CHAR(12) | Mitarbeiter |
-| `KONT_ID` | CHAR(6) | Kontierung |
-| `STATUS` | CHAR(1) | Planungs-/Beauftragungsstatus |
-| `PLANDAT_VON` | DATS | Beginn Planzeitraum |
-| `PLANDAT_BIS` | DATS | Ende Planzeitraum |
-| `STUNDEN` | QUAN(10) | Planstunden |
-| `AENAM` | CHAR(12) | Aenderer |
-| `AEDAT` | DATS | Aenderungsdatum |
-| `AEZEIT` | TIMS | Aenderungszeit |
-| `LKZ` | CHAR(1) | Loeschkennzeichen |
+| Feld          | Typ      | Bedeutung                     |
+| ------------- | -------- | ----------------------------- |
+| `ID`          | CHAR(10) | Planungsdatensatz             |
+| `EXTNR`       | CHAR(12) | Mitarbeiter                   |
+| `KONT_ID`     | CHAR(6)  | Kontierung                    |
+| `STATUS`      | CHAR(1)  | Planungs-/Beauftragungsstatus |
+| `PLANDAT_VON` | DATS     | Beginn Planzeitraum           |
+| `PLANDAT_BIS` | DATS     | Ende Planzeitraum             |
+| `STUNDEN`     | QUAN(10) | Planstunden                   |
+| `AENAM`       | CHAR(12) | Aenderer                      |
+| `AEDAT`       | DATS     | Aenderungsdatum               |
+| `AEZEIT`      | TIMS     | Aenderungszeit                |
+| `LKZ`         | CHAR(1)  | Loeschkennzeichen             |
 
 #### `ZXTS_REGELN_T` - Regelwerk
 
-| Feld | Typ | Bedeutung |
-| --- | --- | --- |
-| `INFOTYP` | CHAR(1) | Regelbereich |
-| `REGEL_XTS` | CHAR(1) | Regelwert |
-| `AKTIVKZ` | CHAR(1) | Aktivkennzeichen |
-| `AENAM` | CHAR(12) | Aenderer |
-| `AEDAT` | DATS | Aenderungsdatum |
-| `AEZEIT` | TIMS | Aenderungszeit |
-| `LKZ` | CHAR(1) | Loeschkennzeichen |
+| Feld        | Typ      | Bedeutung         |
+| ----------- | -------- | ----------------- |
+| `INFOTYP`   | CHAR(1)  | Regelbereich      |
+| `REGEL_XTS` | CHAR(1)  | Regelwert         |
+| `AKTIVKZ`   | CHAR(1)  | Aktivkennzeichen  |
+| `AENAM`     | CHAR(12) | Aenderer          |
+| `AEDAT`     | DATS     | Aenderungsdatum   |
+| `AEZEIT`    | TIMS     | Aenderungszeit    |
+| `LKZ`       | CHAR(1)  | Loeschkennzeichen |
 
 Regeln:
 
@@ -299,129 +299,129 @@ Regeln:
 
 #### `ZXTS_MABEAUF_T` - Mitarbeiterbeauftragung
 
-| Feld | Typ | Bedeutung |
-| --- | --- | --- |
-| `ID` | CHAR(6) | Beauftragungs-ID |
-| `BEZEICHNUNG` | CHAR(40) | BANF-/Bestellpositionstext |
-| `EXTNR` | CHAR(12) | Mitarbeiter, falls personenbezogen |
-| `CO_IDENT` | CHAR(30) | Kontierung |
-| `BEGINN_DATUM` | DATS | Laufzeitbeginn |
-| `ENDE_DATUM` | DATS | Laufzeitende |
-| `MENGE_STD` | QUAN(13) | Beauftragte Stunden |
-| `BANF` | BANFN | BANF-Nummer |
-| `BANF_POS` | BNFPO | BANF-Position |
-| `EBELN` | EBELN | Einkaufsbeleg |
-| `EBELP` | EBELP | Einkaufsbelegposition |
-| `STATUS` | CHAR(1) | Beauftragungsstatus |
-| `AENAM/AEDAT/AEZEIT/LKZ` | Standard | Aenderungs- und Loeschinfos |
+| Feld                     | Typ      | Bedeutung                          |
+| ------------------------ | -------- | ---------------------------------- |
+| `ID`                     | CHAR(6)  | Beauftragungs-ID                   |
+| `BEZEICHNUNG`            | CHAR(40) | BANF-/Bestellpositionstext         |
+| `EXTNR`                  | CHAR(12) | Mitarbeiter, falls personenbezogen |
+| `CO_IDENT`               | CHAR(30) | Kontierung                         |
+| `BEGINN_DATUM`           | DATS     | Laufzeitbeginn                     |
+| `ENDE_DATUM`             | DATS     | Laufzeitende                       |
+| `MENGE_STD`              | QUAN(13) | Beauftragte Stunden                |
+| `BANF`                   | BANFN    | BANF-Nummer                        |
+| `BANF_POS`               | BNFPO    | BANF-Position                      |
+| `EBELN`                  | EBELN    | Einkaufsbeleg                      |
+| `EBELP`                  | EBELP    | Einkaufsbelegposition              |
+| `STATUS`                 | CHAR(1)  | Beauftragungsstatus                |
+| `AENAM/AEDAT/AEZEIT/LKZ` | Standard | Aenderungs- und Loeschinfos        |
 
 #### `ZXTS_MAZUKONT_T` - Mitarbeiter-Kontierungsfreischaltung
 
-| Feld | Typ | Bedeutung |
-| --- | --- | --- |
-| `ID` | CHAR(6) | Zuordnungs-ID |
-| `CO_IDENT` | CHAR(30) | Kontierung |
-| `EXTNR` | CHAR(12) | Mitarbeiter |
-| `BEAUFTRAGTE_STD` | QUAN(13) | Beauftragte Stunden |
-| `TS_STUNDEN` | QUAN(13) | Bereits gebuchte xTS-Stunden |
-| `OFFENE_STUNDEN` | QUAN(13) | Restkontingent |
-| `GUELTIG_VON` | DATS | Freischaltung ab |
-| `GUELTIG_BIS` | DATS | Freischaltung bis |
-| `AENAM/AEDAT/AEZEIT/LKZ` | Standard | Aenderungs- und Loeschinfos |
+| Feld                     | Typ      | Bedeutung                    |
+| ------------------------ | -------- | ---------------------------- |
+| `ID`                     | CHAR(6)  | Zuordnungs-ID                |
+| `CO_IDENT`               | CHAR(30) | Kontierung                   |
+| `EXTNR`                  | CHAR(12) | Mitarbeiter                  |
+| `BEAUFTRAGTE_STD`        | QUAN(13) | Beauftragte Stunden          |
+| `TS_STUNDEN`             | QUAN(13) | Bereits gebuchte xTS-Stunden |
+| `OFFENE_STUNDEN`         | QUAN(13) | Restkontingent               |
+| `GUELTIG_VON`            | DATS     | Freischaltung ab             |
+| `GUELTIG_BIS`            | DATS     | Freischaltung bis            |
+| `AENAM/AEDAT/AEZEIT/LKZ` | Standard | Aenderungs- und Loeschinfos  |
 
 ### 7.3 Stundenschreibung
 
 #### `ZXTS_TIME_T` - Tageskopf
 
-| Feld | Typ | Bedeutung |
-| --- | --- | --- |
-| `EXTNR` | CHAR(12) | Mitarbeiter |
-| `TAGESDATUM` | DATS | Arbeitstag |
-| `KOMMT` | TIMS | Arbeitsbeginn |
-| `GEHT` | TIMS | Arbeitsende |
-| `PAUSE_MIN` | NUMC/QUAN | Pause in Minuten |
-| `ARBEITSZEIT` | QUAN | Berechnete Arbeitszeit |
-| `LEISTUNGSORT` | CHAR | `remote` / `on-site` |
-| `STATUS` | CHAR(1) | `E`, `F`, `G`, `A` |
-| `RUECKWEISUNGSGRUND` | CHAR/Text | Pflicht bei Status `A` |
-| `GENEHMIGER` | CHAR(12) | Genehmigender User |
-| `GENEHMIGT_AM` | DATS/TIMS | Genehmigungszeitpunkt |
-| `AENAM/AEDAT/AEZEIT/LKZ` | Standard | Aenderungs- und Loeschinfos |
+| Feld                     | Typ       | Bedeutung                   |
+| ------------------------ | --------- | --------------------------- |
+| `EXTNR`                  | CHAR(12)  | Mitarbeiter                 |
+| `TAGESDATUM`             | DATS      | Arbeitstag                  |
+| `KOMMT`                  | TIMS      | Arbeitsbeginn               |
+| `GEHT`                   | TIMS      | Arbeitsende                 |
+| `PAUSE_MIN`              | NUMC/QUAN | Pause in Minuten            |
+| `ARBEITSZEIT`            | QUAN      | Berechnete Arbeitszeit      |
+| `LEISTUNGSORT`           | CHAR      | `remote` / `on-site`        |
+| `STATUS`                 | CHAR(1)   | `E`, `F`, `G`, `A`          |
+| `RUECKWEISUNGSGRUND`     | CHAR/Text | Pflicht bei Status `A`      |
+| `GENEHMIGER`             | CHAR(12)  | Genehmigender User          |
+| `GENEHMIGT_AM`           | DATS/TIMS | Genehmigungszeitpunkt       |
+| `AENAM/AEDAT/AEZEIT/LKZ` | Standard  | Aenderungs- und Loeschinfos |
 
 #### `ZXTS_PTIME_T` - Leistungsposition
 
-| Feld | Typ | Bedeutung |
-| --- | --- | --- |
-| `EXTNR` | CHAR(12) | Mitarbeiter |
-| `TAGESDATUM` | DATS | Arbeitstag |
-| `POSNR` | NUMC | Positionsnummer |
-| `KONT_ID` | CHAR(6) | Kontierung |
-| `CO_IDENT` | CHAR(30) | Kontierungsschluessel |
-| `LEISTUNGSBESCHREIBUNG` | CHAR/Text | Beschreibung der Taetigkeit |
-| `ZEIT` | QUAN | Gebuchte Stunden |
-| `AENAM/AEDAT/AEZEIT/LKZ` | Standard | Aenderungs- und Loeschinfos |
+| Feld                     | Typ       | Bedeutung                   |
+| ------------------------ | --------- | --------------------------- |
+| `EXTNR`                  | CHAR(12)  | Mitarbeiter                 |
+| `TAGESDATUM`             | DATS      | Arbeitstag                  |
+| `POSNR`                  | NUMC      | Positionsnummer             |
+| `KONT_ID`                | CHAR(6)   | Kontierung                  |
+| `CO_IDENT`               | CHAR(30)  | Kontierungsschluessel       |
+| `LEISTUNGSBESCHREIBUNG`  | CHAR/Text | Beschreibung der Taetigkeit |
+| `ZEIT`                   | QUAN      | Gebuchte Stunden            |
+| `AENAM/AEDAT/AEZEIT/LKZ` | Standard  | Aenderungs- und Loeschinfos |
 
 ## 8. OData-Service-Schnitt
 
 ### 8.1 Stammdaten
 
-| Service | Zweck |
-| --- | --- |
-| `Z_XTS_MASTERDATA_SRV` | Mitarbeiter, Teams, Teamzuordnung, Kontierungen lesen/pflegen |
-| `GET /Employees` | Mitarbeiterliste |
-| `GET /Teams` | Teams |
-| `GET /EmployeeTeamAssignments` | Gueltige Teamzuordnungen |
-| `GET /CostObjects` | Kontierungen |
+| Service                        | Zweck                                                         |
+| ------------------------------ | ------------------------------------------------------------- |
+| `Z_XTS_MASTERDATA_SRV`         | Mitarbeiter, Teams, Teamzuordnung, Kontierungen lesen/pflegen |
+| `GET /Employees`               | Mitarbeiterliste                                              |
+| `GET /Teams`                   | Teams                                                         |
+| `GET /EmployeeTeamAssignments` | Gueltige Teamzuordnungen                                      |
+| `GET /CostObjects`             | Kontierungen                                                  |
 
 ### 8.2 Planung
 
-| Service | Zweck |
-| --- | --- |
-| `Z_XTS_PLANNING_SRV` | Planung lesen, speichern, freigeben |
-| `GET /PlanningRows?startMonth=&team=&employee=&costObject=` | 12-Monats-Planung lesen |
-| `POST /PlanningRows` | Planungsdatensatz anlegen |
-| `PATCH /PlanningRows('{id}')` | Planungsdatensatz aendern |
-| `POST /PlanningRows/ReleaseForOrder` | Markierte Zeilen fuer BANF freigeben |
+| Service                                                     | Zweck                                |
+| ----------------------------------------------------------- | ------------------------------------ |
+| `Z_XTS_PLANNING_SRV`                                        | Planung lesen, speichern, freigeben  |
+| `GET /PlanningRows?startMonth=&team=&employee=&costObject=` | 12-Monats-Planung lesen              |
+| `POST /PlanningRows`                                        | Planungsdatensatz anlegen            |
+| `PATCH /PlanningRows('{id}')`                               | Planungsdatensatz aendern            |
+| `POST /PlanningRows/ReleaseForOrder`                        | Markierte Zeilen fuer BANF freigeben |
 
 ### 8.3 Beauftragung
 
-| Service | Zweck |
-| --- | --- |
-| `Z_XTS_ORDERING_SRV` | Beauftragung, BANF, Bestellung |
-| `GET /OrderCandidates` | Freigegebene Planungen mit Status `F` |
-| `POST /Assignments` | Beauftragungsdatensatz anlegen |
+| Service                                               | Zweck                                               |
+| ----------------------------------------------------- | --------------------------------------------------- |
+| `Z_XTS_ORDERING_SRV`                                  | Beauftragung, BANF, Bestellung                      |
+| `GET /OrderCandidates`                                | Freigegebene Planungen mit Status `F`               |
+| `POST /Assignments`                                   | Beauftragungsdatensatz anlegen                      |
 | `POST /Assignments('{id}')/CreatePurchaseRequisition` | MM-BANF aktiv anlegen und BANF-Daten rueckschreiben |
-| `POST /Jobs/RefreshPurchaseOrders` | Bestellstatus nachlesen |
+| `POST /Jobs/RefreshPurchaseOrders`                    | Bestellstatus nachlesen                             |
 
 ### 8.4 Stundenschreibung
 
-| Service | Zweck |
-| --- | --- |
-| `Z_XTS_TIMESHEET_SRV` | WebClient Stundenschreibung |
-| `GET /MyProfile` | Angemeldeten Mitarbeiter ermitteln |
-| `GET /MyEnabledCostObjects?date=` | Freigeschaltete Kontierungen mit Reststunden |
-| `GET /MyTimesheets?from=&to=` | Eigene Zeiteintraege |
-| `POST /TimesheetDays` | Tageskopf mit Positionen speichern |
-| `PATCH /TimesheetDays('{id}')` | Entwurf aendern |
-| `POST /TimesheetDays('{id}')/Submit` | Zur Genehmigung freigeben |
+| Service                              | Zweck                                        |
+| ------------------------------------ | -------------------------------------------- |
+| `Z_XTS_TIMESHEET_SRV`                | WebClient Stundenschreibung                  |
+| `GET /MyProfile`                     | Angemeldeten Mitarbeiter ermitteln           |
+| `GET /MyEnabledCostObjects?date=`    | Freigeschaltete Kontierungen mit Reststunden |
+| `GET /MyTimesheets?from=&to=`        | Eigene Zeiteintraege                         |
+| `POST /TimesheetDays`                | Tageskopf mit Positionen speichern           |
+| `PATCH /TimesheetDays('{id}')`       | Entwurf aendern                              |
+| `POST /TimesheetDays('{id}')/Submit` | Zur Genehmigung freigeben                    |
 
 ### 8.5 Genehmigung
 
-| Service | Zweck |
-| --- | --- |
-| `Z_XTS_APPROVAL_SRV` | Projektleiter-Genehmigung |
-| `GET /ApprovalItems?month=&employeeFrom=&employeeTo=` | Freigegebene Stunden anzeigen |
-| `POST /ApprovalItems/ApproveDay` | Vollstaendigen Tag genehmigen und synchrone WE-Buchung anstossen |
-| `POST /ApprovalItems/RejectDay` | Vollstaendigen Tag mit Grund zurueckweisen |
+| Service                                               | Zweck                                                            |
+| ----------------------------------------------------- | ---------------------------------------------------------------- |
+| `Z_XTS_APPROVAL_SRV`                                  | Projektleiter-Genehmigung                                        |
+| `GET /ApprovalItems?month=&employeeFrom=&employeeTo=` | Freigegebene Stunden anzeigen                                    |
+| `POST /ApprovalItems/ApproveDay`                      | Vollstaendigen Tag genehmigen und synchrone WE-Buchung anstossen |
+| `POST /ApprovalItems/RejectDay`                       | Vollstaendigen Tag mit Grund zurueckweisen                       |
 
 ### 8.6 Reporting
 
-| Service | Zweck |
-| --- | --- |
-| `Z_XTS_REPORTING_SRV` | Reports und Monitore |
-| `GET /ResourceLifecycle` | Plan bis Rechnung/Wertefluss |
-| `GET /BudgetMonitor` | Budgetverbrauch je Kontierung |
-| `GET /HoursQuotaMonitor` | Mitarbeiterkontingente |
+| Service                  | Zweck                         |
+| ------------------------ | ----------------------------- |
+| `Z_XTS_REPORTING_SRV`    | Reports und Monitore          |
+| `GET /ResourceLifecycle` | Plan bis Rechnung/Wertefluss  |
+| `GET /BudgetMonitor`     | Budgetverbrauch je Kontierung |
+| `GET /HoursQuotaMonitor` | Mitarbeiterkontingente        |
 
 ## 9. Frontend-Screens
 
@@ -491,25 +491,25 @@ Pflichtfunktionen:
 
 ## 10. Validierungsregeln
 
-| Bereich | Regel |
-| --- | --- |
-| Planung | Mitarbeiter muss aktiv sein und eine gueltige Teamzuordnung im Planzeitraum haben. |
-| Planung | Kontierung muss aktiv und im Zeitraum gueltig sein. |
-| Planung | Planstunden duerfen SAP-Werkkalenderstunden nicht unmarkiert ueberschreiten. |
-| Planung | Status `P` und `B` sperren beauftragte Perioden. |
-| Beauftragung | Nur Status `F` darf in Beauftragung uebernommen werden. |
-| Beauftragung | Beauftragungsaggregation darf nicht ueber mehrere Mitarbeiter laufen. |
-| Beauftragung | BANF-Positionstext ist Pflicht, falls BANF automatisiert erzeugt wird. |
-| Freischaltung | Regel `P` erlaubt Stundenschreibung ab BANF; Regel `B` erst ab Bestellung. |
-| Stundenschreibung | Kontierung muss fuer Mitarbeiter und Datum freigeschaltet sein. |
-| Stundenschreibung | Positionsstunden duerfen Restkontingent nicht ueberschreiten. |
-| Stundenschreibung | Summe Positionsstunden soll zur berechneten Arbeitszeit passen oder begruendet abweichen. |
-| Stundenschreibung | Status `F` und `G` sind fuer Mitarbeiter nicht aenderbar. |
-| Genehmigung | Zurueckweisung erfordert Rueckweisungsgrund. |
-| Genehmigung | Genehmigung/Zurückweisung wirkt auf den vollstaendigen Arbeitstag. |
-| Genehmigung | Status `G` ist final und darf im MVP nicht zurueckgesetzt werden. |
-| Wareneingang | Synchrone WE-Buchung nach `G` erfordert eine zugeordnete Bestellposition und einen ausloesenden Button. |
-| Budget | Budgetverbrauch wird ueber Stundenbudget betrachtet; verbindlich ab Status `P` bzw. BANF erstellt. |
+| Bereich           | Regel                                                                                                   |
+| ----------------- | ------------------------------------------------------------------------------------------------------- |
+| Planung           | Mitarbeiter muss aktiv sein und eine gueltige Teamzuordnung im Planzeitraum haben.                      |
+| Planung           | Kontierung muss aktiv und im Zeitraum gueltig sein.                                                     |
+| Planung           | Planstunden duerfen SAP-Werkkalenderstunden nicht unmarkiert ueberschreiten.                            |
+| Planung           | Status `P` und `B` sperren beauftragte Perioden.                                                        |
+| Beauftragung      | Nur Status `F` darf in Beauftragung uebernommen werden.                                                 |
+| Beauftragung      | Beauftragungsaggregation darf nicht ueber mehrere Mitarbeiter laufen.                                   |
+| Beauftragung      | BANF-Positionstext ist Pflicht, falls BANF automatisiert erzeugt wird.                                  |
+| Freischaltung     | Regel `P` erlaubt Stundenschreibung ab BANF; Regel `B` erst ab Bestellung.                              |
+| Stundenschreibung | Kontierung muss fuer Mitarbeiter und Datum freigeschaltet sein.                                         |
+| Stundenschreibung | Positionsstunden duerfen Restkontingent nicht ueberschreiten.                                           |
+| Stundenschreibung | Summe Positionsstunden soll zur berechneten Arbeitszeit passen oder begruendet abweichen.               |
+| Stundenschreibung | Status `F` und `G` sind fuer Mitarbeiter nicht aenderbar.                                               |
+| Genehmigung       | Zurueckweisung erfordert Rueckweisungsgrund.                                                            |
+| Genehmigung       | Genehmigung/Zurückweisung wirkt auf den vollstaendigen Arbeitstag.                                      |
+| Genehmigung       | Status `G` ist final und darf im MVP nicht zurueckgesetzt werden.                                       |
+| Wareneingang      | Synchrone WE-Buchung nach `G` erfordert eine zugeordnete Bestellposition und einen ausloesenden Button. |
+| Budget            | Budgetverbrauch wird ueber Stundenbudget betrachtet; verbindlich ab Status `P` bzw. BANF erstellt.      |
 
 ## 11. SAP-Integration und Jobs
 
@@ -526,36 +526,36 @@ Pflichtfunktionen:
 
 Die angepasste Konzeptfassung vom 2026-05-08 definiert folgende Feldbelegung fuer die aktive BANF-Anlage:
 
-| Ziel-Feld | Wert / Quelle |
-| --- | --- |
-| `EBAN-BSART` | `ZDB` |
-| `EBAN-BSTYP` | `B` |
-| `EBAN-EKGR` | `A02` |
-| `EBAN-MATNR` | `ZXTS_MABEAUF_T-BEZEICHNUNG` |
-| `EBAN-MATKL` | `93` |
-| `EBAN-WERKS` | `0057` |
-| `EBAN-BAMNG` | `ZXTS_MABEAUF_T-MENGE_STD` |
-| `EBAN-BAMEI` | `H` |
+| Ziel-Feld    | Wert / Quelle                 |
+| ------------ | ----------------------------- |
+| `EBAN-BSART` | `ZDB`                         |
+| `EBAN-BSTYP` | `B`                           |
+| `EBAN-EKGR`  | `A02`                         |
+| `EBAN-MATNR` | `ZXTS_MABEAUF_T-BEZEICHNUNG`  |
+| `EBAN-MATKL` | `93`                          |
+| `EBAN-WERKS` | `0057`                        |
+| `EBAN-BAMNG` | `ZXTS_MABEAUF_T-MENGE_STD`    |
+| `EBAN-BAMEI` | `H`                           |
 | `EBAN-EINDT` | `ZXTS_MABEAUF_T-BEGINN_DATUM` |
-| `EBKN-SAKTO` | `431100` |
-| `EBAN-WLIEF` | `ZXTS_WIW_T-FIRMA` |
+| `EBKN-SAKTO` | `431100`                      |
+| `EBAN-WLIEF` | `ZXTS_WIW_T-FIRMA`            |
 
 Kontierungsableitung:
 
-| Bedingung | BANF/Kontierung |
-| --- | --- |
-| `ZXTS_KONT_T-CO_OBJEKTTYP = OR` | `EBAN-PSTYP = F`, `COBL-AUFNR = ZXTS_MABEAUF_T-KONTIERUNG` |
-| `ZXTS_KONT_T-CO_OBJEKTTYP = KS` | `EBAN-PSTYP = K`, `COBL-KOSTL = ZXTS_MABEAUF_T-KONTIERUNG` |
+| Bedingung                       | BANF/Kontierung                                               |
+| ------------------------------- | ------------------------------------------------------------- |
+| `ZXTS_KONT_T-CO_OBJEKTTYP = OR` | `EBAN-PSTYP = F`, `COBL-AUFNR = ZXTS_MABEAUF_T-KONTIERUNG`    |
+| `ZXTS_KONT_T-CO_OBJEKTTYP = KS` | `EBAN-PSTYP = K`, `COBL-KOSTL = ZXTS_MABEAUF_T-KONTIERUNG`    |
 | `ZXTS_KONT_T-CO_OBJEKTTYP = PR` | `EBAN-PSTYP = F`, `COBL-PS_POSID = ZXTS_MABEAUF_T-KONTIERUNG` |
 
 ### 11.3 Hintergrundjobs
 
-| Job | Zweck | Frequenz v0.1 |
-| --- | --- | --- |
-| `Z_XTS_REFRESH_PO` | Bestelldaten zu BANF/Beauftragungen nachlesen | mehrmals taeglich oder nightly |
-| `Z_XTS_REFRESH_TS_SUMS` | Gebuchte Stunden in `ZXTS_MAZUKONT_T` aggregieren | nach Buchung plus nightly reconciliation |
-| `Z_XTS_RETRY_GR` | Fehlgeschlagene synchrone Wareneingangsbuchungen pruefen und erneut verarbeiten | nach Bedarf / periodisch |
-| `Z_XTS_REPORT_SYNC` | Reportingdaten fuer Live-Circle aktualisieren | nightly |
+| Job                     | Zweck                                                                           | Frequenz v0.1                            |
+| ----------------------- | ------------------------------------------------------------------------------- | ---------------------------------------- |
+| `Z_XTS_REFRESH_PO`      | Bestelldaten zu BANF/Beauftragungen nachlesen                                   | mehrmals taeglich oder nightly           |
+| `Z_XTS_REFRESH_TS_SUMS` | Gebuchte Stunden in `ZXTS_MAZUKONT_T` aggregieren                               | nach Buchung plus nightly reconciliation |
+| `Z_XTS_RETRY_GR`        | Fehlgeschlagene synchrone Wareneingangsbuchungen pruefen und erneut verarbeiten | nach Bedarf / periodisch                 |
+| `Z_XTS_REPORT_SYNC`     | Reportingdaten fuer Live-Circle aktualisieren                                   | nightly                                  |
 
 ## 12. Technische Architektur v0.1
 

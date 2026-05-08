@@ -13,7 +13,6 @@ So that ...
 
 ## Acceptance Criteria
 
-- [ ] 
+- [ ]
 
 ## Notes
-

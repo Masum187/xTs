@@ -5,6 +5,7 @@ export function sumLineHours(lines: TimesheetDay["lines"]): number {
 }
 
 export function canSubmitTimesheet(day: TimesheetDay): boolean {
-  return day.status === "E" && day.lines.length > 0 && sumLineHours(day.lines) > 0;
+  return (
+    day.status === "E" && day.lines.length > 0 && sumLineHours(day.lines) > 0
+  );
 }
-

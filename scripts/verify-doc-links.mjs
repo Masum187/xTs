@@ -34,7 +34,9 @@ for (const file of markdownFiles) {
     if (!target || target.startsWith("#")) continue;
     if (/^[a-z]+:\/\//i.test(target) || target.startsWith("mailto:")) continue;
 
-    const cleanTarget = target.split("#")[0].split(":").slice(0, -1).join(":") || target.split("#")[0];
+    const cleanTarget =
+      target.split("#")[0].split(":").slice(0, -1).join(":") ||
+      target.split("#")[0];
     if (!cleanTarget) continue;
 
     const resolved = path.isAbsolute(cleanTarget)
@@ -54,4 +56,3 @@ if (missing.length) {
 }
 
 console.log(`Checked ${markdownFiles.length} markdown files.`);
-

@@ -15,14 +15,19 @@ const baseDay: TimesheetDay = {
     {
       coIdent: "700000000004",
       description: "Daily Projektabstimmung",
-      hours: 2
-    }
-  ]
+      hours: 2,
+    },
+  ],
 };
 
 describe("timesheet logic", () => {
   it("sums line hours", () => {
-    expect(sumLineHours([...baseDay.lines, { coIdent: "600000000001", description: "Konzept", hours: 1.5 }])).toBe(3.5);
+    expect(
+      sumLineHours([
+        ...baseDay.lines,
+        { coIdent: "600000000001", description: "Konzept", hours: 1.5 },
+      ]),
+    ).toBe(3.5);
   });
 
   it("allows submit only for editable entries with hours", () => {
@@ -31,4 +36,3 @@ describe("timesheet logic", () => {
     expect(canSubmitTimesheet({ ...baseDay, lines: [] })).toBe(false);
   });
 });
-

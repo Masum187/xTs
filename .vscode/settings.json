@@ -4,4 +4,3 @@
   "eslint.validate": ["typescript", "javascript"],
   "typescript.tsdk": "frontend/node_modules/typescript/lib"
 }
-

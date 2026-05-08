@@ -9,9 +9,8 @@ labels: bug
 
 ## Steps To Reproduce
 
-1. 
+1.
 
 ## Expected Result
 
 ## Actual Result
-

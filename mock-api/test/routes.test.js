@@ -18,7 +18,9 @@ test("returns employee profile", async () => {
 });
 
 test("returns enabled cost objects", async () => {
-  const response = await routeRequest(request("GET", "/odata/MyEnabledCostObjects?date=2026-04-13"));
+  const response = await routeRequest(
+    request("GET", "/odata/MyEnabledCostObjects?date=2026-04-13"),
+  );
   const body = JSON.parse(response.body);
   assert.equal(response.status, 200);
   assert.equal(body.value.length, 2);
@@ -30,10 +32,11 @@ test("echoes saved timesheet draft", async () => {
     extNr: "SCHILZ",
     date: "2026-04-13",
     status: "F",
-    lines: []
+    lines: [],
   };
-  const response = await routeRequest(request("POST", "/odata/TimesheetDays", draft));
+  const response = await routeRequest(
+    request("POST", "/odata/TimesheetDays", draft),
+  );
   assert.equal(response.status, 201);
   assert.deepEqual(JSON.parse(response.body), draft);
 });
-

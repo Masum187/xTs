@@ -6,7 +6,6 @@ export const routes: Routes = [
   {
     path: "",
     component: TimesheetComponent,
-    title: "xTS TimeSheet"
-  }
+    title: "xTS TimeSheet",
+  },
 ];
-
