@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import { canSubmitTimesheet, sumLineHours } from "./timesheet.logic";
-import { TimesheetDay } from "./timesheet.models";
+import type { TimesheetDay } from "./timesheet.models";
 
 const baseDay: TimesheetDay = {
   extNr: "SCHILZ",
