@@ -78,7 +78,53 @@ select {
   align-items: center;
   display: grid;
   gap: 10px;
-  grid-template-columns: 160px 1fr 120px;
+  grid-template-columns: 160px 1fr minmax(120px, auto) auto;
+}
+
+.line-row.blocked {
+  color: #8a94a6;
+}
+
+.blocked-hint {
+  color: #a3392f;
+  font-style: normal;
+  font-weight: 700;
+  margin-left: 6px;
+}
+
+.empty-hint {
+  color: #60718f;
+  font-size: 13px;
+  margin: 0;
+}
+
+.day-nav {
+  align-items: center;
+  display: flex;
+  gap: 12px;
+}
+
+.status-badge {
+  background: #eef3fa;
+  border: 1px solid #cbd6e6;
+  border-radius: 999px;
+  color: #174b86;
+  font-size: 13px;
+  font-weight: 700;
+  margin-left: auto;
+  padding: 6px 14px;
+}
+
+.rejection {
+  background: #fdf3f2;
+  border-color: #e6b8b2;
+  color: #7c2d24;
+}
+
+.rejection p {
+  color: #7c2d24;
+  font-size: 13px;
+  margin: 8px 0 0;
 }
 
 .summary {

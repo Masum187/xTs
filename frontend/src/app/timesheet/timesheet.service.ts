@@ -22,12 +22,19 @@ export class TimesheetService {
     return this.readJson<EmployeeProfile>(response);
   }
 
-  async getEnabledCostObjects(date: string): Promise<EnabledCostObject[]> {
+  async getEnabledCostObjects(date?: string): Promise<EnabledCostObject[]> {
+    const query = date ? `?date=${encodeURIComponent(date)}` : "";
     const response = await fetch(
-      `${this.baseUrl}/MyEnabledCostObjects?date=${encodeURIComponent(date)}`,
+      `${this.baseUrl}/MyEnabledCostObjects${query}`,
     );
     const body =
       await this.readJson<ODataResponse<EnabledCostObject>>(response);
+    return body.value;
+  }
+
+  async getMyTimesheets(): Promise<TimesheetDay[]> {
+    const response = await fetch(`${this.baseUrl}/MyTimesheets`);
+    const body = await this.readJson<ODataResponse<TimesheetDay>>(response);
     return body.value;
   }
 

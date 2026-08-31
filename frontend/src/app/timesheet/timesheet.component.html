@@ -11,18 +11,39 @@
   </div>
 </section>
 
+<section class="panel day-nav" data-testid="day-nav">
+  <button type="button" (click)="previousDay()" data-testid="previous-day">
+    ‹ Vortag
+  </button>
+  <input
+    type="date"
+    aria-label="Tagesdatum"
+    [ngModel]="day().date"
+    (ngModelChange)="openDate($event)"
+  />
+  <button type="button" (click)="nextDay()" data-testid="next-day">
+    Folgetag ›
+  </button>
+  <span class="status-badge" data-testid="day-status">{{ statusLabel() }}</span>
+</section>
+
+@if (day().status === "A" && day().rejectionReason) {
+  <section class="panel rejection" data-testid="rejection-banner">
+    <strong>Zurückgewiesen:</strong>
+    <span>{{ day().rejectionReason }}</span>
+    <p>
+      Bitte korrigieren und erneut zur Genehmigung freigeben. Beim Speichern
+      wechselt der Tag zurück in den Entwurf.
+    </p>
+  </section>
+}
+
 <section class="panel">
   <div class="grid">
     <label>
-      Tagesdatum
-      <input
-        [ngModel]="day().date"
-        (ngModelChange)="updateDay({ date: $event })"
-      />
-    </label>
-    <label>
       Kommt
       <input
+        [disabled]="!canEdit()"
         [ngModel]="day().startTime"
         (ngModelChange)="updateDay({ startTime: $event })"
       />
@@ -30,6 +51,7 @@
     <label>
       Geht
       <input
+        [disabled]="!canEdit()"
         [ngModel]="day().endTime"
         (ngModelChange)="updateDay({ endTime: $event })"
       />
@@ -38,6 +60,7 @@
       Pause (Min.)
       <input
         type="number"
+        [disabled]="!canEdit()"
         [ngModel]="day().breakMinutes"
         (ngModelChange)="updateDay({ breakMinutes: +$event })"
       />
@@ -45,6 +68,7 @@
     <label>
       Leistungsort
       <select
+        [disabled]="!canEdit()"
         [ngModel]="day().location"
         (ngModelChange)="updateDay({ location: $event })"
       >
@@ -57,19 +81,50 @@
 
 <section class="panel">
   <div class="section-title">
+    <h2>Kontingente</h2>
+  </div>
+  <div class="lines" data-testid="cost-object-list">
+    @for (item of costObjects(); track item.coIdent) {
+      <div class="line-row" [class.blocked]="!isBookable(item)">
+        <span>{{ item.coIdent }}</span>
+        <span>{{ item.description }}</span>
+        <span>
+          {{ item.remainingHours }} Std. Rest ({{ item.validFrom }} –
+          {{ item.validTo }})
+          @if (!isBookable(item)) {
+            <em class="blocked-hint">nicht buchbar</em>
+          }
+        </span>
+      </div>
+    }
+  </div>
+</section>
+
+<section class="panel">
+  <div class="section-title">
     <h2>Leistungspositionen</h2>
     <div>
       <select
+        [disabled]="!canEdit()"
         [ngModel]="selectedCostObject()"
         (ngModelChange)="selectedCostObject.set($event)"
       >
-        @for (item of costObjects(); track item.coIdent) {
+        @for (item of bookableCostObjects(); track item.coIdent) {
           <option [value]="item.coIdent">
-            {{ item.coIdent }} - {{ item.description }}
+            {{ item.coIdent }} - {{ item.description }} ({{
+              item.remainingHours
+            }}
+            Std. Rest)
           </option>
         }
       </select>
-      <button type="button" (click)="addLine()">Position hinzufügen</button>
+      <button
+        type="button"
+        [disabled]="!canEdit() || bookableCostObjects().length === 0"
+        (click)="addLine()"
+      >
+        Position hinzufügen
+      </button>
     </div>
   </div>
 
@@ -79,6 +134,7 @@
         <span>{{ line.coIdent }}</span>
         <input
           aria-label="Leistungsbeschreibung"
+          [disabled]="!canEdit()"
           [ngModel]="line.description"
           (ngModelChange)="updateLine($index, { description: $event })"
         />
@@ -87,21 +143,39 @@
           type="number"
           min="0"
           step="0.25"
+          [disabled]="!canEdit()"
           [ngModel]="line.hours"
           (ngModelChange)="updateLine($index, { hours: +$event })"
         />
+        <button
+          type="button"
+          aria-label="Position entfernen"
+          [disabled]="!canEdit()"
+          (click)="removeLine($index)"
+        >
+          ✕
+        </button>
       </div>
+    } @empty {
+      <p class="empty-hint">Noch keine Positionen für diesen Tag.</p>
     }
   </div>
 
   <footer class="summary">
-    <span>Status: {{ day().status }}</span>
+    <span>Status: {{ statusLabel() }}</span>
     <strong>{{ totalHours() }} Std.</strong>
   </footer>
 </section>
 
 <section class="actions">
-  <button type="button" (click)="save()">Entwurf speichern</button>
+  <button
+    type="button"
+    [disabled]="!canEdit()"
+    (click)="save()"
+    data-testid="save-draft"
+  >
+    Entwurf speichern
+  </button>
   <button
     type="button"
     [disabled]="!canSubmit()"

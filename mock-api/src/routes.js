@@ -6,6 +6,17 @@ import {
   timesheets,
 } from "./fixtures.js";
 
+const timesheetKey = (day) => `${day.extNr}|${day.date}`;
+
+let timesheetStore = new Map();
+resetTimesheetStore();
+
+export function resetTimesheetStore() {
+  timesheetStore = new Map(
+    timesheets.map((day) => [timesheetKey(day), structuredClone(day)]),
+  );
+}
+
 export async function routeRequest(request) {
   const url = new URL(request.url, "http://127.0.0.1");
   const path = url.pathname.replace(/\/$/, "");
@@ -35,12 +46,21 @@ export async function routeRequest(request) {
   }
 
   if (request.method === "GET" && path === "/odata/MyTimesheets") {
-    return json({ value: timesheets });
+    const date = url.searchParams.get("date");
+    const value = [...timesheetStore.values()]
+      .filter((day) => !date || day.date === date)
+      .sort((a, b) => b.date.localeCompare(a.date));
+    return json({ value });
   }
 
   if (request.method === "POST" && path === "/odata/TimesheetDays") {
     const body = await readJsonBody(request);
-    return json(body, 201);
+    if (!body.extNr || !body.date) {
+      return json({ error: "extNr and date are required" }, 400);
+    }
+    const saved = structuredClone(body);
+    timesheetStore.set(timesheetKey(saved), saved);
+    return json(saved, 201);
   }
 
   return json({ error: "Not found", path }, 404);
