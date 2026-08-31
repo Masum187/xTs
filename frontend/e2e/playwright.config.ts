@@ -10,12 +10,14 @@ export default defineConfig({
   webServer: [
     {
       command: "npm run start --workspace mock-api",
+      cwd: "../..",
       url: "http://127.0.0.1:4010/health",
       reuseExistingServer: !process.env.CI,
     },
     {
       command:
         "npm run start --workspace frontend -- --host 127.0.0.1 --port 4200",
+      cwd: "../..",
       url: "http://127.0.0.1:4200",
       reuseExistingServer: !process.env.CI,
     },

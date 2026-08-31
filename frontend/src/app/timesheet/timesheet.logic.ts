@@ -1,4 +1,4 @@
-import { TimesheetDay } from "./timesheet.models";
+import type { TimesheetDay } from "./timesheet.models";
 
 export function sumLineHours(lines: TimesheetDay["lines"]): number {
   return lines.reduce((total, line) => total + line.hours, 0);

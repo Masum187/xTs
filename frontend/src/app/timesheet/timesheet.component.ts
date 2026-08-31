@@ -1,8 +1,8 @@
-import { Component, computed, signal } from "@angular/core";
+import { Component, computed, inject, signal } from "@angular/core";
 import { FormsModule } from "@angular/forms";
 
 import { canSubmitTimesheet, sumLineHours } from "./timesheet.logic";
-import {
+import type {
   EnabledCostObject,
   EmployeeProfile,
   TimesheetDay,
@@ -17,6 +17,8 @@ import { TimesheetService } from "./timesheet.service";
   styleUrl: "./timesheet.component.css",
 })
 export class TimesheetComponent {
+  private readonly timesheetService = inject(TimesheetService);
+
   protected readonly profile = signal<EmployeeProfile | null>(null);
   protected readonly costObjects = signal<EnabledCostObject[]>([]);
   protected readonly selectedCostObject = signal<string>("700000000004");
@@ -43,7 +45,7 @@ export class TimesheetComponent {
   );
   protected readonly canSubmit = computed(() => canSubmitTimesheet(this.day()));
 
-  constructor(private readonly timesheetService: TimesheetService) {
+  constructor() {
     void this.loadInitialData();
   }
 
@@ -64,6 +66,10 @@ export class TimesheetComponent {
         },
       ],
     }));
+  }
+
+  protected updateDay(patch: Partial<TimesheetDay>): void {
+    this.day.update((day) => ({ ...day, ...patch }));
   }
 
   protected updateLine(

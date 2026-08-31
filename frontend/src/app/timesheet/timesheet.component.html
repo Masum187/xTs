@@ -17,21 +17,21 @@
       Tagesdatum
       <input
         [ngModel]="day().date"
-        (ngModelChange)="day.update(current => ({ ...current, date: $event }))"
+        (ngModelChange)="updateDay({ date: $event })"
       />
     </label>
     <label>
       Kommt
       <input
         [ngModel]="day().startTime"
-        (ngModelChange)="day.update(current => ({ ...current, startTime: $event }))"
+        (ngModelChange)="updateDay({ startTime: $event })"
       />
     </label>
     <label>
       Geht
       <input
         [ngModel]="day().endTime"
-        (ngModelChange)="day.update(current => ({ ...current, endTime: $event }))"
+        (ngModelChange)="updateDay({ endTime: $event })"
       />
     </label>
     <label>
@@ -39,14 +39,14 @@
       <input
         type="number"
         [ngModel]="day().breakMinutes"
-        (ngModelChange)="day.update(current => ({ ...current, breakMinutes: +$event }))"
+        (ngModelChange)="updateDay({ breakMinutes: +$event })"
       />
     </label>
     <label>
       Leistungsort
       <select
         [ngModel]="day().location"
-        (ngModelChange)="day.update(current => ({ ...current, location: $event }))"
+        (ngModelChange)="updateDay({ location: $event })"
       >
         <option value="remote">remote</option>
         <option value="on-site">on-site</option>
