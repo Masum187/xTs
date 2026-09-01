@@ -26,6 +26,7 @@ const STATUS_LABELS: Record<OrderStatus, string> = {
 export class OrdersComponent {
   private readonly ordersService = inject(OrdersService);
   private readonly candidateTexts = new Map<string, string>();
+  private readonly orderTexts = new Map<string, string>();
 
   protected readonly candidates = signal<OrderCandidate[]>([]);
   protected readonly orders = signal<Order[]>([]);
@@ -66,6 +67,14 @@ export class OrdersComponent {
     this.candidateTexts.set(this.candidateKey(candidate), text);
   }
 
+  protected orderTextFor(order: Order): string {
+    return this.orderTexts.get(order.orderId) ?? order.text;
+  }
+
+  protected setOrderText(order: Order, text: string): void {
+    this.orderTexts.set(order.orderId, text);
+  }
+
   protected async updateFilter(
     patch: Partial<{
       extNr: string;
@@ -90,6 +99,16 @@ export class OrdersComponent {
     this.message.set(
       `Beauftragung ${order.orderId} für ${order.displayName} angelegt (${order.hours} Std.).`,
     );
+    await this.load();
+  }
+
+  protected async saveOrderText(order: Order): Promise<void> {
+    const updated = await this.ordersService.updateOrderText(
+      order.orderId,
+      this.orderTextFor(order),
+    );
+    this.orderTexts.delete(order.orderId);
+    this.message.set(`BANF-Positionstext für ${updated.orderId} gespeichert.`);
     await this.load();
   }
 
@@ -126,7 +145,19 @@ export class OrdersComponent {
       this.ordersService.getOrders(),
       this.ordersService.getProtocol(),
     ]);
+    this.pruneOrderTexts(orders);
     this.orders.set(orders);
     this.protocol.set(protocol);
+  }
+
+  private pruneOrderTexts(orders: Order[]): void {
+    const editableOrderIds = new Set(
+      orders
+        .filter((order) => order.status === "created")
+        .map((order) => order.orderId),
+    );
+    for (const orderId of this.orderTexts.keys()) {
+      if (!editableOrderIds.has(orderId)) this.orderTexts.delete(orderId);
+    }
   }
 }

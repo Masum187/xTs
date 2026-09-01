@@ -50,6 +50,10 @@ export class OrdersService {
     });
   }
 
+  async updateOrderText(orderId: string, text: string): Promise<Order> {
+    return this.post<Order>(`${this.baseUrl}/Orders`, { orderId, text });
+  }
+
   async createBanf(orderId: string): Promise<Order> {
     return this.post<Order>(`${this.baseUrl}/OrderBanfs`, { orderId });
   }

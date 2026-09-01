@@ -76,23 +76,28 @@ export function createOrder(state, planningEntries, payload) {
   if (!extNr || !coIdent || !Array.isArray(months) || months.length === 0) {
     return { error: { status: 400, code: "INVALID_ORDER" } };
   }
+  const uniqueMonths = [...new Set(months)];
+  if (uniqueMonths.length !== months.length) {
+    return { error: { status: 400, code: "DUPLICATE_PLANNING_REFS" } };
+  }
   const available = releasedRows(planningEntries, state.orders).filter(
     (entry) => entry.extNr === extNr && entry.coIdent === coIdent,
   );
-  const rows = months.map((month) =>
+  const rows = uniqueMonths.map((month) =>
     available.find((entry) => entry.month === month),
   );
   if (rows.some((row) => !row)) {
     return { error: { status: 409, code: "PLANNING_ROWS_NOT_AVAILABLE" } };
   }
-  const sorted = [...months].sort();
+  const sorted = [...uniqueMonths].sort();
+  const normalizedText = typeof text === "string" ? text.trim() : "";
   state.orderCounter += 1;
   const order = {
     orderId: `BEAUF-${String(state.orderCounter).padStart(6, "0")}`,
     extNr,
     displayName: displayNameFor(extNr),
     coIdent,
-    text: text || `Beauftragung ${displayNameFor(extNr)} ${coIdent}`,
+    text: normalizedText || `Beauftragung ${displayNameFor(extNr)} ${coIdent}`,
     periodFrom: sorted[0],
     periodTo: sorted[sorted.length - 1],
     hours: rows.reduce((sum, row) => sum + row.hours, 0),
@@ -117,10 +122,11 @@ export function updateOrderText(state, payload) {
   if (order.status !== "created") {
     return { error: { status: 409, code: "ORDER_TEXT_LOCKED" } };
   }
-  if (!payload.text) {
+  const text = typeof payload.text === "string" ? payload.text.trim() : "";
+  if (!text) {
     return { error: { status: 400, code: "INVALID_ORDER_TEXT" } };
   }
-  order.text = payload.text;
+  order.text = text;
   return { order: { ...order } };
 }
 

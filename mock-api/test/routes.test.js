@@ -732,6 +732,20 @@ test("creates an order from planning rows and keeps references", async () => {
   assert.equal(again.status, 409);
 });
 
+test("rejects duplicate planning references in one order", async () => {
+  await seedReleasedRow("SCHILZ", "700000000004", "2026-04", 60);
+
+  const response = await routeRequest(
+    approverRequest("POST", "/odata/Orders", {
+      extNr: "SCHILZ",
+      coIdent: "700000000004",
+      months: ["2026-04", "2026-04"],
+    }),
+  );
+  assert.equal(response.status, 400);
+  assert.equal(JSON.parse(response.body).error, "DUPLICATE_PLANNING_REFS");
+});
+
 test("order text stays editable until the BANF exists", async () => {
   await seedReleasedRow("SCHILZ", "700000000004", "2026-04", 60);
   await routeRequest(
@@ -749,6 +763,14 @@ test("order text stays editable until the BANF exists", async () => {
     }),
   );
   assert.equal(JSON.parse(renamed.body).text, "Neuer BANF-Positionstext");
+
+  const blank = await routeRequest(
+    approverRequest("POST", "/odata/Orders", {
+      orderId: "BEAUF-000001",
+      text: "   ",
+    }),
+  );
+  assert.equal(blank.status, 400);
 
   await routeRequest(
     approverRequest("POST", "/odata/OrderBanfs", { orderId: "BEAUF-000001" }),

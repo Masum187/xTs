@@ -121,6 +121,23 @@ input {
   overflow-x: auto;
 }
 
+.text-edit {
+  align-items: center;
+  display: flex;
+  gap: 8px;
+  min-width: 320px;
+}
+
+.text-edit input {
+  flex: 1;
+  min-width: 220px;
+}
+
+.text-edit button {
+  min-height: 36px;
+  padding: 0 10px;
+}
+
 table {
   border-collapse: collapse;
   width: 100%;

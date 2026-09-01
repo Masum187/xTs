@@ -59,11 +59,22 @@ test("full chain: candidate to order, BANF, purchase order sync", async ({
   await implementation.getByTestId("create-order-SCHILZ-700000000004").click();
   const orderRow = page.getByTestId("order-BEAUF-000001");
   await expect(orderRow).toContainText("Angelegt");
-  await expect(orderRow).toContainText("SAP-Implementierung Sprint Juni");
+  const positionText = orderRow.getByLabel("BANF-Positionstext BEAUF-000001");
+  await expect(positionText).toHaveValue("SAP-Implementierung Sprint Juni");
   await expect(implementation).toBeHidden();
+
+  await positionText.fill("SAP-Implementierung Sprint Juni final");
+  await orderRow.getByTestId("save-text-BEAUF-000001").click();
+  await expect(page.getByTestId("orders-message")).toContainText(
+    "BANF-Positionstext für BEAUF-000001 gespeichert.",
+  );
+  await expect(positionText).toHaveValue(
+    "SAP-Implementierung Sprint Juni final",
+  );
 
   await page.getByTestId("create-banf-BEAUF-000001").click();
   await expect(orderRow).toContainText("BANF vorhanden");
+  await expect(orderRow).toContainText("SAP-Implementierung Sprint Juni final");
   await expect(orderRow).toContainText("10000001/00010");
 
   await page

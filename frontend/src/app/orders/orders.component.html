@@ -135,7 +135,27 @@
             <td>{{ order.coIdent }}</td>
             <td>{{ periodLabel(order.periodFrom, order.periodTo) }}</td>
             <td class="num">{{ order.hours }}</td>
-            <td>{{ order.text }}</td>
+            <td>
+              @if (order.status === "created") {
+                <div class="text-edit">
+                  <input
+                    [attr.aria-label]="'BANF-Positionstext ' + order.orderId"
+                    [ngModel]="orderTextFor(order)"
+                    (ngModelChange)="setOrderText(order, $event)"
+                  />
+                  <button
+                    type="button"
+                    (click)="saveOrderText(order)"
+                    [disabled]="!orderTextFor(order).trim()"
+                    [attr.data-testid]="'save-text-' + order.orderId"
+                  >
+                    Speichern
+                  </button>
+                </div>
+              } @else {
+                {{ order.text }}
+              }
+            </td>
             <td>
               <span class="status" [attr.data-status]="order.status">
                 {{ statusLabel(order.status) }}
