@@ -8,12 +8,25 @@ import {
 
 const timesheetKey = (day) => `${day.extNr}|${day.date}`;
 
+// Bis XTS-050 (AD/OAuth-Mapping) entschieden ist, simuliert die Mock-API
+// feste Personas: employees[0] schreibt Stunden, employees[1] genehmigt.
+const MOCK_USER = () => employees[0].extNr;
+const MOCK_APPROVER = () => employees[1].extNr;
+
 let timesheetStore = new Map();
+let weDocumentCounter = 0;
 resetTimesheetStore();
 
 export function resetTimesheetStore() {
   timesheetStore = new Map(
     timesheets.map((day) => [timesheetKey(day), structuredClone(day)]),
+  );
+  weDocumentCounter = 0;
+}
+
+function displayNameFor(extNr) {
+  return (
+    employees.find((employee) => employee.extNr === extNr)?.displayName ?? extNr
   );
 }
 
@@ -48,9 +61,62 @@ export async function routeRequest(request) {
   if (request.method === "GET" && path === "/odata/MyTimesheets") {
     const date = url.searchParams.get("date");
     const value = [...timesheetStore.values()]
+      .filter((day) => day.extNr === MOCK_USER())
       .filter((day) => !date || day.date === date)
       .sort((a, b) => b.date.localeCompare(a.date));
     return json({ value });
+  }
+
+  if (request.method === "GET" && path === "/odata/ApprovalTimesheets") {
+    const month = url.searchParams.get("month");
+    const extNr = url.searchParams.get("extNr");
+    const value = [...timesheetStore.values()]
+      .filter((day) => day.status === "F")
+      .filter((day) => !month || day.date.startsWith(month))
+      .filter((day) => !extNr || day.extNr === extNr)
+      .sort(
+        (a, b) =>
+          a.date.localeCompare(b.date) || a.extNr.localeCompare(b.extNr),
+      )
+      .map((day) => ({ ...day, displayName: displayNameFor(day.extNr) }));
+    return json({ value });
+  }
+
+  if (request.method === "POST" && path === "/odata/TimesheetApprovals") {
+    const body = await readJsonBody(request);
+    if (!body.extNr || !body.date || !body.action) {
+      return json({ error: "extNr, date and action are required" }, 400);
+    }
+    const day = timesheetStore.get(timesheetKey(body));
+    if (!day) {
+      return json({ error: "Timesheet day not found" }, 404);
+    }
+    if (day.status !== "F") {
+      return json(
+        { error: "Only submitted days (status F) can be processed" },
+        409,
+      );
+    }
+    if (body.action === "approve") {
+      day.status = "G";
+      day.rejectionReason = undefined;
+      day.approvedBy = MOCK_APPROVER();
+      day.approvedAt = new Date().toISOString();
+      weDocumentCounter += 1;
+      day.weDocument = `WE-${String(weDocumentCounter).padStart(6, "0")}`;
+      return json(structuredClone(day));
+    }
+    if (body.action === "reject") {
+      if (!body.reason) {
+        return json({ error: "reason is required for rejection" }, 400);
+      }
+      day.status = "A";
+      day.rejectionReason = body.reason;
+      day.approvedBy = undefined;
+      day.approvedAt = undefined;
+      return json(structuredClone(day));
+    }
+    return json({ error: "action must be approve or reject" }, 400);
   }
 
   if (request.method === "POST" && path === "/odata/TimesheetDays") {

@@ -1,0 +1,113 @@
+<section class="page-header">
+  <div>
+    <p class="eyebrow">WebClient</p>
+    <h1>Genehmigung</h1>
+  </div>
+</section>
+
+<section class="panel filters">
+  <label>
+    Leistungsmonat
+    <select
+      aria-label="Leistungsmonat"
+      [ngModel]="monthFilter()"
+      (ngModelChange)="monthFilter.set($event)"
+    >
+      <option value="">Alle Monate</option>
+      @for (month of months(); track month) {
+        <option [value]="month">{{ month }}</option>
+      }
+    </select>
+  </label>
+  <label>
+    Mitarbeiter
+    <select
+      aria-label="Mitarbeiter"
+      [ngModel]="employeeFilter()"
+      (ngModelChange)="employeeFilter.set($event)"
+    >
+      <option value="">Alle Mitarbeiter</option>
+      @for (employee of employees(); track employee.extNr) {
+        <option [value]="employee.extNr">{{ employee.displayName }}</option>
+      }
+    </select>
+  </label>
+  @if (message()) {
+    <span class="message" data-testid="approval-message">{{ message() }}</span>
+  }
+</section>
+
+<section class="panel">
+  <div class="section-title">
+    <h2>Freigegebene Arbeitstage</h2>
+    <span>{{ filteredDays().length }} offen</span>
+  </div>
+
+  <div class="approval-list" data-testid="approval-list">
+    @for (day of filteredDays(); track dayKey(day)) {
+      <article
+        class="approval-card"
+        [attr.data-testid]="'approval-' + day.extNr + '-' + day.date"
+      >
+        <header>
+          <div>
+            <strong>{{ day.displayName }}</strong>
+            <span>{{ day.date }} · {{ day.location }}</span>
+          </div>
+          <strong>{{ totalHours(day) }} Std.</strong>
+        </header>
+        <div class="approval-lines">
+          @for (line of day.lines; track $index) {
+            <div class="approval-line">
+              <span>{{ line.coIdent }}</span>
+              <span>{{ line.description }}</span>
+              <span>{{ line.hours }} Std.</span>
+            </div>
+          }
+        </div>
+        <footer>
+          @if (rejectingKey() === dayKey(day)) {
+            <input
+              aria-label="Rückweisungsgrund"
+              placeholder="Rückweisungsgrund"
+              [ngModel]="rejectReason()"
+              (ngModelChange)="rejectReason.set($event)"
+            />
+            <button
+              type="button"
+              class="danger"
+              [disabled]="!rejectReason().trim()"
+              (click)="confirmReject(day)"
+              data-testid="confirm-reject"
+            >
+              Zurückweisen
+            </button>
+            <button type="button" class="ghost" (click)="cancelReject()">
+              Abbrechen
+            </button>
+          } @else {
+            <button
+              type="button"
+              (click)="approve(day)"
+              [attr.data-testid]="'approve-' + day.extNr + '-' + day.date"
+            >
+              Genehmigen + WE buchen
+            </button>
+            <button
+              type="button"
+              class="danger"
+              (click)="startReject(day)"
+              [attr.data-testid]="'reject-' + day.extNr + '-' + day.date"
+            >
+              Zurückweisen
+            </button>
+          }
+        </footer>
+      </article>
+    } @empty {
+      <p class="empty-hint" data-testid="approval-empty">
+        Keine offenen Arbeitstage zur Genehmigung.
+      </p>
+    }
+  </div>
+</section>

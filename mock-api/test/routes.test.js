@@ -35,10 +35,10 @@ test("returns own timesheets sorted by date descending", async () => {
   const response = await routeRequest(request("GET", "/odata/MyTimesheets"));
   const body = JSON.parse(response.body);
   assert.equal(response.status, 200);
-  assert.equal(body.value.length, 3);
+  assert.equal(body.value.length, 4);
   assert.deepEqual(
     body.value.map((day) => day.date),
-    ["2026-04-13", "2026-04-10", "2026-04-09"],
+    ["2026-04-13", "2026-04-10", "2026-04-09", "2026-04-08"],
   );
 });
 
@@ -91,7 +91,97 @@ test("creates a new day for an unknown date", async () => {
   };
   await routeRequest(request("POST", "/odata/TimesheetDays", draft));
   const response = await routeRequest(request("GET", "/odata/MyTimesheets"));
-  assert.equal(JSON.parse(response.body).value.length, 4);
+  assert.equal(JSON.parse(response.body).value.length, 5);
+});
+
+test("lists only submitted days for approval with employee names", async () => {
+  const response = await routeRequest(
+    request("GET", "/odata/ApprovalTimesheets"),
+  );
+  const body = JSON.parse(response.body);
+  assert.equal(response.status, 200);
+  assert.deepEqual(
+    body.value.map((day) => [day.extNr, day.date]),
+    [
+      ["ROEPER", "2026-03-31"],
+      ["ROEPER", "2026-04-08"],
+      ["SCHILZ", "2026-04-08"],
+    ],
+  );
+  assert.equal(body.value[0].displayName, "Christian Roeper");
+});
+
+test("filters approval list by month and employee", async () => {
+  const response = await routeRequest(
+    request("GET", "/odata/ApprovalTimesheets?month=2026-04&extNr=ROEPER"),
+  );
+  const body = JSON.parse(response.body);
+  assert.equal(body.value.length, 1);
+  assert.equal(body.value[0].date, "2026-04-08");
+});
+
+test("approves a submitted day and posts a goods receipt", async () => {
+  const response = await routeRequest(
+    request("POST", "/odata/TimesheetApprovals", {
+      extNr: "SCHILZ",
+      date: "2026-04-08",
+      action: "approve",
+    }),
+  );
+  const day = JSON.parse(response.body);
+  assert.equal(response.status, 200);
+  assert.equal(day.status, "G");
+  assert.equal(day.approvedBy, "ROEPER");
+  assert.ok(day.approvedAt);
+  assert.equal(day.weDocument, "WE-000001");
+
+  const approvals = await routeRequest(
+    request("GET", "/odata/ApprovalTimesheets?extNr=SCHILZ"),
+  );
+  assert.equal(JSON.parse(approvals.body).value.length, 0);
+});
+
+test("rejects a submitted day with a reason", async () => {
+  const response = await routeRequest(
+    request("POST", "/odata/TimesheetApprovals", {
+      extNr: "ROEPER",
+      date: "2026-04-08",
+      action: "reject",
+      reason: "Bitte Positionsbeschreibung präzisieren.",
+    }),
+  );
+  const day = JSON.parse(response.body);
+  assert.equal(response.status, 200);
+  assert.equal(day.status, "A");
+  assert.equal(day.rejectionReason, "Bitte Positionsbeschreibung präzisieren.");
+});
+
+test("requires a reason for rejection", async () => {
+  const response = await routeRequest(
+    request("POST", "/odata/TimesheetApprovals", {
+      extNr: "ROEPER",
+      date: "2026-04-08",
+      action: "reject",
+    }),
+  );
+  assert.equal(response.status, 400);
+});
+
+test("refuses approval for days that are not submitted", async () => {
+  const response = await routeRequest(
+    request("POST", "/odata/TimesheetApprovals", {
+      extNr: "SCHILZ",
+      date: "2026-04-09",
+      action: "approve",
+    }),
+  );
+  assert.equal(response.status, 409);
+});
+
+test("excludes other employees from own timesheets", async () => {
+  const response = await routeRequest(request("GET", "/odata/MyTimesheets"));
+  const body = JSON.parse(response.body);
+  assert.ok(body.value.every((day) => day.extNr === "SCHILZ"));
 });
 
 test("rejects timesheet without key fields", async () => {
