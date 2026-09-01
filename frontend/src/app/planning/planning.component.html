@@ -1,0 +1,172 @@
+<section class="page-header">
+  <div>
+    <p class="eyebrow">WebClient</p>
+    <h1>Ressourcenplanung</h1>
+  </div>
+</section>
+
+<section class="panel filters">
+  <label>
+    Startmonat
+    <input
+      aria-label="Startmonat"
+      placeholder="MM.JJJJ"
+      [ngModel]="startInput()"
+      (change)="onStartChange($any($event.target).value)"
+    />
+  </label>
+  <label>
+    Mitarbeiter
+    <select
+      aria-label="Mitarbeiter"
+      [ngModel]="filterExtNr()"
+      (ngModelChange)="updateFilter({ extNr: $event })"
+    >
+      <option value="">Alle Mitarbeiter</option>
+      @for (option of employeeOptions(); track option.value) {
+        <option [value]="option.value">{{ option.label }}</option>
+      }
+    </select>
+  </label>
+  <label>
+    Team
+    <select
+      aria-label="Team"
+      [ngModel]="filterTeam()"
+      (ngModelChange)="updateFilter({ team: $event })"
+    >
+      <option value="">Alle Teams</option>
+      @for (team of teams(); track team.id) {
+        <option [value]="team.id">{{ team.name }}</option>
+      }
+    </select>
+  </label>
+  <label>
+    Kontierung
+    <select
+      aria-label="Kontierung"
+      [ngModel]="filterCoIdent()"
+      (ngModelChange)="updateFilter({ coIdent: $event })"
+    >
+      <option value="">Alle Kontierungen</option>
+      @for (option of coIdentOptions(); track option.value) {
+        <option [value]="option.value">{{ option.label }}</option>
+      }
+    </select>
+  </label>
+</section>
+
+@if (startError()) {
+  <section class="panel notice error" data-testid="start-error">
+    Ungültiger Startmonat. Bitte im Format MM.JJJJ eingeben, z.&nbsp;B. 03.2026.
+  </section>
+}
+@if (warning()) {
+  <section class="panel notice warn" data-testid="overbooked-warning">
+    {{ warning() }}
+  </section>
+}
+@if (message()) {
+  <section class="panel notice ok" data-testid="planning-message">
+    {{ message() }}
+  </section>
+}
+
+<section class="panel">
+  <div class="table-wrap">
+    <table data-testid="planning-grid">
+      <thead>
+        <tr>
+          <th class="sticky">Mitarbeiter / Kontierung</th>
+          @for (month of monthLabels(); track month.month) {
+            <th class="num">
+              {{ month.label }}
+              <span class="available">{{ month.availableHours }} Std.</span>
+            </th>
+          }
+        </tr>
+      </thead>
+      <tbody>
+        @for (row of overview()?.rows ?? []; track row.extNr + row.coIdent) {
+          <tr>
+            <td class="sticky">
+              <strong>{{ row.displayName }}</strong>
+              <span class="co">{{ row.coIdent }}</span>
+            </td>
+            @for (cell of row.cells; track cell.month) {
+              <td
+                class="num cell"
+                [class.overbooked]="cell.overbooked"
+                [attr.data-testid]="
+                  'cell-' + row.extNr + '-' + row.coIdent + '-' + cell.month
+                "
+              >
+                @if (!cell.valid) {
+                  <span class="locked-badge" data-status="invalid">
+                    nicht gültig
+                  </span>
+                } @else if (cell.locked) {
+                  <span class="locked-badge" [attr.data-status]="cell.status">
+                    {{ cell.hours }} · {{ cell.status }}
+                  </span>
+                } @else {
+                  <input
+                    type="number"
+                    min="0"
+                    [attr.aria-label]="
+                      'Planstunden ' +
+                      row.displayName +
+                      ' ' +
+                      row.coIdent +
+                      ' ' +
+                      cell.month
+                    "
+                    [attr.data-testid]="
+                      'input-' +
+                      row.extNr +
+                      '-' +
+                      row.coIdent +
+                      '-' +
+                      cell.month
+                    "
+                    [value]="cell.hours || ''"
+                    (change)="saveCell(row, cell, $any($event.target).value)"
+                  />
+                  @if (cell.status === "V" && cell.hours > 0) {
+                    <button
+                      type="button"
+                      class="release"
+                      title="Für BANF freigeben"
+                      [attr.data-testid]="
+                        'release-' +
+                        row.extNr +
+                        '-' +
+                        row.coIdent +
+                        '-' +
+                        cell.month
+                      "
+                      (click)="releaseCell(row, cell)"
+                    >
+                      F
+                    </button>
+                  }
+                }
+              </td>
+            }
+          </tr>
+        } @empty {
+          <tr>
+            <td colspan="13" class="empty-hint">
+              Keine Planungszeilen für die aktuelle Selektion.
+            </td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  </div>
+  <p class="legend">
+    Status: V = Vorschlag (editierbar), F = für BANF freigegeben, P = BANF
+    erstellt, B = Bestellung. Rot hinterlegte Zellen liegen über den verfügbaren
+    Stunden des Werkkalenders.
+  </p>
+</section>

@@ -3,10 +3,21 @@ import {
   employees,
   enabledCostObjects,
   oauthMappings,
+  planningEntries,
   teams,
   timesheets,
 } from "./fixtures.js";
-import { buildBudgetMonitor, buildCostObjectQuota } from "./reporting.js";
+import {
+  buildPlanningOverview,
+  isValidMonth,
+  releasePlanningEntry,
+  upsertPlanningEntry,
+} from "./planning.js";
+import {
+  buildBudgetMonitor,
+  buildCostObjectQuota,
+  withRemainingHours,
+} from "./reporting.js";
 
 const timesheetKey = (day) => `${day.extNr}|${day.date}`;
 
@@ -16,6 +27,7 @@ const OAUTH_HEADER = "x-mock-oauth-upn";
 const DEFAULT_UPN = "stephan.schilz@qualitytimes.de";
 
 let timesheetStore = new Map();
+let planningStore = [];
 let weDocumentCounter = 0;
 resetTimesheetStore();
 
@@ -23,6 +35,7 @@ export function resetTimesheetStore() {
   timesheetStore = new Map(
     timesheets.map((day) => [timesheetKey(day), structuredClone(day)]),
   );
+  planningStore = structuredClone(planningEntries);
   weDocumentCounter = 0;
 }
 
@@ -50,11 +63,15 @@ function resolvePersona(request) {
   return { employee };
 }
 
-function requireApprover(persona) {
-  if (!persona.employee.roles.includes("approver")) {
-    return json({ error: "NOT_AUTHORIZED", requiredRole: "approver" }, 403);
+function requireRole(persona, role) {
+  if (!persona.employee.roles.includes(role)) {
+    return json({ error: "NOT_AUTHORIZED", requiredRole: role }, 403);
   }
   return null;
+}
+
+function requireApprover(persona) {
+  return requireRole(persona, "approver");
 }
 
 export async function routeRequest(request) {
@@ -87,8 +104,11 @@ export async function routeRequest(request) {
   if (request.method === "GET" && path === "/odata/MyEnabledCostObjects") {
     const persona = resolvePersona(request);
     if (persona.error) return persona.error;
-    const value = enabledCostObjects.filter(
-      (item) => item.extNr === persona.employee.extNr,
+    const value = withRemainingHours(
+      enabledCostObjects.filter(
+        (item) => item.extNr === persona.employee.extNr,
+      ),
+      [...timesheetStore.values()],
     );
     return json({ value });
   }
@@ -121,6 +141,51 @@ export async function routeRequest(request) {
       )
       .map((day) => ({ ...day, displayName: displayNameFor(day.extNr) }));
     return json({ value });
+  }
+
+  if (request.method === "GET" && path === "/odata/PlanningOverview") {
+    const persona = resolvePersona(request);
+    if (persona.error) return persona.error;
+    const roleError = requireRole(persona, "planner");
+    if (roleError) return roleError;
+    const start = url.searchParams.get("start") ?? "2026-03";
+    if (!isValidMonth(start)) {
+      return json({ error: "INVALID_START_MONTH", start }, 400);
+    }
+    return json(
+      buildPlanningOverview(planningStore, {
+        start,
+        extNr: url.searchParams.get("extNr") ?? "",
+        team: url.searchParams.get("team") ?? "",
+        coIdent: url.searchParams.get("coIdent") ?? "",
+      }),
+    );
+  }
+
+  if (request.method === "POST" && path === "/odata/PlanningEntries") {
+    const persona = resolvePersona(request);
+    if (persona.error) return persona.error;
+    const roleError = requireRole(persona, "planner");
+    if (roleError) return roleError;
+    const body = await readJsonBody(request);
+    const result = upsertPlanningEntry(planningStore, body);
+    if (result.error) {
+      return json({ error: result.error.code }, result.error.status);
+    }
+    return json(result, 201);
+  }
+
+  if (request.method === "POST" && path === "/odata/PlanningReleases") {
+    const persona = resolvePersona(request);
+    if (persona.error) return persona.error;
+    const roleError = requireRole(persona, "planner");
+    if (roleError) return roleError;
+    const body = await readJsonBody(request);
+    const result = releasePlanningEntry(planningStore, body);
+    if (result.error) {
+      return json({ error: result.error.code }, result.error.status);
+    }
+    return json(result);
   }
 
   if (request.method === "GET" && path === "/odata/BudgetMonitor") {

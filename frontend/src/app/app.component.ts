@@ -32,6 +32,9 @@ import { AuthService } from "./auth/auth.service";
           <a routerLink="/approvals" routerLinkActive="active">Genehmigung</a>
           <a routerLink="/reports" routerLinkActive="active">Reporting</a>
         }
+        @if (isPlanner()) {
+          <a routerLink="/planning" routerLinkActive="active">Planung</a>
+        }
       </nav>
       <label class="persona">
         Dev-Persona
@@ -98,6 +101,9 @@ export class AppComponent {
   protected readonly personas = MOCK_PERSONAS;
   protected readonly isApprover = computed(
     () => this.auth.profile()?.roles.includes("approver") ?? false,
+  );
+  protected readonly isPlanner = computed(
+    () => this.auth.profile()?.roles.includes("planner") ?? false,
   );
 
   constructor() {

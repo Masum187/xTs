@@ -19,7 +19,7 @@ export const employees = [
     sapAccount: "CROEPER",
     active: true,
     teamId: "ENTW_SUPPORT",
-    roles: ["user", "approver"],
+    roles: ["user", "approver", "planner"],
   },
   {
     extNr: "ALTMANN",
@@ -95,9 +95,8 @@ export const enabledCostObjects = [
     coIdent: "700000000004",
     description: "SAP-Implementierung, Stephan Schilz",
     validFrom: "2026-02-01",
-    validTo: "2026-04-30",
+    validTo: "2027-02-28",
     budgetHours: 320,
-    remainingHours: 240,
   },
   {
     id: "000002",
@@ -107,7 +106,6 @@ export const enabledCostObjects = [
     validFrom: "2026-02-01",
     validTo: "2026-04-30",
     budgetHours: 160,
-    remainingHours: 120,
   },
   {
     id: "000003",
@@ -117,7 +115,6 @@ export const enabledCostObjects = [
     validFrom: "2026-01-01",
     validTo: "2026-03-31",
     budgetHours: 80,
-    remainingHours: 0,
   },
   {
     id: "000004",
@@ -127,7 +124,6 @@ export const enabledCostObjects = [
     validFrom: "2026-02-01",
     validTo: "2026-04-30",
     budgetHours: 100,
-    remainingHours: 60,
   },
 ];
 
@@ -228,5 +224,48 @@ export const timesheets = [
         hours: 7.5,
       },
     ],
+  },
+];
+
+// Simulierter SAP-Werkkalender (XTS-022): verfuegbare Arbeitsstunden je Monat.
+export const workCalendar = {
+  defaultHours: 160,
+  months: {
+    "2026-03": 176,
+    "2026-04": 168,
+    "2026-05": 160,
+  },
+};
+
+// Planstunden analog ZXTS_MAPLAN_T (Epic 3). Status: V = Vorschlag
+// (editierbar), F = fuer BANF freigegeben, P = BANF erstellt, B = Bestellung.
+export const planningEntries = [
+  {
+    extNr: "SCHILZ",
+    coIdent: "700000000004",
+    month: "2026-04",
+    hours: 60,
+    status: "V",
+  },
+  {
+    extNr: "SCHILZ",
+    coIdent: "700000000004",
+    month: "2026-05",
+    hours: 80,
+    status: "V",
+  },
+  {
+    extNr: "SCHILZ",
+    coIdent: "600000000001",
+    month: "2026-03",
+    hours: 30,
+    status: "P",
+  },
+  {
+    extNr: "ROEPER",
+    coIdent: "600000000001",
+    month: "2026-04",
+    hours: 20,
+    status: "F",
   },
 ];

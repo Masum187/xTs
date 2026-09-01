@@ -33,6 +33,7 @@ const baseCostObject: EnabledCostObject = {
   description: "SAP-Implementierung",
   validFrom: "2026-02-01",
   validTo: "2026-04-30",
+  budgetHours: 320,
   remainingHours: 240,
 };
 

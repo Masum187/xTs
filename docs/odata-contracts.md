@@ -17,6 +17,9 @@ Diese Datei beschreibt die fachlichen Service-Kontrakte fuer SAP-OData und die M
 | Genehmigung | `/odata/TimesheetApprovals`   | Tag genehmigen oder zurueckweisen                  |
 | Reporting   | `/odata/BudgetMonitor`        | Budget-Monitor je Kontierung (XTS-071)             |
 | Reporting   | `/odata/CostObjectQuota`      | Stundenkontingent-Monitor je Mitarbeiter (XTS-072) |
+| Planung     | `/odata/PlanningOverview`     | 12-Monatsuebersicht der Planstunden (XTS-020)      |
+| Planung     | `/odata/PlanningEntries`      | Planstunden speichern (XTS-021)                    |
+| Planung     | `/odata/PlanningReleases`     | Planzeile fuer BANF freigeben (XTS-023)            |
 
 ## Genehmigungs-Verhalten
 
@@ -24,6 +27,15 @@ Diese Datei beschreibt die fachlichen Service-Kontrakte fuer SAP-OData und die M
 - `POST /odata/TimesheetApprovals` mit `{ extNr, date, action }` verarbeitet genau einen Tag; nur Status `F` ist zulaessig (sonst HTTP 409).
   - `action: "approve"` setzt Status `G`, protokolliert `approvedBy`/`approvedAt` und simuliert die synchrone Wareneingangsbuchung (XTS-061A) ueber ein `weDocument` (`WE-000001`, fortlaufend). Genehmigte Tage koennen im MVP nicht zurueckgesetzt werden.
   - `action: "reject"` erfordert `reason` (sonst HTTP 400), setzt Status `A` und schreibt den Grund nach `rejectionReason`.
+
+## Planungs-Verhalten (Epic 3)
+
+- Alle Planungs-Endpunkte erfordern die Rolle `planner`.
+- `GET /odata/PlanningOverview?start=YYYY-MM` liefert 12 fortlaufende Monate ab Startmonat mit verfuegbaren Stunden aus dem simulierten SAP-Werkkalender (`workCalendar`); Zeilen sind aktive Mitarbeiter mit Kontierungsfreischaltung. Filter: `?extNr=`, `?team=`, `?coIdent=`. Ungueltiger Startmonat: HTTP 400.
+- `POST /odata/PlanningEntries` speichert Planstunden je Mitarbeiter, Kontierung und Monat. Neue Werte erhalten Status `V`; nur `V` ist aenderbar, `F`/`P`/`B` liefern HTTP 409 `PLANNING_ENTRY_LOCKED`. Unbekannte Kombination: HTTP 404.
+- Ueberplanung (XTS-022): Planstunden ueber den verfuegbaren Monatsstunden werden markiert (`overbooked`), Speichern bleibt erlaubt (Warnung). Die Fachentscheidung "Warnung vs. blockieren" ist offen; der Mock setzt Warnung als Default um.
+- `POST /odata/PlanningReleases` setzt eine `V`-Zeile mit Stunden > 0 auf `F` (fuer BANF freigegeben, gesperrt); andere Status: HTTP 409. Freigegebene Zeilen sind die Kandidaten fuer die Beauftragung (Epic 4).
+- Statusmodell analog `ZXTS_MAPLAN_T`: `V` Vorschlag, `F` freigegeben fuer BANF, `P` BANF erstellt, `B` Bestellung vorhanden.
 
 ## Reporting-Verhalten
 
@@ -42,6 +54,7 @@ Diese Datei beschreibt die fachlichen Service-Kontrakte fuer SAP-OData und die M
 
 ## Timesheet-Verhalten
 
+- `GET /odata/MyEnabledCostObjects` berechnet `remainingHours` einheitlich als `budgetHours` minus genehmigte Stunden (Status `G`) — dieselbe Quelle wie Budget- und Kontingent-Monitor; statische Reststunden gibt es nicht mehr.
 - `GET /odata/MyTimesheets` liefert alle eigenen Tage absteigend nach Datum, optional gefiltert mit `?date=YYYY-MM-DD`.
 - `POST /odata/TimesheetDays` ist ein Upsert je `EXTNR` + Datum; `extNr` und `date` sind Pflicht (sonst HTTP 400). Die Mock-API haelt die Tage im Speicher, damit Navigation und Korrektur-Flows entwickelbar sind.
 - Zurueckgewiesene Tage (Status `A`) tragen den Grund im Feld `rejectionReason`. Beim erneuten Speichern/Freigeben durch den Mitarbeiter wird das Feld entfernt (Flow `A -> E -> F`).
