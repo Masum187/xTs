@@ -101,14 +101,35 @@ test("denies saving timesheets for a foreign extNr", async () => {
   assert.equal(JSON.parse(response.body).error, "NOT_AUTHORIZED");
 });
 
-test("returns enabled cost objects", async () => {
+test("returns enabled cost objects with computed remaining hours", async () => {
   const response = await routeRequest(
     request("GET", "/odata/MyEnabledCostObjects?date=2026-04-13"),
   );
   const body = JSON.parse(response.body);
   assert.equal(response.status, 200);
   assert.equal(body.value.length, 3);
-  assert.equal(body.value[0].coIdent, "700000000004");
+  const implementation = body.value.find(
+    (item) => item.coIdent === "700000000004",
+  );
+  assert.equal(implementation.budgetHours, 320);
+  assert.equal(implementation.remainingHours, 312);
+});
+
+test("remaining hours shrink when a day gets approved", async () => {
+  await routeRequest(
+    approverRequest("POST", "/odata/TimesheetApprovals", {
+      extNr: "SCHILZ",
+      date: "2026-04-08",
+      action: "approve",
+    }),
+  );
+  const response = await routeRequest(
+    request("GET", "/odata/MyEnabledCostObjects"),
+  );
+  const implementation = JSON.parse(response.body).value.find(
+    (item) => item.coIdent === "700000000004",
+  );
+  assert.equal(implementation.remainingHours, 304);
 });
 
 test("returns own timesheets sorted by date descending", async () => {

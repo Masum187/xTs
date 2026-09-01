@@ -97,7 +97,6 @@ export const enabledCostObjects = [
     validFrom: "2026-02-01",
     validTo: "2026-04-30",
     budgetHours: 320,
-    remainingHours: 240,
   },
   {
     id: "000002",
@@ -107,7 +106,6 @@ export const enabledCostObjects = [
     validFrom: "2026-02-01",
     validTo: "2026-04-30",
     budgetHours: 160,
-    remainingHours: 120,
   },
   {
     id: "000003",
@@ -117,7 +115,6 @@ export const enabledCostObjects = [
     validFrom: "2026-01-01",
     validTo: "2026-03-31",
     budgetHours: 80,
-    remainingHours: 0,
   },
   {
     id: "000004",
@@ -127,7 +124,6 @@ export const enabledCostObjects = [
     validFrom: "2026-02-01",
     validTo: "2026-04-30",
     budgetHours: 100,
-    remainingHours: 60,
   },
 ];
 

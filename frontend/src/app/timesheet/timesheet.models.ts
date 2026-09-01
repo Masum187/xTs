@@ -6,6 +6,7 @@ export interface EnabledCostObject {
   description: string;
   validFrom: string;
   validTo: string;
+  budgetHours: number;
   remainingHours: number;
 }
 

@@ -35,6 +35,20 @@ function approvedLines(days) {
     );
 }
 
+// Einheitliche Reststunden-Quelle fuer Timesheet und Reporting:
+// Rest = budgetHours der Freischaltung minus genehmigte Stunden (Status G).
+export function withRemainingHours(items, days) {
+  const lines = approvedLines(days);
+  return items.map((item) => {
+    const bookedHours = lines
+      .filter(
+        (line) => line.extNr === item.extNr && line.coIdent === item.coIdent,
+      )
+      .reduce((sum, line) => sum + line.hours, 0);
+    return { ...item, remainingHours: item.budgetHours - bookedHours };
+  });
+}
+
 export function buildBudgetMonitor(days, detail) {
   const lines = approvedLines(days);
   const byCoIdent = new Map();

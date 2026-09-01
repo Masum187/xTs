@@ -42,6 +42,7 @@ Diese Datei beschreibt die fachlichen Service-Kontrakte fuer SAP-OData und die M
 
 ## Timesheet-Verhalten
 
+- `GET /odata/MyEnabledCostObjects` berechnet `remainingHours` einheitlich als `budgetHours` minus genehmigte Stunden (Status `G`) — dieselbe Quelle wie Budget- und Kontingent-Monitor; statische Reststunden gibt es nicht mehr.
 - `GET /odata/MyTimesheets` liefert alle eigenen Tage absteigend nach Datum, optional gefiltert mit `?date=YYYY-MM-DD`.
 - `POST /odata/TimesheetDays` ist ein Upsert je `EXTNR` + Datum; `extNr` und `date` sind Pflicht (sonst HTTP 400). Die Mock-API haelt die Tage im Speicher, damit Navigation und Korrektur-Flows entwickelbar sind.
 - Zurueckgewiesene Tage (Status `A`) tragen den Grund im Feld `rejectionReason`. Beim erneuten Speichern/Freigeben durch den Mitarbeiter wird das Feld entfernt (Flow `A -> E -> F`).

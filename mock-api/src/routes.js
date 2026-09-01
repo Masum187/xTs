@@ -6,7 +6,11 @@ import {
   teams,
   timesheets,
 } from "./fixtures.js";
-import { buildBudgetMonitor, buildCostObjectQuota } from "./reporting.js";
+import {
+  buildBudgetMonitor,
+  buildCostObjectQuota,
+  withRemainingHours,
+} from "./reporting.js";
 
 const timesheetKey = (day) => `${day.extNr}|${day.date}`;
 
@@ -87,8 +91,11 @@ export async function routeRequest(request) {
   if (request.method === "GET" && path === "/odata/MyEnabledCostObjects") {
     const persona = resolvePersona(request);
     if (persona.error) return persona.error;
-    const value = enabledCostObjects.filter(
-      (item) => item.extNr === persona.employee.extNr,
+    const value = withRemainingHours(
+      enabledCostObjects.filter(
+        (item) => item.extNr === persona.employee.extNr,
+      ),
+      [...timesheetStore.values()],
     );
     return json({ value });
   }
