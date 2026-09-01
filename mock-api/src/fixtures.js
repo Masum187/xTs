@@ -95,7 +95,7 @@ export const enabledCostObjects = [
     coIdent: "700000000004",
     description: "SAP-Implementierung, Stephan Schilz",
     validFrom: "2026-02-01",
-    validTo: "2026-04-30",
+    validTo: "2027-02-28",
     budgetHours: 320,
   },
   {

@@ -9,6 +9,7 @@ export interface PlanningCell {
   month: string;
   hours: number;
   status: PlanningStatus | null;
+  valid: boolean;
   locked: boolean;
   overbooked: boolean;
 }
@@ -19,6 +20,8 @@ export interface PlanningRow {
   teamId: string;
   coIdent: string;
   description: string;
+  validFrom: string;
+  validTo: string;
   cells: PlanningCell[];
 }
 

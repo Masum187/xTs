@@ -101,7 +101,11 @@
                   'cell-' + row.extNr + '-' + row.coIdent + '-' + cell.month
                 "
               >
-                @if (cell.locked) {
+                @if (!cell.valid) {
+                  <span class="locked-badge" data-status="invalid">
+                    nicht gültig
+                  </span>
+                } @else if (cell.locked) {
                   <span class="locked-badge" [attr.data-status]="cell.status">
                     {{ cell.hours }} · {{ cell.status }}
                   </span>

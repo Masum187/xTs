@@ -28,6 +28,12 @@ test("shows 12 months from the start month with locked entries", async ({
   await expect(
     page.getByTestId("cell-ROEPER-600000000001-2026-04"),
   ).toContainText("20 · F");
+  await expect(
+    page.getByTestId("cell-SCHILZ-600000000009-2026-04"),
+  ).toContainText("nicht gültig");
+  await expect(
+    page.getByTestId("input-SCHILZ-600000000009-2026-04"),
+  ).toBeHidden();
 
   await page.getByLabel("Startmonat").fill("13.2026");
   await page.getByLabel("Startmonat").press("Tab");

@@ -27,23 +27,37 @@ export function isValidMonth(value) {
   return typeof value === "string" && /^\d{4}-(0[1-9]|1[0-2])$/.test(value);
 }
 
+function isMonthInRange(month, validFrom, validTo) {
+  return month >= validFrom.slice(0, 7) && month <= validTo.slice(0, 7);
+}
+
 /**
  * Gueltige Planungszeilen sind aktive Mitarbeiter mit Kontierungsfreischaltung
  * (XTS-020: "gueltig und nicht geloescht").
  */
-export function planningCombinations() {
+export function planningCombinations(months = null) {
   return enabledCostObjects
     .map((item) => {
       const employee = employees.find(
         (candidate) => candidate.extNr === item.extNr,
       );
       if (!employee?.active) return null;
+      if (
+        months &&
+        !months.some((month) =>
+          isMonthInRange(month, item.validFrom, item.validTo),
+        )
+      ) {
+        return null;
+      }
       return {
         extNr: employee.extNr,
         displayName: employee.displayName,
         teamId: employee.teamId,
         coIdent: item.coIdent,
         description: item.description,
+        validFrom: item.validFrom,
+        validTo: item.validTo,
       };
     })
     .filter(Boolean);
@@ -54,7 +68,7 @@ export function buildPlanningOverview(entries, filters) {
   const months = monthsFrom(start);
   const monthSet = new Set(months);
 
-  const rows = planningCombinations()
+  const rows = planningCombinations(months)
     .filter((combo) => !extNr || combo.extNr === extNr)
     .filter((combo) => !team || combo.teamId === team)
     .filter((combo) => !coIdent || combo.coIdent === coIdent);
@@ -87,11 +101,13 @@ export function buildPlanningOverview(entries, filters) {
         );
         const plannedTotal =
           plannedPerEmployeeMonth.get(`${combo.extNr}|${month}`) ?? 0;
+        const valid = isMonthInRange(month, combo.validFrom, combo.validTo);
         return {
           month,
           hours: entry?.hours ?? 0,
           status: entry?.status ?? null,
-          locked: entry ? isLockedStatus(entry.status) : false,
+          valid,
+          locked: !valid || (entry ? isLockedStatus(entry.status) : false),
           overbooked: plannedTotal > availableHoursFor(month),
         };
       }),
@@ -108,7 +124,7 @@ export function upsertPlanningEntry(entries, payload) {
   if (hours < 0) {
     return { error: { status: 400, code: "INVALID_PLANNING_ENTRY" } };
   }
-  const combination = planningCombinations().find(
+  const combination = planningCombinations([month]).find(
     (combo) => combo.extNr === extNr && combo.coIdent === coIdent,
   );
   if (!combination) {
@@ -143,6 +159,12 @@ export function upsertPlanningEntry(entries, payload) {
 
 export function releasePlanningEntry(entries, payload) {
   const { extNr, coIdent, month } = payload;
+  const combination = planningCombinations([month]).find(
+    (combo) => combo.extNr === extNr && combo.coIdent === coIdent,
+  );
+  if (!combination) {
+    return { error: { status: 404, code: "UNKNOWN_PLANNING_COMBINATION" } };
+  }
   const existing = entries.find(
     (candidate) =>
       candidate.extNr === extNr &&

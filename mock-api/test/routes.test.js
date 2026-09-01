@@ -451,6 +451,7 @@ test("planning overview shows 12 months with valid combinations", async () => {
   const lockedCell = body.rows
     .find((row) => row.extNr === "SCHILZ" && row.coIdent === "600000000001")
     .cells.find((cell) => cell.month === "2026-03");
+  assert.equal(lockedCell.valid, true);
   assert.equal(lockedCell.status, "P");
   assert.equal(lockedCell.locked, true);
 
@@ -459,6 +460,19 @@ test("planning overview shows 12 months with valid combinations", async () => {
     .cells.find((cell) => cell.month === "2026-04");
   assert.equal(releasedCell.status, "F");
   assert.equal(releasedCell.locked, true);
+});
+
+test("planning overview locks months outside the cost object validity", async () => {
+  const response = await routeRequest(
+    approverRequest("GET", "/odata/PlanningOverview?start=2026-03"),
+  );
+  const row = JSON.parse(response.body).rows.find(
+    (item) => item.extNr === "SCHILZ" && item.coIdent === "600000000009",
+  );
+  assert.equal(row.cells.find((cell) => cell.month === "2026-03").valid, true);
+  const expiredCell = row.cells.find((cell) => cell.month === "2026-04");
+  assert.equal(expiredCell.valid, false);
+  assert.equal(expiredCell.locked, true);
 });
 
 test("planning overview filters by employee, team and cost object", async () => {
@@ -489,7 +503,7 @@ test("saves new plan hours with status V and updates existing V entries", async 
     approverRequest("POST", "/odata/PlanningEntries", {
       extNr: "ROEPER",
       coIdent: "600000000001",
-      month: "2026-06",
+      month: "2026-03",
       hours: 40,
     }),
   );
@@ -530,6 +544,16 @@ test("rejects plan changes for locked entries and unknown combinations", async (
     }),
   );
   assert.equal(unknown.status, 404);
+
+  const expired = await routeRequest(
+    approverRequest("POST", "/odata/PlanningEntries", {
+      extNr: "SCHILZ",
+      coIdent: "600000000009",
+      month: "2026-05",
+      hours: 10,
+    }),
+  );
+  assert.equal(expired.status, 404);
 });
 
 test("marks overplanning against the work calendar", async () => {
