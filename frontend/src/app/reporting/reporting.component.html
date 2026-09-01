@@ -1,0 +1,183 @@
+<section class="page-header">
+  <div>
+    <p class="eyebrow">WebClient</p>
+    <h1>Reporting</h1>
+  </div>
+</section>
+
+<section class="panel">
+  <div class="section-title">
+    <h2>Budget-Monitor</h2>
+    <label>
+      Detailstufe
+      <select
+        aria-label="Detailstufe"
+        [ngModel]="budgetDetail()"
+        (ngModelChange)="setBudgetDetail($event)"
+      >
+        <option value="none">Keine Mitarbeiterdetails</option>
+        <option value="employee">Summe je Mitarbeiter</option>
+        <option value="day">Alle Tagesdetails</option>
+      </select>
+    </label>
+  </div>
+
+  <div class="table-wrap">
+    <table data-testid="budget-table">
+      <thead>
+        <tr>
+          <th>Kontierung</th>
+          <th>Beschreibung</th>
+          <th class="num">Budget</th>
+          <th class="num">Verbraucht</th>
+          <th class="num">Verbrauch %</th>
+          <th class="num">Rest</th>
+          <th>Ampel</th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (row of budgetRows(); track row.coIdent) {
+          <tr [attr.data-testid]="'budget-' + row.coIdent">
+            <td>{{ row.coIdent }}</td>
+            <td>{{ row.description }}</td>
+            <td class="num">{{ row.budgetHours }}</td>
+            <td class="num">{{ row.consumedHours }}</td>
+            <td class="num">{{ row.consumedPercent }} %</td>
+            <td class="num">{{ row.remainingHours }}</td>
+            <td>
+              <span
+                class="traffic"
+                [class]="'traffic ' + row.trafficLight"
+                [attr.data-testid]="'traffic-' + row.coIdent"
+              >
+                {{ trafficLabel(row.trafficLight) }}
+              </span>
+            </td>
+          </tr>
+          @for (employee of row.byEmployee ?? []; track employee.extNr) {
+            <tr class="detail-row">
+              <td></td>
+              <td>{{ employee.displayName }}</td>
+              <td class="num"></td>
+              <td class="num">{{ employee.hours }}</td>
+              <td class="num"></td>
+              <td class="num"></td>
+              <td></td>
+            </tr>
+            @for (day of employee.days ?? []; track day.date) {
+              <tr class="detail-row day-row">
+                <td></td>
+                <td>{{ day.date }} – {{ day.description }}</td>
+                <td class="num"></td>
+                <td class="num">{{ day.hours }}</td>
+                <td class="num"></td>
+                <td class="num"></td>
+                <td></td>
+              </tr>
+            }
+          }
+        }
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<section class="panel">
+  <div class="section-title">
+    <h2>Stundenkontingent-Monitor</h2>
+  </div>
+
+  <div class="filters">
+    <label>
+      Nachname
+      <input
+        aria-label="Nachname"
+        placeholder="z. B. Schilz"
+        [ngModel]="quotaLastName()"
+        (ngModelChange)="updateQuotaFilter({ lastName: $event })"
+      />
+    </label>
+    <label>
+      Team
+      <select
+        aria-label="Team"
+        [ngModel]="quotaTeam()"
+        (ngModelChange)="updateQuotaFilter({ team: $event })"
+      >
+        <option value="">Alle Teams</option>
+        @for (team of teams(); track team.id) {
+          <option [value]="team.id">{{ team.name }}</option>
+        }
+      </select>
+    </label>
+    <label>
+      Buchungsdatum von
+      <input
+        type="date"
+        aria-label="Buchungsdatum von"
+        [ngModel]="quotaFrom()"
+        (ngModelChange)="updateQuotaFilter({ from: $event })"
+      />
+    </label>
+    <label>
+      Buchungsdatum bis
+      <input
+        type="date"
+        aria-label="Buchungsdatum bis"
+        [ngModel]="quotaTo()"
+        (ngModelChange)="updateQuotaFilter({ to: $event })"
+      />
+    </label>
+    <label class="checkbox">
+      <input
+        type="checkbox"
+        aria-label="Tagesdetails"
+        [ngModel]="quotaDayDetail()"
+        (ngModelChange)="updateQuotaFilter({ dayDetail: $event })"
+      />
+      Tagesdetails
+    </label>
+  </div>
+
+  <div class="table-wrap">
+    <table data-testid="quota-table">
+      <thead>
+        <tr>
+          <th>Mitarbeiter</th>
+          <th>Kontierung</th>
+          <th>Gültigkeit</th>
+          <th class="num">Budget</th>
+          <th class="num">Gebucht</th>
+          <th class="num">Rest</th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (row of quotaRows(); track row.extNr + row.coIdent) {
+          <tr [attr.data-testid]="'quota-' + row.extNr + '-' + row.coIdent">
+            <td>{{ row.displayName }}</td>
+            <td>{{ row.coIdent }}</td>
+            <td>{{ row.validFrom }} – {{ row.validTo }}</td>
+            <td class="num">{{ row.budgetHours }}</td>
+            <td class="num">{{ row.bookedHours }}</td>
+            <td class="num">{{ row.remainingHours }}</td>
+          </tr>
+          @for (day of row.days ?? []; track day.date) {
+            <tr class="detail-row day-row">
+              <td></td>
+              <td colspan="2">{{ day.date }} – {{ day.description }}</td>
+              <td class="num"></td>
+              <td class="num">{{ day.hours }}</td>
+              <td class="num"></td>
+            </tr>
+          }
+        } @empty {
+          <tr>
+            <td colspan="6" class="empty-hint" data-testid="quota-empty">
+              Keine Kontingente für die aktuelle Selektion.
+            </td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  </div>
+</section>

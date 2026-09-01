@@ -273,3 +273,143 @@ test("rejects timesheet without key fields", async () => {
   );
   assert.equal(response.status, 400);
 });
+
+test("budget monitor aggregates approved hours per cost object", async () => {
+  const response = await routeRequest(
+    approverRequest("GET", "/odata/BudgetMonitor"),
+  );
+  const body = JSON.parse(response.body);
+  assert.equal(response.status, 200);
+  assert.deepEqual(
+    body.value.map((row) => row.coIdent),
+    ["600000000001", "600000000009", "700000000004"],
+  );
+  const implementation = body.value.find(
+    (row) => row.coIdent === "700000000004",
+  );
+  assert.equal(implementation.budgetHours, 320);
+  assert.equal(implementation.consumedHours, 8);
+  assert.equal(implementation.consumedPercent, 2.5);
+  assert.equal(implementation.remainingHours, 312);
+  assert.equal(implementation.trafficLight, "green");
+  const shared = body.value.find((row) => row.coIdent === "600000000001");
+  assert.equal(shared.budgetHours, 260);
+  assert.equal(implementation.byEmployee, undefined);
+});
+
+test("budget monitor supports employee and day detail levels", async () => {
+  const employeeLevel = await routeRequest(
+    approverRequest("GET", "/odata/BudgetMonitor?detail=employee"),
+  );
+  const employeeRow = JSON.parse(employeeLevel.body).value.find(
+    (row) => row.coIdent === "700000000004",
+  );
+  assert.deepEqual(employeeRow.byEmployee, [
+    { extNr: "SCHILZ", displayName: "Stephan Schilz", hours: 8 },
+  ]);
+
+  const dayLevel = await routeRequest(
+    approverRequest("GET", "/odata/BudgetMonitor?detail=day"),
+  );
+  const dayRow = JSON.parse(dayLevel.body).value.find(
+    (row) => row.coIdent === "700000000004",
+  );
+  assert.deepEqual(dayRow.byEmployee[0].days, [
+    { date: "2026-04-09", description: "Datenmodell Review", hours: 8 },
+  ]);
+});
+
+test("budget monitor traffic light turns red from customizing thresholds", async () => {
+  await routeRequest(
+    request("POST", "/odata/TimesheetDays", {
+      extNr: "SCHILZ",
+      date: "2026-03-20",
+      startTime: "08:00",
+      endTime: "18:00",
+      breakMinutes: 0,
+      location: "remote",
+      status: "F",
+      lines: [
+        { coIdent: "600000000009", description: "Altprojekt", hours: 150 },
+      ],
+    }),
+  );
+  await routeRequest(
+    approverRequest("POST", "/odata/TimesheetApprovals", {
+      extNr: "SCHILZ",
+      date: "2026-03-20",
+      action: "approve",
+    }),
+  );
+
+  const response = await routeRequest(
+    approverRequest("GET", "/odata/BudgetMonitor"),
+  );
+  const row = JSON.parse(response.body).value.find(
+    (item) => item.coIdent === "600000000009",
+  );
+  assert.equal(row.consumedPercent, 187.5);
+  assert.equal(row.trafficLight, "red");
+  assert.equal(row.remainingHours, -70);
+});
+
+test("cost object quota lists enabled cost objects with booked hours", async () => {
+  const response = await routeRequest(
+    approverRequest("GET", "/odata/CostObjectQuota"),
+  );
+  const body = JSON.parse(response.body);
+  assert.equal(response.status, 200);
+  assert.equal(body.value.length, 4);
+  assert.equal(body.value[0].lastName, "Roeper");
+  const booked = body.value.find(
+    (row) => row.extNr === "SCHILZ" && row.coIdent === "700000000004",
+  );
+  assert.equal(booked.bookedHours, 8);
+  assert.equal(booked.remainingHours, 312);
+  assert.equal(booked.teamId, "TRANSFORMATION_MC");
+  assert.equal(booked.days, undefined);
+});
+
+test("cost object quota filters by last name, team and booking date", async () => {
+  const byName = await routeRequest(
+    approverRequest("GET", "/odata/CostObjectQuota?lastName=schi"),
+  );
+  assert.equal(JSON.parse(byName.body).value.length, 3);
+
+  const byTeam = await routeRequest(
+    approverRequest("GET", "/odata/CostObjectQuota?team=ENTW_SUPPORT"),
+  );
+  const teamRows = JSON.parse(byTeam.body).value;
+  assert.equal(teamRows.length, 1);
+  assert.equal(teamRows[0].extNr, "ROEPER");
+
+  const byDate = await routeRequest(
+    approverRequest(
+      "GET",
+      "/odata/CostObjectQuota?from=2026-04-10&to=2026-04-30",
+    ),
+  );
+  const dateRow = JSON.parse(byDate.body).value.find(
+    (row) => row.extNr === "SCHILZ" && row.coIdent === "700000000004",
+  );
+  assert.equal(dateRow.bookedHours, 0);
+});
+
+test("cost object quota exposes day details on request", async () => {
+  const response = await routeRequest(
+    approverRequest("GET", "/odata/CostObjectQuota?detail=day"),
+  );
+  const row = JSON.parse(response.body).value.find(
+    (item) => item.extNr === "SCHILZ" && item.coIdent === "700000000004",
+  );
+  assert.deepEqual(row.days, [
+    { date: "2026-04-09", description: "Datenmodell Review", hours: 8 },
+  ]);
+});
+
+test("reporting endpoints require the approver role", async () => {
+  const budget = await routeRequest(request("GET", "/odata/BudgetMonitor"));
+  assert.equal(budget.status, 403);
+  const quota = await routeRequest(request("GET", "/odata/CostObjectQuota"));
+  assert.equal(quota.status, 403);
+});

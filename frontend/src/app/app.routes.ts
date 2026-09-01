@@ -4,6 +4,7 @@ import { Router } from "@angular/router";
 
 import { ApprovalComponent } from "./approval/approval.component";
 import { AuthService } from "./auth/auth.service";
+import { ReportingComponent } from "./reporting/reporting.component";
 import { TimesheetComponent } from "./timesheet/timesheet.component";
 
 const approverGuard: CanActivateFn = async () => {
@@ -23,6 +24,12 @@ export const routes: Routes = [
     path: "approvals",
     component: ApprovalComponent,
     title: "xTS Genehmigung",
+    canActivate: [approverGuard],
+  },
+  {
+    path: "reports",
+    component: ReportingComponent,
+    title: "xTS Reporting",
     canActivate: [approverGuard],
   },
 ];

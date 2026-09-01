@@ -30,6 +30,7 @@ import { AuthService } from "./auth/auth.service";
         </a>
         @if (isApprover()) {
           <a routerLink="/approvals" routerLinkActive="active">Genehmigung</a>
+          <a routerLink="/reports" routerLinkActive="active">Reporting</a>
         }
       </nav>
       <label class="persona">
