@@ -29,5 +29,6 @@ export interface TimesheetDay {
   breakMinutes: number;
   location: "remote" | "on-site";
   status: TimesheetStatus;
+  rejectionReason?: string;
   lines: TimesheetLine[];
 }
