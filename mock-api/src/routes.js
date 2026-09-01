@@ -6,6 +6,7 @@ import {
   teams,
   timesheets,
 } from "./fixtures.js";
+import { buildBudgetMonitor, buildCostObjectQuota } from "./reporting.js";
 
 const timesheetKey = (day) => `${day.extNr}|${day.date}`;
 
@@ -119,6 +120,31 @@ export async function routeRequest(request) {
           a.date.localeCompare(b.date) || a.extNr.localeCompare(b.extNr),
       )
       .map((day) => ({ ...day, displayName: displayNameFor(day.extNr) }));
+    return json({ value });
+  }
+
+  if (request.method === "GET" && path === "/odata/BudgetMonitor") {
+    const persona = resolvePersona(request);
+    if (persona.error) return persona.error;
+    const roleError = requireApprover(persona);
+    if (roleError) return roleError;
+    const detail = url.searchParams.get("detail") ?? "none";
+    const value = buildBudgetMonitor([...timesheetStore.values()], detail);
+    return json({ value });
+  }
+
+  if (request.method === "GET" && path === "/odata/CostObjectQuota") {
+    const persona = resolvePersona(request);
+    if (persona.error) return persona.error;
+    const roleError = requireApprover(persona);
+    if (roleError) return roleError;
+    const value = buildCostObjectQuota([...timesheetStore.values()], {
+      lastName: url.searchParams.get("lastName") ?? "",
+      team: url.searchParams.get("team") ?? "",
+      from: url.searchParams.get("from") ?? "",
+      to: url.searchParams.get("to") ?? "",
+      detail: url.searchParams.get("detail") ?? "none",
+    });
     return json({ value });
   }
 

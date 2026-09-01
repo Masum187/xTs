@@ -7,6 +7,7 @@ export const employees = [
     company: "QualityTimes",
     sapAccount: "SSCHILZ",
     active: true,
+    teamId: "TRANSFORMATION_MC",
     roles: ["user"],
   },
   {
@@ -17,6 +18,7 @@ export const employees = [
     company: "QualityTimes",
     sapAccount: "CROEPER",
     active: true,
+    teamId: "ENTW_SUPPORT",
     roles: ["user", "approver"],
   },
   {
@@ -27,6 +29,7 @@ export const employees = [
     company: "QualityTimes",
     sapAccount: null,
     active: false,
+    teamId: "ENTW_SUPPORT",
     roles: ["user"],
   },
 ];
@@ -78,6 +81,13 @@ export const costObjects = [
   },
 ];
 
+// Ampelgrenzen fuer den Budget-Monitor (XTS-071): simuliertes Customizing,
+// spaeter aus ZXTS_REGELN_T.
+export const budgetTrafficLight = {
+  warnPercent: 80,
+  criticalPercent: 95,
+};
+
 export const enabledCostObjects = [
   {
     id: "000001",
@@ -86,6 +96,7 @@ export const enabledCostObjects = [
     description: "SAP-Implementierung, Stephan Schilz",
     validFrom: "2026-02-01",
     validTo: "2026-04-30",
+    budgetHours: 320,
     remainingHours: 240,
   },
   {
@@ -95,6 +106,7 @@ export const enabledCostObjects = [
     description: "SAP-Support, Stephan Schilz",
     validFrom: "2026-02-01",
     validTo: "2026-04-30",
+    budgetHours: 160,
     remainingHours: 120,
   },
   {
@@ -104,7 +116,18 @@ export const enabledCostObjects = [
     description: "Altprojekt Migration, Stephan Schilz",
     validFrom: "2026-01-01",
     validTo: "2026-03-31",
+    budgetHours: 80,
     remainingHours: 0,
+  },
+  {
+    id: "000004",
+    extNr: "ROEPER",
+    coIdent: "600000000001",
+    description: "SAP-Support, Christian Roeper",
+    validFrom: "2026-02-01",
+    validTo: "2026-04-30",
+    budgetHours: 100,
+    remainingHours: 60,
   },
 ];
 
