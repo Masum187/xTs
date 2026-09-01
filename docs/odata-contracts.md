@@ -22,7 +22,14 @@ Diese Datei beschreibt die fachlichen Service-Kontrakte fuer SAP-OData und die M
 - `POST /odata/TimesheetApprovals` mit `{ extNr, date, action }` verarbeitet genau einen Tag; nur Status `F` ist zulaessig (sonst HTTP 409).
   - `action: "approve"` setzt Status `G`, protokolliert `approvedBy`/`approvedAt` und simuliert die synchrone Wareneingangsbuchung (XTS-061A) ueber ein `weDocument` (`WE-000001`, fortlaufend). Genehmigte Tage koennen im MVP nicht zurueckgesetzt werden.
   - `action: "reject"` erfordert `reason` (sonst HTTP 400), setzt Status `A` und schreibt den Grund nach `rejectionReason`.
-- Bis XTS-050 entschieden ist, simuliert die Mock-API feste Personas: `employees[0]` schreibt Stunden, `employees[1]` genehmigt.
+
+## Auth-Simulation (bis XTS-050 entschieden ist)
+
+- Der OAuth-Benutzer wird als Pseudo-Claim im Header `x-mock-oauth-upn` uebergeben (Default: `stephan.schilz@qualitytimes.de`); Personas und Mapping stehen in den Fixtures (`oauthMappings`).
+- `GET /odata/MyProfile` liefert Profil inkl. `roles` (`user`, `approver`). Ohne EXTNR-Mapping: HTTP 404 `NO_EXTNR_MAPPING` (inkl. `upn`); inaktiver Mitarbeiter: HTTP 403 `EMPLOYEE_INACTIVE`.
+- Alle `My*`-Endpunkte und `POST /odata/TimesheetDays` sind auf den gemappten Mitarbeiter beschraenkt (fremde `extNr`: HTTP 403 `NOT_AUTHORIZED`).
+- Genehmigungs-Endpunkte erfordern die Rolle `approver` (sonst HTTP 403 `NOT_AUTHORIZED`); `approvedBy` ist der genehmigende Benutzer.
+- Zieldefinition des Mappings: [entscheidungsvorlage-extnr-mapping.md](entscheidungsvorlage-extnr-mapping.md).
 
 ## Timesheet-Verhalten
 

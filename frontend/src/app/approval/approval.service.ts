@@ -1,6 +1,7 @@
-import { Injectable } from "@angular/core";
+import { Injectable, inject } from "@angular/core";
 
 import { environment } from "../../environments/environment";
+import { AuthService } from "../auth/auth.service";
 import type { ApprovalDay, TimesheetDay } from "../timesheet/timesheet.models";
 
 interface ODataResponse<T> {
@@ -12,9 +13,12 @@ interface ODataResponse<T> {
 })
 export class ApprovalService {
   private readonly baseUrl = environment.apiBaseUrl;
+  private readonly auth = inject(AuthService);
 
   async getApprovalTimesheets(): Promise<ApprovalDay[]> {
-    const response = await fetch(`${this.baseUrl}/ApprovalTimesheets`);
+    const response = await fetch(`${this.baseUrl}/ApprovalTimesheets`, {
+      headers: this.auth.authHeaders(),
+    });
     const body = await this.readJson<ODataResponse<ApprovalDay>>(response);
     return body.value;
   }
@@ -41,6 +45,7 @@ export class ApprovalService {
       method: "POST",
       headers: {
         "content-type": "application/json",
+        ...this.auth.authHeaders(),
       },
       body: JSON.stringify(payload),
     });

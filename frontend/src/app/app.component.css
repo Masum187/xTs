@@ -42,3 +42,46 @@ main {
   max-width: 1180px;
   padding: 24px;
 }
+
+.persona {
+  align-items: center;
+  color: #b7c6dd;
+  display: flex;
+  font-size: 13px;
+  gap: 8px;
+}
+
+.persona select {
+  background: #1c3a66;
+  border: 1px solid #2c4a76;
+  border-radius: 6px;
+  color: #ffffff;
+  min-height: 32px;
+  padding: 0 8px;
+}
+
+.auth-panel {
+  background: #ffffff;
+  border: 1px solid #d9e1ee;
+  border-radius: 8px;
+  padding: 24px;
+}
+
+.auth-panel h2 {
+  margin: 0 0 8px;
+}
+
+.auth-panel p {
+  color: #465873;
+  margin: 0;
+}
+
+.auth-error {
+  background: #fdf3f2;
+  border-color: #e6b8b2;
+}
+
+.auth-error h2,
+.auth-error p {
+  color: #7c2d24;
+}

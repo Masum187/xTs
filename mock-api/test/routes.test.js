@@ -4,21 +4,101 @@ import test from "node:test";
 
 import { resetTimesheetStore, routeRequest } from "../src/routes.js";
 
-function request(method, url, body) {
+const APPROVER_UPN = "christian.roeper@qualitytimes.de";
+
+function request(method, url, body, headers = {}) {
   const stream = Readable.from(body ? [JSON.stringify(body)] : []);
   stream.method = method;
   stream.url = url;
+  stream.headers = headers;
   return stream;
+}
+
+function approverRequest(method, url, body) {
+  return request(method, url, body, { "x-mock-oauth-upn": APPROVER_UPN });
 }
 
 test.beforeEach(() => {
   resetTimesheetStore();
 });
 
-test("returns employee profile", async () => {
+test("returns employee profile with roles for the default persona", async () => {
   const response = await routeRequest(request("GET", "/odata/MyProfile"));
+  const body = JSON.parse(response.body);
   assert.equal(response.status, 200);
-  assert.equal(JSON.parse(response.body).extNr, "SCHILZ");
+  assert.equal(body.extNr, "SCHILZ");
+  assert.deepEqual(body.roles, ["user"]);
+});
+
+test("returns approver role for the approver persona", async () => {
+  const response = await routeRequest(
+    approverRequest("GET", "/odata/MyProfile"),
+  );
+  const body = JSON.parse(response.body);
+  assert.equal(body.extNr, "ROEPER");
+  assert.deepEqual(body.roles, ["user", "approver"]);
+});
+
+test("rejects an OAuth user without EXTNR mapping", async () => {
+  const response = await routeRequest(
+    request("GET", "/odata/MyProfile", undefined, {
+      "x-mock-oauth-upn": "neu.extern@qualitytimes.de",
+    }),
+  );
+  const body = JSON.parse(response.body);
+  assert.equal(response.status, 404);
+  assert.equal(body.error, "NO_EXTNR_MAPPING");
+  assert.equal(body.upn, "neu.extern@qualitytimes.de");
+});
+
+test("rejects an unknown OAuth user like an unmapped one", async () => {
+  const response = await routeRequest(
+    request("GET", "/odata/MyProfile", undefined, {
+      "x-mock-oauth-upn": "unbekannt@qualitytimes.de",
+    }),
+  );
+  assert.equal(response.status, 404);
+  assert.equal(JSON.parse(response.body).error, "NO_EXTNR_MAPPING");
+});
+
+test("rejects an inactive employee", async () => {
+  const response = await routeRequest(
+    request("GET", "/odata/MyProfile", undefined, {
+      "x-mock-oauth-upn": "petra.altmann@qualitytimes.de",
+    }),
+  );
+  const body = JSON.parse(response.body);
+  assert.equal(response.status, 403);
+  assert.equal(body.error, "EMPLOYEE_INACTIVE");
+  assert.equal(body.extNr, "ALTMANN");
+});
+
+test("denies approval endpoints without approver role", async () => {
+  const list = await routeRequest(request("GET", "/odata/ApprovalTimesheets"));
+  assert.equal(list.status, 403);
+  assert.equal(JSON.parse(list.body).error, "NOT_AUTHORIZED");
+
+  const action = await routeRequest(
+    request("POST", "/odata/TimesheetApprovals", {
+      extNr: "SCHILZ",
+      date: "2026-04-08",
+      action: "approve",
+    }),
+  );
+  assert.equal(action.status, 403);
+});
+
+test("denies saving timesheets for a foreign extNr", async () => {
+  const response = await routeRequest(
+    request("POST", "/odata/TimesheetDays", {
+      extNr: "ROEPER",
+      date: "2026-04-14",
+      status: "E",
+      lines: [],
+    }),
+  );
+  assert.equal(response.status, 403);
+  assert.equal(JSON.parse(response.body).error, "NOT_AUTHORIZED");
 });
 
 test("returns enabled cost objects", async () => {
@@ -96,7 +176,7 @@ test("creates a new day for an unknown date", async () => {
 
 test("lists only submitted days for approval with employee names", async () => {
   const response = await routeRequest(
-    request("GET", "/odata/ApprovalTimesheets"),
+    approverRequest("GET", "/odata/ApprovalTimesheets"),
   );
   const body = JSON.parse(response.body);
   assert.equal(response.status, 200);
@@ -113,7 +193,10 @@ test("lists only submitted days for approval with employee names", async () => {
 
 test("filters approval list by month and employee", async () => {
   const response = await routeRequest(
-    request("GET", "/odata/ApprovalTimesheets?month=2026-04&extNr=ROEPER"),
+    approverRequest(
+      "GET",
+      "/odata/ApprovalTimesheets?month=2026-04&extNr=ROEPER",
+    ),
   );
   const body = JSON.parse(response.body);
   assert.equal(body.value.length, 1);
@@ -122,7 +205,7 @@ test("filters approval list by month and employee", async () => {
 
 test("approves a submitted day and posts a goods receipt", async () => {
   const response = await routeRequest(
-    request("POST", "/odata/TimesheetApprovals", {
+    approverRequest("POST", "/odata/TimesheetApprovals", {
       extNr: "SCHILZ",
       date: "2026-04-08",
       action: "approve",
@@ -136,14 +219,14 @@ test("approves a submitted day and posts a goods receipt", async () => {
   assert.equal(day.weDocument, "WE-000001");
 
   const approvals = await routeRequest(
-    request("GET", "/odata/ApprovalTimesheets?extNr=SCHILZ"),
+    approverRequest("GET", "/odata/ApprovalTimesheets?extNr=SCHILZ"),
   );
   assert.equal(JSON.parse(approvals.body).value.length, 0);
 });
 
 test("rejects a submitted day with a reason", async () => {
   const response = await routeRequest(
-    request("POST", "/odata/TimesheetApprovals", {
+    approverRequest("POST", "/odata/TimesheetApprovals", {
       extNr: "ROEPER",
       date: "2026-04-08",
       action: "reject",
@@ -158,7 +241,7 @@ test("rejects a submitted day with a reason", async () => {
 
 test("requires a reason for rejection", async () => {
   const response = await routeRequest(
-    request("POST", "/odata/TimesheetApprovals", {
+    approverRequest("POST", "/odata/TimesheetApprovals", {
       extNr: "ROEPER",
       date: "2026-04-08",
       action: "reject",
@@ -169,7 +252,7 @@ test("requires a reason for rejection", async () => {
 
 test("refuses approval for days that are not submitted", async () => {
   const response = await routeRequest(
-    request("POST", "/odata/TimesheetApprovals", {
+    approverRequest("POST", "/odata/TimesheetApprovals", {
       extNr: "SCHILZ",
       date: "2026-04-09",
       action: "approve",

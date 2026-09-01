@@ -1,7 +1,11 @@
 import { expect, test } from "@playwright/test";
 
 test("filters, approves and rejects submitted days", async ({ page }) => {
-  await page.goto("/approvals");
+  await page.goto("/");
+  await page
+    .getByTestId("persona-select")
+    .selectOption("christian.roeper@qualitytimes.de");
+  await page.getByRole("link", { name: "Genehmigung" }).click();
   await expect(
     page.getByRole("heading", { name: "Genehmigung" }),
   ).toBeVisible();
@@ -58,6 +62,7 @@ test("approved day is locked in the timesheet view", async ({
     },
   });
   await request.post("http://127.0.0.1:4010/odata/TimesheetApprovals", {
+    headers: { "x-mock-oauth-upn": "christian.roeper@qualitytimes.de" },
     data: {
       extNr: "SCHILZ",
       date,
