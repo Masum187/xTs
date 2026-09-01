@@ -1,11 +1,5 @@
 export type TimesheetStatus = "E" | "F" | "G" | "A";
 
-export interface EmployeeProfile {
-  extNr: string;
-  displayName: string;
-  company: string;
-}
-
 export interface EnabledCostObject {
   id: string;
   coIdent: string;

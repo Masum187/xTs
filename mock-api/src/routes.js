@@ -2,16 +2,17 @@ import {
   costObjects,
   employees,
   enabledCostObjects,
+  oauthMappings,
   teams,
   timesheets,
 } from "./fixtures.js";
 
 const timesheetKey = (day) => `${day.extNr}|${day.date}`;
 
-// Bis XTS-050 (AD/OAuth-Mapping) entschieden ist, simuliert die Mock-API
-// feste Personas: employees[0] schreibt Stunden, employees[1] genehmigt.
-const MOCK_USER = () => employees[0].extNr;
-const MOCK_APPROVER = () => employees[1].extNr;
+// Simulierter OAuth-Claim: bis XTS-050 real angebunden ist, kommt der
+// angemeldete Benutzer als Header-Pseudo-Claim herein (Default: SCHILZ).
+const OAUTH_HEADER = "x-mock-oauth-upn";
+const DEFAULT_UPN = "stephan.schilz@qualitytimes.de";
 
 let timesheetStore = new Map();
 let weDocumentCounter = 0;
@@ -28,6 +29,31 @@ function displayNameFor(extNr) {
   return (
     employees.find((employee) => employee.extNr === extNr)?.displayName ?? extNr
   );
+}
+
+function resolvePersona(request) {
+  const upn = request.headers?.[OAUTH_HEADER] ?? DEFAULT_UPN;
+  const mapping = oauthMappings.find((entry) => entry.upn === upn);
+  if (!mapping?.extNr) {
+    return { error: json({ error: "NO_EXTNR_MAPPING", upn }, 404) };
+  }
+  const employee = employees.find((entry) => entry.extNr === mapping.extNr);
+  if (!employee) {
+    return { error: json({ error: "NO_EXTNR_MAPPING", upn }, 404) };
+  }
+  if (!employee.active) {
+    return {
+      error: json({ error: "EMPLOYEE_INACTIVE", extNr: employee.extNr }, 403),
+    };
+  }
+  return { employee };
+}
+
+function requireApprover(persona) {
+  if (!persona.employee.roles.includes("approver")) {
+    return json({ error: "NOT_AUTHORIZED", requiredRole: "approver" }, 403);
+  }
+  return null;
 }
 
 export async function routeRequest(request) {
@@ -51,23 +77,37 @@ export async function routeRequest(request) {
   }
 
   if (request.method === "GET" && path === "/odata/MyProfile") {
-    return json(employees[0]);
+    const persona = resolvePersona(request);
+    if (persona.error) return persona.error;
+    const { extNr, displayName, company, roles } = persona.employee;
+    return json({ extNr, displayName, company, roles });
   }
 
   if (request.method === "GET" && path === "/odata/MyEnabledCostObjects") {
-    return json({ value: enabledCostObjects });
+    const persona = resolvePersona(request);
+    if (persona.error) return persona.error;
+    const value = enabledCostObjects.filter(
+      (item) => item.extNr === persona.employee.extNr,
+    );
+    return json({ value });
   }
 
   if (request.method === "GET" && path === "/odata/MyTimesheets") {
+    const persona = resolvePersona(request);
+    if (persona.error) return persona.error;
     const date = url.searchParams.get("date");
     const value = [...timesheetStore.values()]
-      .filter((day) => day.extNr === MOCK_USER())
+      .filter((day) => day.extNr === persona.employee.extNr)
       .filter((day) => !date || day.date === date)
       .sort((a, b) => b.date.localeCompare(a.date));
     return json({ value });
   }
 
   if (request.method === "GET" && path === "/odata/ApprovalTimesheets") {
+    const persona = resolvePersona(request);
+    if (persona.error) return persona.error;
+    const roleError = requireApprover(persona);
+    if (roleError) return roleError;
     const month = url.searchParams.get("month");
     const extNr = url.searchParams.get("extNr");
     const value = [...timesheetStore.values()]
@@ -83,6 +123,10 @@ export async function routeRequest(request) {
   }
 
   if (request.method === "POST" && path === "/odata/TimesheetApprovals") {
+    const persona = resolvePersona(request);
+    if (persona.error) return persona.error;
+    const roleError = requireApprover(persona);
+    if (roleError) return roleError;
     const body = await readJsonBody(request);
     if (!body.extNr || !body.date || !body.action) {
       return json({ error: "extNr, date and action are required" }, 400);
@@ -100,7 +144,7 @@ export async function routeRequest(request) {
     if (body.action === "approve") {
       day.status = "G";
       day.rejectionReason = undefined;
-      day.approvedBy = MOCK_APPROVER();
+      day.approvedBy = persona.employee.extNr;
       day.approvedAt = new Date().toISOString();
       weDocumentCounter += 1;
       day.weDocument = `WE-${String(weDocumentCounter).padStart(6, "0")}`;
@@ -120,9 +164,14 @@ export async function routeRequest(request) {
   }
 
   if (request.method === "POST" && path === "/odata/TimesheetDays") {
+    const persona = resolvePersona(request);
+    if (persona.error) return persona.error;
     const body = await readJsonBody(request);
     if (!body.extNr || !body.date) {
       return json({ error: "extNr and date are required" }, 400);
+    }
+    if (body.extNr !== persona.employee.extNr) {
+      return json({ error: "NOT_AUTHORIZED", reason: "foreign extNr" }, 403);
     }
     const saved = structuredClone(body);
     timesheetStore.set(timesheetKey(saved), saved);
@@ -138,7 +187,7 @@ export function json(payload, status = 200) {
     headers: {
       "access-control-allow-origin": "*",
       "access-control-allow-methods": "GET,POST,PATCH,OPTIONS",
-      "access-control-allow-headers": "content-type",
+      "access-control-allow-headers": `content-type,${OAUTH_HEADER}`,
       "content-type": "application/json; charset=utf-8",
     },
     body: JSON.stringify(payload),

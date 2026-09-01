@@ -1,11 +1,8 @@
-import { Injectable } from "@angular/core";
+import { Injectable, inject } from "@angular/core";
 
 import { environment } from "../../environments/environment";
-import type {
-  EmployeeProfile,
-  EnabledCostObject,
-  TimesheetDay,
-} from "./timesheet.models";
+import { AuthService } from "../auth/auth.service";
+import type { EnabledCostObject, TimesheetDay } from "./timesheet.models";
 
 interface ODataResponse<T> {
   value: T[];
@@ -16,16 +13,13 @@ interface ODataResponse<T> {
 })
 export class TimesheetService {
   private readonly baseUrl = environment.apiBaseUrl;
-
-  async getProfile(): Promise<EmployeeProfile> {
-    const response = await fetch(`${this.baseUrl}/MyProfile`);
-    return this.readJson<EmployeeProfile>(response);
-  }
+  private readonly auth = inject(AuthService);
 
   async getEnabledCostObjects(date?: string): Promise<EnabledCostObject[]> {
     const query = date ? `?date=${encodeURIComponent(date)}` : "";
     const response = await fetch(
       `${this.baseUrl}/MyEnabledCostObjects${query}`,
+      { headers: this.auth.authHeaders() },
     );
     const body =
       await this.readJson<ODataResponse<EnabledCostObject>>(response);
@@ -33,7 +27,9 @@ export class TimesheetService {
   }
 
   async getMyTimesheets(): Promise<TimesheetDay[]> {
-    const response = await fetch(`${this.baseUrl}/MyTimesheets`);
+    const response = await fetch(`${this.baseUrl}/MyTimesheets`, {
+      headers: this.auth.authHeaders(),
+    });
     const body = await this.readJson<ODataResponse<TimesheetDay>>(response);
     return body.value;
   }
@@ -43,6 +39,7 @@ export class TimesheetService {
       method: "POST",
       headers: {
         "content-type": "application/json",
+        ...this.auth.authHeaders(),
       },
       body: JSON.stringify(day),
     });

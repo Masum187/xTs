@@ -9,9 +9,9 @@ import {
   shiftDate,
   sumLineHours,
 } from "./timesheet.logic";
+import { AuthService } from "../auth/auth.service";
 import type {
   EnabledCostObject,
-  EmployeeProfile,
   TimesheetDay,
   TimesheetStatus,
 } from "./timesheet.models";
@@ -33,9 +33,10 @@ const STATUS_LABELS: Record<TimesheetStatus, string> = {
 })
 export class TimesheetComponent {
   private readonly timesheetService = inject(TimesheetService);
+  private readonly auth = inject(AuthService);
   private readonly savedDays = new Map<string, TimesheetDay>();
 
-  protected readonly profile = signal<EmployeeProfile | null>(null);
+  protected readonly profile = this.auth.profile;
   protected readonly costObjects = signal<EnabledCostObject[]>([]);
   protected readonly selectedCostObject = signal<string>("");
   protected readonly message = signal<string>("");
@@ -169,12 +170,10 @@ export class TimesheetComponent {
   }
 
   private async loadInitialData(): Promise<void> {
-    const [profile, costObjects, timesheets] = await Promise.all([
-      this.timesheetService.getProfile(),
+    const [costObjects, timesheets] = await Promise.all([
       this.timesheetService.getEnabledCostObjects(),
       this.timesheetService.getMyTimesheets(),
     ]);
-    this.profile.set(profile);
     this.costObjects.set(costObjects);
     for (const day of timesheets) {
       this.savedDays.set(day.date, day);
@@ -182,6 +181,7 @@ export class TimesheetComponent {
     const latestDate =
       timesheets[0]?.date ?? new Date().toISOString().slice(0, 10);
     this.openDate(latestDate);
-    this.day.update((day) => ({ ...day, extNr: profile.extNr }));
+    const extNr = this.currentExtNr();
+    this.day.update((day) => ({ ...day, extNr }));
   }
 }

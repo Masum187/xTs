@@ -96,6 +96,12 @@ Umsetzungsregel:
 - xTS muss den authentifizierten Benutzer auf `EXTNR` in `ZXTS_WIW_T` mappen.
 - SAP-User ist optional, aber nicht Voraussetzung fuer WebClient-Nutzung.
 
+Offener Folgepunkt:
+
+- Welches AD/OAuth-Attribut das Mapping traegt, ist noch nicht entschieden.
+  Entscheidungsvorlage mit Optionen und Empfehlung:
+  [entscheidungsvorlage-extnr-mapping.md](entscheidungsvorlage-extnr-mapping.md)
+
 ## Entscheidung 7 - Abwesenheitsmanagement
 
 Status: entschieden  

@@ -7,6 +7,7 @@ export const employees = [
     company: "QualityTimes",
     sapAccount: "SSCHILZ",
     active: true,
+    roles: ["user"],
   },
   {
     extNr: "ROEPER",
@@ -16,7 +17,28 @@ export const employees = [
     company: "QualityTimes",
     sapAccount: "CROEPER",
     active: true,
+    roles: ["user", "approver"],
   },
+  {
+    extNr: "ALTMANN",
+    displayName: "Petra Altmann",
+    firstName: "Petra",
+    lastName: "Altmann",
+    company: "QualityTimes",
+    sapAccount: null,
+    active: false,
+    roles: ["user"],
+  },
+];
+
+// Simuliert das AD/OAuth-Mapping aus der Entscheidungsvorlage
+// docs/entscheidungsvorlage-extnr-mapping.md. Ein Eintrag ohne extNr steht
+// fuer einen OAuth-User, der (noch) nicht auf ZXTS_WIW_T gemappt ist.
+export const oauthMappings = [
+  { upn: "stephan.schilz@qualitytimes.de", extNr: "SCHILZ" },
+  { upn: "christian.roeper@qualitytimes.de", extNr: "ROEPER" },
+  { upn: "petra.altmann@qualitytimes.de", extNr: "ALTMANN" },
+  { upn: "neu.extern@qualitytimes.de", extNr: null },
 ];
 
 export const teams = [
