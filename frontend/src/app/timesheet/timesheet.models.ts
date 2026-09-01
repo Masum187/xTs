@@ -30,5 +30,12 @@ export interface TimesheetDay {
   location: "remote" | "on-site";
   status: TimesheetStatus;
   rejectionReason?: string;
+  approvedBy?: string;
+  approvedAt?: string;
+  weDocument?: string;
   lines: TimesheetLine[];
+}
+
+export interface ApprovalDay extends TimesheetDay {
+  displayName: string;
 }

@@ -18,6 +18,25 @@
   font-size: 13px;
 }
 
+.topbar nav {
+  display: flex;
+  gap: 6px;
+}
+
+.topbar nav a {
+  border-radius: 6px;
+  color: #b7c6dd;
+  font-size: 14px;
+  font-weight: 700;
+  padding: 8px 14px;
+  text-decoration: none;
+}
+
+.topbar nav a.active {
+  background: #1c3a66;
+  color: #ffffff;
+}
+
 main {
   margin: 0 auto;
   max-width: 1180px;

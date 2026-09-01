@@ -136,4 +136,52 @@ export const timesheets = [
       },
     ],
   },
+  {
+    extNr: "SCHILZ",
+    date: "2026-04-08",
+    startTime: "08:30",
+    endTime: "17:30",
+    breakMinutes: 60,
+    location: "remote",
+    status: "F",
+    lines: [
+      {
+        coIdent: "700000000004",
+        description: "Migrationskonzept Kapitel 3",
+        hours: 8,
+      },
+    ],
+  },
+  {
+    extNr: "ROEPER",
+    date: "2026-04-08",
+    startTime: "09:00",
+    endTime: "18:00",
+    breakMinutes: 60,
+    location: "on-site",
+    status: "F",
+    lines: [
+      {
+        coIdent: "600000000001",
+        description: "Basis-Setup Testmandant",
+        hours: 8,
+      },
+    ],
+  },
+  {
+    extNr: "ROEPER",
+    date: "2026-03-31",
+    startTime: "09:00",
+    endTime: "17:00",
+    breakMinutes: 30,
+    location: "remote",
+    status: "F",
+    lines: [
+      {
+        coIdent: "600000000001",
+        description: "Transportstrategie Abstimmung",
+        hours: 7.5,
+      },
+    ],
+  },
 ];

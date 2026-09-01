@@ -6,6 +6,9 @@
     "frontend",
     "mock-api"
   ],
+  "engines": {
+    "node": ">=20 <21"
+  },
   "scripts": {
     "format": "prettier --write .",
     "format:check": "prettier --check .",
