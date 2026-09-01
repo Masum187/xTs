@@ -34,6 +34,7 @@ import { AuthService } from "./auth/auth.service";
         }
         @if (isPlanner()) {
           <a routerLink="/planning" routerLinkActive="active">Planung</a>
+          <a routerLink="/orders" routerLinkActive="active">Beauftragung</a>
         }
       </nav>
       <label class="persona">

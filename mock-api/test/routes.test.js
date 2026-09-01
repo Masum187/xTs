@@ -644,3 +644,233 @@ test("planning endpoints require the planner role", async () => {
   );
   assert.equal(release.status, 403);
 });
+
+async function seedReleasedRow(extNr, coIdent, month, hours) {
+  await routeRequest(
+    approverRequest("POST", "/odata/PlanningEntries", {
+      extNr,
+      coIdent,
+      month,
+      hours,
+    }),
+  );
+  await routeRequest(
+    approverRequest("POST", "/odata/PlanningReleases", {
+      extNr,
+      coIdent,
+      month,
+    }),
+  );
+}
+
+test("order candidates group released rows per employee and cost object", async () => {
+  await seedReleasedRow("SCHILZ", "700000000004", "2026-04", 60);
+  await seedReleasedRow("SCHILZ", "700000000004", "2026-05", 80);
+
+  const response = await routeRequest(
+    approverRequest("GET", "/odata/OrderCandidates"),
+  );
+  const body = JSON.parse(response.body);
+  assert.equal(response.status, 200);
+  assert.equal(body.value.length, 2);
+  const schilz = body.value.find((item) => item.extNr === "SCHILZ");
+  assert.deepEqual(schilz.months, ["2026-04", "2026-05"]);
+  assert.equal(schilz.totalHours, 140);
+  assert.equal(schilz.periodFrom, "2026-04");
+  assert.equal(schilz.periodTo, "2026-05");
+  const roeper = body.value.find((item) => item.extNr === "ROEPER");
+  assert.equal(roeper.totalHours, 20);
+});
+
+test("order candidates support employee, cost object and period filters", async () => {
+  await seedReleasedRow("SCHILZ", "700000000004", "2026-04", 60);
+
+  const byEmployee = await routeRequest(
+    approverRequest("GET", "/odata/OrderCandidates?extNr=ROEPER"),
+  );
+  assert.equal(JSON.parse(byEmployee.body).value.length, 1);
+
+  const byPeriod = await routeRequest(
+    approverRequest("GET", "/odata/OrderCandidates?from=2026-05&to=2026-12"),
+  );
+  assert.equal(JSON.parse(byPeriod.body).value.length, 0);
+});
+
+test("creates an order from planning rows and keeps references", async () => {
+  await seedReleasedRow("SCHILZ", "700000000004", "2026-04", 60);
+  await seedReleasedRow("SCHILZ", "700000000004", "2026-05", 80);
+
+  const response = await routeRequest(
+    approverRequest("POST", "/odata/Orders", {
+      extNr: "SCHILZ",
+      coIdent: "700000000004",
+      months: ["2026-04", "2026-05"],
+      text: "SAP-Implementierung Q2",
+    }),
+  );
+  const order = JSON.parse(response.body);
+  assert.equal(response.status, 201);
+  assert.equal(order.orderId, "BEAUF-000001");
+  assert.equal(order.hours, 140);
+  assert.equal(order.periodFrom, "2026-04");
+  assert.equal(order.periodTo, "2026-05");
+  assert.deepEqual(order.planningRefs, ["2026-04", "2026-05"]);
+  assert.equal(order.status, "created");
+
+  const candidates = await routeRequest(
+    approverRequest("GET", "/odata/OrderCandidates?extNr=SCHILZ"),
+  );
+  assert.equal(JSON.parse(candidates.body).value.length, 0);
+
+  const again = await routeRequest(
+    approverRequest("POST", "/odata/Orders", {
+      extNr: "SCHILZ",
+      coIdent: "700000000004",
+      months: ["2026-04"],
+    }),
+  );
+  assert.equal(again.status, 409);
+});
+
+test("order text stays editable until the BANF exists", async () => {
+  await seedReleasedRow("SCHILZ", "700000000004", "2026-04", 60);
+  await routeRequest(
+    approverRequest("POST", "/odata/Orders", {
+      extNr: "SCHILZ",
+      coIdent: "700000000004",
+      months: ["2026-04"],
+    }),
+  );
+
+  const renamed = await routeRequest(
+    approverRequest("POST", "/odata/Orders", {
+      orderId: "BEAUF-000001",
+      text: "Neuer BANF-Positionstext",
+    }),
+  );
+  assert.equal(JSON.parse(renamed.body).text, "Neuer BANF-Positionstext");
+
+  await routeRequest(
+    approverRequest("POST", "/odata/OrderBanfs", { orderId: "BEAUF-000001" }),
+  );
+  const locked = await routeRequest(
+    approverRequest("POST", "/odata/Orders", {
+      orderId: "BEAUF-000001",
+      text: "zu spaet",
+    }),
+  );
+  assert.equal(locked.status, 409);
+});
+
+test("BANF creation writes back numbers and sets planning to P", async () => {
+  await seedReleasedRow("SCHILZ", "700000000004", "2026-04", 60);
+  await routeRequest(
+    approverRequest("POST", "/odata/Orders", {
+      extNr: "SCHILZ",
+      coIdent: "700000000004",
+      months: ["2026-04"],
+    }),
+  );
+
+  const response = await routeRequest(
+    approverRequest("POST", "/odata/OrderBanfs", { orderId: "BEAUF-000001" }),
+  );
+  const order = JSON.parse(response.body);
+  assert.equal(response.status, 201);
+  assert.equal(order.status, "banf");
+  assert.equal(order.banfNumber, "10000001");
+  assert.equal(order.banfItem, "00010");
+
+  const overview = await routeRequest(
+    approverRequest("GET", "/odata/PlanningOverview?start=2026-04"),
+  );
+  const cell = JSON.parse(overview.body)
+    .rows.find(
+      (row) => row.extNr === "SCHILZ" && row.coIdent === "700000000004",
+    )
+    .cells.find((candidate) => candidate.month === "2026-04");
+  assert.equal(cell.status, "P");
+  assert.equal(cell.locked, true);
+
+  const duplicate = await routeRequest(
+    approverRequest("POST", "/odata/OrderBanfs", { orderId: "BEAUF-000001" }),
+  );
+  assert.equal(duplicate.status, 409);
+  const protocol = await routeRequest(
+    approverRequest("GET", "/odata/OrderProtocol"),
+  );
+  assert.equal(JSON.parse(protocol.body).value.length, 1);
+});
+
+test("purchase order sync updates found orders and logs missing ones", async () => {
+  await seedReleasedRow("SCHILZ", "700000000004", "2026-04", 60);
+  await seedReleasedRow("SCHILZ", "600000000001", "2026-04", 25);
+  await routeRequest(
+    approverRequest("POST", "/odata/Orders", {
+      extNr: "SCHILZ",
+      coIdent: "700000000004",
+      months: ["2026-04"],
+    }),
+  );
+  await routeRequest(
+    approverRequest("POST", "/odata/Orders", {
+      extNr: "SCHILZ",
+      coIdent: "600000000001",
+      months: ["2026-04"],
+    }),
+  );
+  await routeRequest(
+    approverRequest("POST", "/odata/OrderBanfs", { orderId: "BEAUF-000001" }),
+  );
+  await routeRequest(
+    approverRequest("POST", "/odata/OrderBanfs", { orderId: "BEAUF-000002" }),
+  );
+
+  const response = await routeRequest(
+    approverRequest("POST", "/odata/PurchaseOrderSyncRuns"),
+  );
+  const body = JSON.parse(response.body);
+  assert.equal(body.updated, 1);
+  assert.equal(body.errors.length, 1);
+  assert.match(body.errors[0].message, /Keine Bestellung zur BANF 10000002/);
+
+  const orders = await routeRequest(approverRequest("GET", "/odata/Orders"));
+  const list = JSON.parse(orders.body).value;
+  const done = list.find((order) => order.orderId === "BEAUF-000001");
+  assert.equal(done.status, "bestellt");
+  assert.equal(done.ebeln, "4500001234");
+  assert.equal(done.ebelp, "00010");
+  assert.equal(
+    list.find((order) => order.orderId === "BEAUF-000002").status,
+    "banf",
+  );
+
+  const overview = await routeRequest(
+    approverRequest("GET", "/odata/PlanningOverview?start=2026-04"),
+  );
+  const cell = JSON.parse(overview.body)
+    .rows.find(
+      (row) => row.extNr === "SCHILZ" && row.coIdent === "700000000004",
+    )
+    .cells.find((candidate) => candidate.month === "2026-04");
+  assert.equal(cell.status, "B");
+});
+
+test("order endpoints require the planner role", async () => {
+  const candidates = await routeRequest(
+    request("GET", "/odata/OrderCandidates"),
+  );
+  assert.equal(candidates.status, 403);
+  const create = await routeRequest(
+    request("POST", "/odata/Orders", {
+      extNr: "SCHILZ",
+      coIdent: "700000000004",
+      months: ["2026-04"],
+    }),
+  );
+  assert.equal(create.status, 403);
+  const sync = await routeRequest(
+    request("POST", "/odata/PurchaseOrderSyncRuns"),
+  );
+  assert.equal(sync.status, 403);
+});

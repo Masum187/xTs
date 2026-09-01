@@ -8,6 +8,13 @@ import {
   timesheets,
 } from "./fixtures.js";
 import {
+  buildOrderCandidates,
+  createBanf,
+  createOrder,
+  runPurchaseOrderSync,
+  updateOrderText,
+} from "./orders.js";
+import {
   buildPlanningOverview,
   isValidMonth,
   releasePlanningEntry,
@@ -28,6 +35,7 @@ const DEFAULT_UPN = "stephan.schilz@qualitytimes.de";
 
 let timesheetStore = new Map();
 let planningStore = [];
+let ordersState = null;
 let weDocumentCounter = 0;
 resetTimesheetStore();
 
@@ -36,6 +44,7 @@ export function resetTimesheetStore() {
     timesheets.map((day) => [timesheetKey(day), structuredClone(day)]),
   );
   planningStore = structuredClone(planningEntries);
+  ordersState = { orders: [], protocol: [], orderCounter: 0, banfCounter: 0 };
   weDocumentCounter = 0;
 }
 
@@ -186,6 +195,72 @@ export async function routeRequest(request) {
       return json({ error: result.error.code }, result.error.status);
     }
     return json(result);
+  }
+
+  if (request.method === "GET" && path === "/odata/OrderCandidates") {
+    const persona = resolvePersona(request);
+    if (persona.error) return persona.error;
+    const roleError = requireRole(persona, "planner");
+    if (roleError) return roleError;
+    const value = buildOrderCandidates(planningStore, ordersState.orders, {
+      extNr: url.searchParams.get("extNr") ?? "",
+      coIdent: url.searchParams.get("coIdent") ?? "",
+      from: url.searchParams.get("from") ?? "",
+      to: url.searchParams.get("to") ?? "",
+    });
+    return json({ value });
+  }
+
+  if (request.method === "GET" && path === "/odata/Orders") {
+    const persona = resolvePersona(request);
+    if (persona.error) return persona.error;
+    const roleError = requireRole(persona, "planner");
+    if (roleError) return roleError;
+    return json({ value: ordersState.orders.map((order) => ({ ...order })) });
+  }
+
+  if (request.method === "POST" && path === "/odata/Orders") {
+    const persona = resolvePersona(request);
+    if (persona.error) return persona.error;
+    const roleError = requireRole(persona, "planner");
+    if (roleError) return roleError;
+    const body = await readJsonBody(request);
+    const result = body.orderId
+      ? updateOrderText(ordersState, body)
+      : createOrder(ordersState, planningStore, body);
+    if (result.error) {
+      return json({ error: result.error.code }, result.error.status);
+    }
+    return json(result.order, body.orderId ? 200 : 201);
+  }
+
+  if (request.method === "POST" && path === "/odata/OrderBanfs") {
+    const persona = resolvePersona(request);
+    if (persona.error) return persona.error;
+    const roleError = requireRole(persona, "planner");
+    if (roleError) return roleError;
+    const body = await readJsonBody(request);
+    const result = createBanf(ordersState, planningStore, body);
+    if (result.error) {
+      return json({ error: result.error.code }, result.error.status);
+    }
+    return json(result.order, 201);
+  }
+
+  if (request.method === "POST" && path === "/odata/PurchaseOrderSyncRuns") {
+    const persona = resolvePersona(request);
+    if (persona.error) return persona.error;
+    const roleError = requireRole(persona, "planner");
+    if (roleError) return roleError;
+    return json(runPurchaseOrderSync(ordersState, planningStore));
+  }
+
+  if (request.method === "GET" && path === "/odata/OrderProtocol") {
+    const persona = resolvePersona(request);
+    if (persona.error) return persona.error;
+    const roleError = requireRole(persona, "planner");
+    if (roleError) return roleError;
+    return json({ value: ordersState.protocol.map((entry) => ({ ...entry })) });
   }
 
   if (request.method === "GET" && path === "/odata/BudgetMonitor") {

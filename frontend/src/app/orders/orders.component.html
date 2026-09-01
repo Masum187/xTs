@@ -1,0 +1,191 @@
+<section class="page-header">
+  <div>
+    <p class="eyebrow">WebClient</p>
+    <h1>Beauftragung</h1>
+  </div>
+  <button type="button" (click)="runSync()" data-testid="run-po-sync">
+    Bestelldaten aktualisieren (Job)
+  </button>
+</section>
+
+@if (message()) {
+  <section class="panel notice ok" data-testid="orders-message">
+    {{ message() }}
+  </section>
+}
+
+<section class="panel">
+  <div class="section-title">
+    <h2>Beauftragungskandidaten</h2>
+    <span>{{ candidates().length }} Vorschläge</span>
+  </div>
+  <p class="hint">
+    Zusammenfassung je Mitarbeiter und Kontierung gemäß Regelwerk — niemals über
+    mehrere Mitarbeiter hinweg.
+  </p>
+
+  <div class="filters">
+    <label>
+      Mitarbeiter-Nr.
+      <input
+        aria-label="Mitarbeiter-Nr."
+        placeholder="z. B. SCHILZ"
+        [ngModel]="filterExtNr()"
+        (ngModelChange)="updateFilter({ extNr: $event })"
+      />
+    </label>
+    <label>
+      Kontierung
+      <input
+        aria-label="Kontierung"
+        placeholder="z. B. 700000000004"
+        [ngModel]="filterCoIdent()"
+        (ngModelChange)="updateFilter({ coIdent: $event })"
+      />
+    </label>
+    <label>
+      Zeitraum von
+      <input
+        aria-label="Zeitraum von"
+        placeholder="MM.JJJJ"
+        [ngModel]="filterFrom()"
+        (ngModelChange)="updateFilter({ from: $event })"
+      />
+    </label>
+    <label>
+      Zeitraum bis
+      <input
+        aria-label="Zeitraum bis"
+        placeholder="MM.JJJJ"
+        [ngModel]="filterTo()"
+        (ngModelChange)="updateFilter({ to: $event })"
+      />
+    </label>
+  </div>
+
+  <div class="cards" data-testid="candidate-list">
+    @for (candidate of candidates(); track candidateKey(candidate)) {
+      <article
+        class="card"
+        [attr.data-testid]="
+          'candidate-' + candidate.extNr + '-' + candidate.coIdent
+        "
+      >
+        <header>
+          <div>
+            <strong>{{ candidate.displayName }}</strong>
+            <span>{{ candidate.coIdent }}</span>
+          </div>
+          <strong>{{ candidate.totalHours }} Std.</strong>
+        </header>
+        <p class="period">
+          {{ periodLabel(candidate.periodFrom, candidate.periodTo) }} ·
+          {{ candidate.months.length }} Monat(e)
+        </p>
+        <footer>
+          <input
+            aria-label="BANF-Positionstext"
+            [ngModel]="textFor(candidate)"
+            (ngModelChange)="setText(candidate, $event)"
+          />
+          <button
+            type="button"
+            (click)="createOrder(candidate)"
+            [attr.data-testid]="
+              'create-order-' + candidate.extNr + '-' + candidate.coIdent
+            "
+          >
+            Beauftragung anlegen
+          </button>
+        </footer>
+      </article>
+    } @empty {
+      <p class="empty-hint" data-testid="candidates-empty">
+        Keine freigegebenen Planzeilen für die aktuelle Selektion.
+      </p>
+    }
+  </div>
+</section>
+
+<section class="panel">
+  <div class="section-title">
+    <h2>Beauftragungen</h2>
+  </div>
+  <div class="table-wrap">
+    <table data-testid="orders-table">
+      <thead>
+        <tr>
+          <th>Nr.</th>
+          <th>Mitarbeiter</th>
+          <th>Kontierung</th>
+          <th>Zeitraum</th>
+          <th class="num">Std.</th>
+          <th>BANF-Positionstext</th>
+          <th>Status</th>
+          <th>BANF</th>
+          <th>Bestellung</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (order of orders(); track order.orderId) {
+          <tr [attr.data-testid]="'order-' + order.orderId">
+            <td>{{ order.orderId }}</td>
+            <td>{{ order.displayName }}</td>
+            <td>{{ order.coIdent }}</td>
+            <td>{{ periodLabel(order.periodFrom, order.periodTo) }}</td>
+            <td class="num">{{ order.hours }}</td>
+            <td>{{ order.text }}</td>
+            <td>
+              <span class="status" [attr.data-status]="order.status">
+                {{ statusLabel(order.status) }}
+              </span>
+            </td>
+            <td>
+              @if (order.banfNumber) {
+                {{ order.banfNumber }}/{{ order.banfItem }}
+              }
+            </td>
+            <td>
+              @if (order.ebeln) {
+                {{ order.ebeln }}/{{ order.ebelp }}
+              }
+            </td>
+            <td>
+              @if (order.status === "created") {
+                <button
+                  type="button"
+                  (click)="createBanf(order)"
+                  [attr.data-testid]="'create-banf-' + order.orderId"
+                >
+                  BANF anlegen
+                </button>
+              }
+            </td>
+          </tr>
+        } @empty {
+          <tr>
+            <td colspan="10" class="empty-hint">
+              Noch keine Beauftragungen angelegt.
+            </td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<section class="panel">
+  <div class="section-title">
+    <h2>Fehlerprotokoll</h2>
+  </div>
+  <div class="protocol" data-testid="order-protocol">
+    @for (entry of protocol(); track $index) {
+      <p class="protocol-entry">
+        <strong>{{ entry.orderId }}</strong> · {{ entry.message }}
+      </p>
+    } @empty {
+      <p class="empty-hint">Keine Fehler protokolliert.</p>
+    }
+  </div>
+</section>

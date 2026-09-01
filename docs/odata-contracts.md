@@ -4,22 +4,27 @@ Diese Datei beschreibt die fachlichen Service-Kontrakte fuer SAP-OData und die M
 
 ## Services
 
-| Service     | Pfad                          | Zweck                                              |
-| ----------- | ----------------------------- | -------------------------------------------------- |
-| Stammdaten  | `/odata/Employees`            | Mitarbeiter lesen                                  |
-| Stammdaten  | `/odata/Teams`                | Teams lesen                                        |
-| Stammdaten  | `/odata/CostObjects`          | Kontierungen lesen                                 |
-| Timesheet   | `/odata/MyProfile`            | Angemeldeten Benutzer auf `EXTNR` abbilden         |
-| Timesheet   | `/odata/MyEnabledCostObjects` | Freigeschaltete Kontierungen mit Reststunden       |
-| Timesheet   | `/odata/MyTimesheets`         | Eigene Stundeneintraege                            |
-| Timesheet   | `/odata/TimesheetDays`        | Tageskopf mit Leistungspositionen speichern        |
-| Genehmigung | `/odata/ApprovalTimesheets`   | Freigegebene Tage (Status `F`) fuer Projektleiter  |
-| Genehmigung | `/odata/TimesheetApprovals`   | Tag genehmigen oder zurueckweisen                  |
-| Reporting   | `/odata/BudgetMonitor`        | Budget-Monitor je Kontierung (XTS-071)             |
-| Reporting   | `/odata/CostObjectQuota`      | Stundenkontingent-Monitor je Mitarbeiter (XTS-072) |
-| Planung     | `/odata/PlanningOverview`     | 12-Monatsuebersicht der Planstunden (XTS-020)      |
-| Planung     | `/odata/PlanningEntries`      | Planstunden speichern (XTS-021)                    |
-| Planung     | `/odata/PlanningReleases`     | Planzeile fuer BANF freigeben (XTS-023)            |
+| Service      | Pfad                           | Zweck                                               |
+| ------------ | ------------------------------ | --------------------------------------------------- |
+| Stammdaten   | `/odata/Employees`             | Mitarbeiter lesen                                   |
+| Stammdaten   | `/odata/Teams`                 | Teams lesen                                         |
+| Stammdaten   | `/odata/CostObjects`           | Kontierungen lesen                                  |
+| Timesheet    | `/odata/MyProfile`             | Angemeldeten Benutzer auf `EXTNR` abbilden          |
+| Timesheet    | `/odata/MyEnabledCostObjects`  | Freigeschaltete Kontierungen mit Reststunden        |
+| Timesheet    | `/odata/MyTimesheets`          | Eigene Stundeneintraege                             |
+| Timesheet    | `/odata/TimesheetDays`         | Tageskopf mit Leistungspositionen speichern         |
+| Genehmigung  | `/odata/ApprovalTimesheets`    | Freigegebene Tage (Status `F`) fuer Projektleiter   |
+| Genehmigung  | `/odata/TimesheetApprovals`    | Tag genehmigen oder zurueckweisen                   |
+| Reporting    | `/odata/BudgetMonitor`         | Budget-Monitor je Kontierung (XTS-071)              |
+| Reporting    | `/odata/CostObjectQuota`       | Stundenkontingent-Monitor je Mitarbeiter (XTS-072)  |
+| Planung      | `/odata/PlanningOverview`      | 12-Monatsuebersicht der Planstunden (XTS-020)       |
+| Planung      | `/odata/PlanningEntries`       | Planstunden speichern (XTS-021)                     |
+| Planung      | `/odata/PlanningReleases`      | Planzeile fuer BANF freigeben (XTS-023)             |
+| Beauftragung | `/odata/OrderCandidates`       | Beauftragungskandidaten aus F-Planzeilen (XTS-030)  |
+| Beauftragung | `/odata/Orders`                | Beauftragungen lesen/anlegen/Text pflegen (XTS-031) |
+| Beauftragung | `/odata/OrderBanfs`            | BANF simuliert anlegen und rueckschreiben (XTS-032) |
+| Beauftragung | `/odata/PurchaseOrderSyncRuns` | Bestelldaten-Job simuliert ausfuehren (XTS-033)     |
+| Beauftragung | `/odata/OrderProtocol`         | Fehlerprotokoll zu BANF und Bestelldaten-Job        |
 
 ## Genehmigungs-Verhalten
 
@@ -36,6 +41,15 @@ Diese Datei beschreibt die fachlichen Service-Kontrakte fuer SAP-OData und die M
 - Ueberplanung (XTS-022): Planstunden ueber den verfuegbaren Monatsstunden werden markiert (`overbooked`), Speichern bleibt erlaubt (Warnung). Die Fachentscheidung "Warnung vs. blockieren" ist offen; der Mock setzt Warnung als Default um.
 - `POST /odata/PlanningReleases` setzt eine `V`-Zeile mit Stunden > 0 auf `F` (fuer BANF freigegeben, gesperrt); andere Status: HTTP 409. Freigegebene Zeilen sind die Kandidaten fuer die Beauftragung (Epic 4).
 - Statusmodell analog `ZXTS_MAPLAN_T`: `V` Vorschlag, `F` freigegeben fuer BANF, `P` BANF erstellt, `B` Bestellung vorhanden.
+
+## Beauftragungs-Verhalten (Epic 4)
+
+- Alle Beauftragungs-Endpunkte erfordern die Rolle `planner` (Order Manager/RM in Personalunion; eigene Rolle kann spaeter getrennt werden).
+- `GET /odata/OrderCandidates` liefert F-Planzeilen ohne Beauftragungsreferenz, zusammengefasst je Mitarbeiter und Kontierung (Simulation ZXTS_REGELN_T Infotyp 1, niemals ueber mehrere Mitarbeiter). Filter: `?extNr=`, `?coIdent=`, `?from=`/`?to=` (Monate).
+- `POST /odata/Orders` legt eine Beauftragung analog `ZXTS_MABEAUF_T` an: Kontierung, Zeitraum und Stunden kommen aus den referenzierten Planmonaten (`planningRefs` bleiben nachvollziehbar); mit `orderId` im Body wird stattdessen der BANF-Positionstext gepflegt (nur solange Status `created`, sonst HTTP 409).
+- `POST /odata/OrderBanfs` simuliert die MM-BANF-Anlage: BANF-Nummer/-Position werden rueckgeschrieben, Status wechselt auf `banf`, referenzierte Planzeilen auf `P`. Doppelte Anlage: HTTP 409 + Eintrag im Fehlerprotokoll. Echtes EBAN/EBKN/COBL-Feldmapping und DDIC-Validierung bleiben SAP-seitig offen.
+- `POST /odata/PurchaseOrderSyncRuns` simuliert den Bestelldaten-Job (XTS-033): zu jeder BANF wird die Bestellung aus der Fixture `purchaseOrders` gelesen, `EBELN`/`EBELP` rueckgeschrieben, Status `bestellt`, Planung `B`. Nicht gefundene Faelle landen im Fehlerprotokoll; Bestellungen werden nie aktiv angelegt.
+- `GET /odata/OrderProtocol` liefert das Fehlerprotokoll (BANF-Ablehnungen und Job-Fehler) fachlich lesbar.
 
 ## Reporting-Verhalten
 
