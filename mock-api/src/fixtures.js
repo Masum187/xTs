@@ -269,3 +269,10 @@ export const planningEntries = [
     status: "F",
   },
 ];
+
+// Simulierte MM-Bestellungen fuer den Bestelldaten-Job (XTS-033): je
+// Kontierung eine Bestellung; Kontierungen ohne Eintrag erzeugen einen
+// Fehlerprotokoll-Fall.
+export const purchaseOrders = {
+  700000000004: { ebeln: "4500001234" },
+};

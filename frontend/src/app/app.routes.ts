@@ -5,6 +5,7 @@ import { Router } from "@angular/router";
 import { ApprovalComponent } from "./approval/approval.component";
 import type { AuthRole } from "./auth/auth.models";
 import { AuthService } from "./auth/auth.service";
+import { OrdersComponent } from "./orders/orders.component";
 import { PlanningComponent } from "./planning/planning.component";
 import { ReportingComponent } from "./reporting/reporting.component";
 import { TimesheetComponent } from "./timesheet/timesheet.component";
@@ -40,6 +41,12 @@ export const routes: Routes = [
     path: "planning",
     component: PlanningComponent,
     title: "xTS Ressourcenplanung",
+    canActivate: [roleGuard("planner")],
+  },
+  {
+    path: "orders",
+    component: OrdersComponent,
+    title: "xTS Beauftragung",
     canActivate: [roleGuard("planner")],
   },
 ];
