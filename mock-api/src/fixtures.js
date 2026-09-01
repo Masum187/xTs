@@ -19,7 +19,7 @@ export const employees = [
     sapAccount: "CROEPER",
     active: true,
     teamId: "ENTW_SUPPORT",
-    roles: ["user", "approver"],
+    roles: ["user", "approver", "planner"],
   },
   {
     extNr: "ALTMANN",
@@ -224,5 +224,48 @@ export const timesheets = [
         hours: 7.5,
       },
     ],
+  },
+];
+
+// Simulierter SAP-Werkkalender (XTS-022): verfuegbare Arbeitsstunden je Monat.
+export const workCalendar = {
+  defaultHours: 160,
+  months: {
+    "2026-03": 176,
+    "2026-04": 168,
+    "2026-05": 160,
+  },
+};
+
+// Planstunden analog ZXTS_MAPLAN_T (Epic 3). Status: V = Vorschlag
+// (editierbar), F = fuer BANF freigegeben, P = BANF erstellt, B = Bestellung.
+export const planningEntries = [
+  {
+    extNr: "SCHILZ",
+    coIdent: "700000000004",
+    month: "2026-04",
+    hours: 60,
+    status: "V",
+  },
+  {
+    extNr: "SCHILZ",
+    coIdent: "700000000004",
+    month: "2026-05",
+    hours: 80,
+    status: "V",
+  },
+  {
+    extNr: "SCHILZ",
+    coIdent: "600000000001",
+    month: "2026-03",
+    hours: 30,
+    status: "P",
+  },
+  {
+    extNr: "ROEPER",
+    coIdent: "600000000001",
+    month: "2026-04",
+    hours: 20,
+    status: "F",
   },
 ];

@@ -36,7 +36,7 @@ test("returns approver role for the approver persona", async () => {
   );
   const body = JSON.parse(response.body);
   assert.equal(body.extNr, "ROEPER");
-  assert.deepEqual(body.roles, ["user", "approver"]);
+  assert.deepEqual(body.roles, ["user", "approver", "planner"]);
 });
 
 test("rejects an OAuth user without EXTNR mapping", async () => {
@@ -433,4 +433,190 @@ test("reporting endpoints require the approver role", async () => {
   assert.equal(budget.status, 403);
   const quota = await routeRequest(request("GET", "/odata/CostObjectQuota"));
   assert.equal(quota.status, 403);
+});
+
+test("planning overview shows 12 months with valid combinations", async () => {
+  const response = await routeRequest(
+    approverRequest("GET", "/odata/PlanningOverview?start=2026-03"),
+  );
+  const body = JSON.parse(response.body);
+  assert.equal(response.status, 200);
+  assert.equal(body.months.length, 12);
+  assert.equal(body.months[0].month, "2026-03");
+  assert.equal(body.months[0].availableHours, 176);
+  assert.equal(body.months[11].month, "2027-02");
+  assert.equal(body.months[11].availableHours, 160);
+  assert.equal(body.rows.length, 4);
+
+  const lockedCell = body.rows
+    .find((row) => row.extNr === "SCHILZ" && row.coIdent === "600000000001")
+    .cells.find((cell) => cell.month === "2026-03");
+  assert.equal(lockedCell.status, "P");
+  assert.equal(lockedCell.locked, true);
+
+  const releasedCell = body.rows
+    .find((row) => row.extNr === "ROEPER" && row.coIdent === "600000000001")
+    .cells.find((cell) => cell.month === "2026-04");
+  assert.equal(releasedCell.status, "F");
+  assert.equal(releasedCell.locked, true);
+});
+
+test("planning overview filters by employee, team and cost object", async () => {
+  const byEmployee = await routeRequest(
+    approverRequest("GET", "/odata/PlanningOverview?extNr=ROEPER"),
+  );
+  assert.equal(JSON.parse(byEmployee.body).rows.length, 1);
+
+  const byTeam = await routeRequest(
+    approverRequest("GET", "/odata/PlanningOverview?team=TRANSFORMATION_MC"),
+  );
+  const teamRows = JSON.parse(byTeam.body).rows;
+  assert.ok(teamRows.every((row) => row.extNr === "SCHILZ"));
+
+  const byCoIdent = await routeRequest(
+    approverRequest("GET", "/odata/PlanningOverview?coIdent=600000000001"),
+  );
+  assert.equal(JSON.parse(byCoIdent.body).rows.length, 2);
+
+  const badStart = await routeRequest(
+    approverRequest("GET", "/odata/PlanningOverview?start=03.2026"),
+  );
+  assert.equal(badStart.status, 400);
+});
+
+test("saves new plan hours with status V and updates existing V entries", async () => {
+  const created = await routeRequest(
+    approverRequest("POST", "/odata/PlanningEntries", {
+      extNr: "ROEPER",
+      coIdent: "600000000001",
+      month: "2026-06",
+      hours: 40,
+    }),
+  );
+  const createdBody = JSON.parse(created.body);
+  assert.equal(created.status, 201);
+  assert.equal(createdBody.entry.status, "V");
+  assert.equal(createdBody.overbooked, false);
+
+  const updated = await routeRequest(
+    approverRequest("POST", "/odata/PlanningEntries", {
+      extNr: "SCHILZ",
+      coIdent: "700000000004",
+      month: "2026-05",
+      hours: 100,
+    }),
+  );
+  assert.equal(JSON.parse(updated.body).entry.hours, 100);
+});
+
+test("rejects plan changes for locked entries and unknown combinations", async () => {
+  const locked = await routeRequest(
+    approverRequest("POST", "/odata/PlanningEntries", {
+      extNr: "SCHILZ",
+      coIdent: "600000000001",
+      month: "2026-03",
+      hours: 10,
+    }),
+  );
+  assert.equal(locked.status, 409);
+  assert.equal(JSON.parse(locked.body).error, "PLANNING_ENTRY_LOCKED");
+
+  const unknown = await routeRequest(
+    approverRequest("POST", "/odata/PlanningEntries", {
+      extNr: "ALTMANN",
+      coIdent: "700000000004",
+      month: "2026-05",
+      hours: 10,
+    }),
+  );
+  assert.equal(unknown.status, 404);
+});
+
+test("marks overplanning against the work calendar", async () => {
+  const response = await routeRequest(
+    approverRequest("POST", "/odata/PlanningEntries", {
+      extNr: "SCHILZ",
+      coIdent: "600000000001",
+      month: "2026-04",
+      hours: 120,
+    }),
+  );
+  const body = JSON.parse(response.body);
+  assert.equal(body.plannedTotal, 180);
+  assert.equal(body.availableHours, 168);
+  assert.equal(body.overbooked, true);
+
+  const overview = await routeRequest(
+    approverRequest("GET", "/odata/PlanningOverview?start=2026-04"),
+  );
+  const cell = JSON.parse(overview.body)
+    .rows.find(
+      (row) => row.extNr === "SCHILZ" && row.coIdent === "700000000004",
+    )
+    .cells.find((c) => c.month === "2026-04");
+  assert.equal(cell.overbooked, true);
+});
+
+test("releases V entries for BANF and locks them afterwards", async () => {
+  const released = await routeRequest(
+    approverRequest("POST", "/odata/PlanningReleases", {
+      extNr: "SCHILZ",
+      coIdent: "700000000004",
+      month: "2026-04",
+    }),
+  );
+  assert.equal(released.status, 200);
+  assert.equal(JSON.parse(released.body).entry.status, "F");
+
+  const again = await routeRequest(
+    approverRequest("POST", "/odata/PlanningReleases", {
+      extNr: "SCHILZ",
+      coIdent: "700000000004",
+      month: "2026-04",
+    }),
+  );
+  assert.equal(again.status, 409);
+
+  const edit = await routeRequest(
+    approverRequest("POST", "/odata/PlanningEntries", {
+      extNr: "SCHILZ",
+      coIdent: "700000000004",
+      month: "2026-04",
+      hours: 10,
+    }),
+  );
+  assert.equal(edit.status, 409);
+
+  const missing = await routeRequest(
+    approverRequest("POST", "/odata/PlanningReleases", {
+      extNr: "SCHILZ",
+      coIdent: "700000000004",
+      month: "2027-01",
+    }),
+  );
+  assert.equal(missing.status, 404);
+});
+
+test("planning endpoints require the planner role", async () => {
+  const overview = await routeRequest(
+    request("GET", "/odata/PlanningOverview"),
+  );
+  assert.equal(overview.status, 403);
+  const save = await routeRequest(
+    request("POST", "/odata/PlanningEntries", {
+      extNr: "SCHILZ",
+      coIdent: "700000000004",
+      month: "2026-05",
+      hours: 1,
+    }),
+  );
+  assert.equal(save.status, 403);
+  const release = await routeRequest(
+    request("POST", "/odata/PlanningReleases", {
+      extNr: "SCHILZ",
+      coIdent: "700000000004",
+      month: "2026-04",
+    }),
+  );
+  assert.equal(release.status, 403);
 });

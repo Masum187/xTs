@@ -1,0 +1,160 @@
+import { employees, enabledCostObjects, workCalendar } from "./fixtures.js";
+
+const LOCKED_STATUSES = ["F", "P", "B"];
+
+export const planningKey = (entry) =>
+  `${entry.extNr}|${entry.coIdent}|${entry.month}`;
+
+export function isLockedStatus(status) {
+  return LOCKED_STATUSES.includes(status);
+}
+
+export function availableHoursFor(month) {
+  return workCalendar.months[month] ?? workCalendar.defaultHours;
+}
+
+export function monthsFrom(start, count = 12) {
+  const [year, month] = start.split("-").map(Number);
+  return Array.from({ length: count }, (_unused, index) => {
+    const total = year * 12 + (month - 1) + index;
+    const y = Math.floor(total / 12);
+    const m = total % 12;
+    return `${y}-${String(m + 1).padStart(2, "0")}`;
+  });
+}
+
+export function isValidMonth(value) {
+  return typeof value === "string" && /^\d{4}-(0[1-9]|1[0-2])$/.test(value);
+}
+
+/**
+ * Gueltige Planungszeilen sind aktive Mitarbeiter mit Kontierungsfreischaltung
+ * (XTS-020: "gueltig und nicht geloescht").
+ */
+export function planningCombinations() {
+  return enabledCostObjects
+    .map((item) => {
+      const employee = employees.find(
+        (candidate) => candidate.extNr === item.extNr,
+      );
+      if (!employee?.active) return null;
+      return {
+        extNr: employee.extNr,
+        displayName: employee.displayName,
+        teamId: employee.teamId,
+        coIdent: item.coIdent,
+        description: item.description,
+      };
+    })
+    .filter(Boolean);
+}
+
+export function buildPlanningOverview(entries, filters) {
+  const { start, extNr, team, coIdent } = filters;
+  const months = monthsFrom(start);
+  const monthSet = new Set(months);
+
+  const rows = planningCombinations()
+    .filter((combo) => !extNr || combo.extNr === extNr)
+    .filter((combo) => !team || combo.teamId === team)
+    .filter((combo) => !coIdent || combo.coIdent === coIdent);
+
+  // Ueberplanung (XTS-022): Summe aller Planstunden eines Mitarbeiters im
+  // Monat gegen die verfuegbaren Stunden aus dem Werkkalender.
+  const plannedPerEmployeeMonth = new Map();
+  for (const entry of entries) {
+    if (!monthSet.has(entry.month)) continue;
+    const key = `${entry.extNr}|${entry.month}`;
+    plannedPerEmployeeMonth.set(
+      key,
+      (plannedPerEmployeeMonth.get(key) ?? 0) + entry.hours,
+    );
+  }
+
+  return {
+    months: months.map((month) => ({
+      month,
+      availableHours: availableHoursFor(month),
+    })),
+    rows: rows.map((combo) => ({
+      ...combo,
+      cells: months.map((month) => {
+        const entry = entries.find(
+          (candidate) =>
+            candidate.extNr === combo.extNr &&
+            candidate.coIdent === combo.coIdent &&
+            candidate.month === month,
+        );
+        const plannedTotal =
+          plannedPerEmployeeMonth.get(`${combo.extNr}|${month}`) ?? 0;
+        return {
+          month,
+          hours: entry?.hours ?? 0,
+          status: entry?.status ?? null,
+          locked: entry ? isLockedStatus(entry.status) : false,
+          overbooked: plannedTotal > availableHoursFor(month),
+        };
+      }),
+    })),
+  };
+}
+
+export function upsertPlanningEntry(entries, payload) {
+  const { extNr, coIdent, month } = payload;
+  const hours = Number(payload.hours);
+  if (!extNr || !coIdent || !isValidMonth(month) || Number.isNaN(hours)) {
+    return { error: { status: 400, code: "INVALID_PLANNING_ENTRY" } };
+  }
+  if (hours < 0) {
+    return { error: { status: 400, code: "INVALID_PLANNING_ENTRY" } };
+  }
+  const combination = planningCombinations().find(
+    (combo) => combo.extNr === extNr && combo.coIdent === coIdent,
+  );
+  if (!combination) {
+    return { error: { status: 404, code: "UNKNOWN_PLANNING_COMBINATION" } };
+  }
+  const existing = entries.find(
+    (candidate) =>
+      candidate.extNr === extNr &&
+      candidate.coIdent === coIdent &&
+      candidate.month === month,
+  );
+  if (existing && isLockedStatus(existing.status)) {
+    return { error: { status: 409, code: "PLANNING_ENTRY_LOCKED" } };
+  }
+  const saved = existing ?? { extNr, coIdent, month, status: "V", hours: 0 };
+  saved.hours = hours;
+  saved.status = "V";
+  if (!existing) entries.push(saved);
+
+  const plannedTotal = entries
+    .filter(
+      (candidate) => candidate.extNr === extNr && candidate.month === month,
+    )
+    .reduce((sum, candidate) => sum + candidate.hours, 0);
+  return {
+    entry: { ...saved },
+    overbooked: plannedTotal > availableHoursFor(month),
+    availableHours: availableHoursFor(month),
+    plannedTotal,
+  };
+}
+
+export function releasePlanningEntry(entries, payload) {
+  const { extNr, coIdent, month } = payload;
+  const existing = entries.find(
+    (candidate) =>
+      candidate.extNr === extNr &&
+      candidate.coIdent === coIdent &&
+      candidate.month === month,
+  );
+  if (!existing) {
+    return { error: { status: 404, code: "PLANNING_ENTRY_NOT_FOUND" } };
+  }
+  if (existing.status !== "V" || existing.hours <= 0) {
+    return { error: { status: 409, code: "PLANNING_ENTRY_NOT_RELEASABLE" } };
+  }
+  existing.status = "F";
+  return { entry: { ...existing } };
+}
