@@ -344,13 +344,21 @@ export async function routeRequest(request) {
     if (persona.error) return persona.error;
     const roleError = requireApprover(persona);
     if (roleError) return roleError;
+    const from = url.searchParams.get("from") ?? "";
+    const to = url.searchParams.get("to") ?? "";
+    if ((from && !isValidMonth(from)) || (to && !isValidMonth(to))) {
+      return json({ error: "INVALID_LIFECYCLE_PERIOD", from, to }, 400);
+    }
+    if (from && to && from > to) {
+      return json({ error: "INVALID_LIFECYCLE_PERIOD", from, to }, 400);
+    }
     const value = buildResourceLifecycle(
       planningStore,
       ordersState.orders,
       [...timesheetStore.values()],
       {
-        from: url.searchParams.get("from") ?? "",
-        to: url.searchParams.get("to") ?? "",
+        from,
+        to,
         ebeln: url.searchParams.get("ebeln") ?? "",
         ebelp: url.searchParams.get("ebelp") ?? "",
       },

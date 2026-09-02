@@ -646,6 +646,23 @@ test("resource lifecycle filters by period, purchase order and item", async () =
   assert.equal(JSON.parse(allItems.body).value.length, 4);
 });
 
+test("resource lifecycle rejects invalid period filters", async () => {
+  const badFormat = await routeRequest(
+    approverRequest("GET", "/odata/ResourceLifecycle?from=04.2026"),
+  );
+  assert.equal(badFormat.status, 400);
+  assert.equal(JSON.parse(badFormat.body).error, "INVALID_LIFECYCLE_PERIOD");
+
+  const reversedRange = await routeRequest(
+    approverRequest("GET", "/odata/ResourceLifecycle?from=2026-05&to=2026-04"),
+  );
+  assert.equal(reversedRange.status, 400);
+  assert.equal(
+    JSON.parse(reversedRange.body).error,
+    "INVALID_LIFECYCLE_PERIOD",
+  );
+});
+
 test("resource lifecycle shows goods receipts from approved days", async () => {
   await routeRequest(
     approverRequest("POST", "/odata/TimesheetApprovals", {
