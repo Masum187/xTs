@@ -1,20 +1,15 @@
-import { budgetTrafficLight, costObjects, employees } from "./fixtures.js";
+import { budgetTrafficLight } from "./fixtures.js";
 import {
   bookedLinesFor,
   buildEnablements,
   qualifyingOrders,
 } from "./enablement.js";
+import { costObjectDescription, displayNameFor } from "./masterdata.js";
 
 // Verbraucht zaehlen im Reporting nur genehmigte Stunden (Status G). Budget
 // ist seit Epic 5 die beauftragte Stundenmenge ab Status P/BANF (Regelwerk),
 // nicht mehr eine statische Freischaltung.
 const APPROVED_STATUS = "G";
-
-function displayNameFor(extNr) {
-  return (
-    employees.find((employee) => employee.extNr === extNr)?.displayName ?? extNr
-  );
-}
 
 function trafficLightFor(percent) {
   if (percent >= budgetTrafficLight.criticalPercent) return "red";
@@ -42,10 +37,7 @@ export function buildBudgetMonitor(days, detail, orders, rules) {
   for (const order of qualifyingOrders(orders, rules)) {
     const row = byCoIdent.get(order.coIdent) ?? {
       coIdent: order.coIdent,
-      description: (
-        costObjects.find((item) => item.coIdent === order.coIdent)
-          ?.description ?? order.coIdent
-      ).split(",")[0],
+      description: costObjectDescription(order.coIdent).split(",")[0],
       budgetHours: 0,
     };
     row.budgetHours += order.hours;
@@ -126,5 +118,5 @@ export function buildCostObjectQuota(days, filters, orders, rules) {
         !lastName ||
         row.lastName.toLowerCase().includes(lastName.toLowerCase()),
     )
-    .filter((row) => !team || row.teamId === team);
+    .filter((row) => !team || row.teamIds.includes(team));
 }

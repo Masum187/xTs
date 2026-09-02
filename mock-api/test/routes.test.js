@@ -1313,3 +1313,430 @@ test("deactivating the enablement rule disables timesheet cost objects", async (
   );
   assert.equal(JSON.parse(budget.body).value.length, 0);
 });
+
+test("employee maintenance validates required fields and stamps changes", async () => {
+  const invalid = await routeRequest(
+    approverRequest("POST", "/odata/Employees", {
+      extNr: "",
+      firstName: " ",
+      lastName: "",
+      active: "yes",
+    }),
+  );
+  assert.equal(invalid.status, 400);
+  assert.equal(JSON.parse(invalid.body).error, "INVALID_EMPLOYEE");
+  assert.deepEqual(JSON.parse(invalid.body).fields, [
+    "EXTNR",
+    "NACHNAME",
+    "VORNAME",
+    "STATUS",
+  ]);
+
+  const unknownManager = await routeRequest(
+    approverRequest("POST", "/odata/Employees", {
+      extNr: "tester",
+      firstName: "Toni",
+      lastName: "Tester",
+      active: true,
+      resourceManager: "NIEMAND",
+    }),
+  );
+  assert.equal(unknownManager.status, 400);
+  assert.equal(
+    JSON.parse(unknownManager.body).error,
+    "UNKNOWN_RESOURCE_MANAGER",
+  );
+
+  const created = await routeRequest(
+    approverRequest("POST", "/odata/Employees", {
+      extNr: "tester",
+      firstName: "Toni",
+      lastName: "Tester",
+      company: "QualityTimes",
+      active: true,
+      resourceManager: "ROEPER",
+    }),
+  );
+  const employee = JSON.parse(created.body);
+  assert.equal(created.status, 200);
+  assert.equal(employee.extNr, "TESTER");
+  assert.equal(employee.displayName, "Toni Tester");
+  assert.equal(employee.resourceManager, "ROEPER");
+  assert.deepEqual(employee.roles, ["user"]);
+  assert.equal(employee.changedBy, "ROEPER");
+  assert.match(employee.changedAt, /^\d{4}-\d{2}-\d{2}T/);
+
+  const listed = await routeRequest(request("GET", "/odata/Employees"));
+  assert.ok(
+    JSON.parse(listed.body).value.some((item) => item.extNr === "TESTER"),
+  );
+
+  await routeRequest(
+    approverRequest("POST", "/odata/Employees", {
+      ...employee,
+      deleted: true,
+    }),
+  );
+  const afterDelete = await routeRequest(request("GET", "/odata/Employees"));
+  assert.ok(
+    !JSON.parse(afterDelete.body).value.some((item) => item.extNr === "TESTER"),
+  );
+  const withDeleted = await routeRequest(
+    request("GET", "/odata/Employees?includeDeleted=true"),
+  );
+  assert.ok(
+    JSON.parse(withDeleted.body).value.some(
+      (item) => item.extNr === "TESTER" && item.deleted === true,
+    ),
+  );
+});
+
+test("logically deleted employees lose their access", async () => {
+  await routeRequest(
+    approverRequest("POST", "/odata/Employees", {
+      extNr: "SCHILZ",
+      firstName: "Stephan",
+      lastName: "Schilz",
+      active: true,
+      deleted: true,
+    }),
+  );
+  const profile = await routeRequest(request("GET", "/odata/MyProfile"));
+  assert.equal(profile.status, 403);
+  assert.equal(JSON.parse(profile.body).error, "EMPLOYEE_INACTIVE");
+  const planning = await routeRequest(
+    approverRequest("GET", "/odata/PlanningOverview?start=2026-03"),
+  );
+  assert.ok(
+    !JSON.parse(planning.body).rows.some((row) => row.extNr === "SCHILZ"),
+  );
+});
+
+test("inactive or deleted teams are not offered in selections", async () => {
+  const invalid = await routeRequest(
+    approverRequest("POST", "/odata/Teams", { id: "qa", active: true }),
+  );
+  assert.equal(invalid.status, 400);
+  assert.deepEqual(JSON.parse(invalid.body).fields, ["NAME"]);
+
+  const created = await routeRequest(
+    approverRequest("POST", "/odata/Teams", {
+      id: "qa",
+      name: "QA",
+      active: false,
+    }),
+  );
+  assert.equal(created.status, 200);
+  assert.equal(JSON.parse(created.body).id, "QA");
+
+  const offered = await routeRequest(request("GET", "/odata/Teams"));
+  assert.deepEqual(
+    JSON.parse(offered.body).value.map((team) => team.id),
+    ["TRANSFORMATION_MC", "ENTW_SUPPORT"],
+  );
+  const all = await routeRequest(
+    request("GET", "/odata/Teams?includeInactive=true"),
+  );
+  assert.equal(JSON.parse(all.body).value.length, 3);
+
+  await routeRequest(
+    approverRequest("POST", "/odata/Teams", {
+      id: "ENTW_SUPPORT",
+      name: "Entw.-Support",
+      active: true,
+      deleted: true,
+    }),
+  );
+  const afterDelete = await routeRequest(request("GET", "/odata/Teams"));
+  assert.deepEqual(
+    JSON.parse(afterDelete.body).value.map((team) => team.id),
+    ["TRANSFORMATION_MC"],
+  );
+});
+
+test("team assignments require validity, reject overlaps and drive planning filters", async () => {
+  const missing = await routeRequest(
+    approverRequest("POST", "/odata/TeamAssignments", {
+      extNr: "SCHILZ",
+      teamId: "ENTW_SUPPORT",
+    }),
+  );
+  assert.equal(missing.status, 400);
+  assert.deepEqual(JSON.parse(missing.body).fields, [
+    "GUELTIG_VON",
+    "GUELTIG_BIS",
+  ]);
+
+  const overlap = await routeRequest(
+    approverRequest("POST", "/odata/TeamAssignments", {
+      extNr: "SCHILZ",
+      teamId: "ENTW_SUPPORT",
+      validFrom: "2026-06-01",
+      validTo: "2026-12-31",
+    }),
+  );
+  assert.equal(overlap.status, 409);
+  assert.equal(JSON.parse(overlap.body).error, "TEAM_ASSIGNMENT_OVERLAP");
+  assert.equal(JSON.parse(overlap.body).conflictId, "MT-000001");
+
+  await routeRequest(
+    approverRequest("POST", "/odata/Teams", {
+      id: "QA",
+      name: "QA",
+      active: false,
+    }),
+  );
+  const inactiveTeam = await routeRequest(
+    approverRequest("POST", "/odata/TeamAssignments", {
+      extNr: "SCHILZ",
+      teamId: "QA",
+      validFrom: "2027-01-01",
+      validTo: "2027-12-31",
+    }),
+  );
+  assert.equal(inactiveTeam.status, 409);
+  assert.equal(JSON.parse(inactiveTeam.body).error, "TEAM_NOT_AVAILABLE");
+
+  const created = await routeRequest(
+    approverRequest("POST", "/odata/TeamAssignments", {
+      extNr: "SCHILZ",
+      teamId: "ENTW_SUPPORT",
+      validFrom: "2027-01-01",
+      validTo: "2027-12-31",
+    }),
+  );
+  assert.equal(created.status, 200);
+  assert.equal(JSON.parse(created.body).id, "MT-000004");
+
+  const oldTeam = await routeRequest(
+    approverRequest(
+      "GET",
+      "/odata/PlanningOverview?start=2027-01&team=TRANSFORMATION_MC",
+    ),
+  );
+  assert.deepEqual(JSON.parse(oldTeam.body).rows, []);
+  const newTeam = await routeRequest(
+    approverRequest(
+      "GET",
+      "/odata/PlanningOverview?start=2027-01&team=ENTW_SUPPORT",
+    ),
+  );
+  const schilzRows = JSON.parse(newTeam.body).rows.filter(
+    (row) => row.extNr === "SCHILZ",
+  );
+  assert.equal(schilzRows.length, 1);
+  assert.equal(schilzRows[0].teamId, "ENTW_SUPPORT");
+  const current = await routeRequest(
+    approverRequest(
+      "GET",
+      "/odata/PlanningOverview?start=2026-03&team=TRANSFORMATION_MC",
+    ),
+  );
+  assert.ok(
+    JSON.parse(current.body).rows.some((row) => row.extNr === "SCHILZ"),
+  );
+});
+
+test("cost objects validate their type and can be checked against the SAP CO stub", async () => {
+  const badType = await routeRequest(
+    approverRequest("POST", "/odata/CostObjects", {
+      coIdent: "600000000042",
+      type: "XX",
+      description: "QA Kostenstelle",
+      active: true,
+    }),
+  );
+  assert.equal(badType.status, 400);
+  assert.equal(JSON.parse(badType.body).error, "INVALID_COST_OBJECT_TYPE");
+  assert.deepEqual(JSON.parse(badType.body).allowed, [
+    "KS",
+    "OR",
+    "PR",
+    "FB",
+    "KL",
+  ]);
+
+  const created = await routeRequest(
+    approverRequest("POST", "/odata/CostObjects", {
+      coIdent: "600000000042",
+      type: "ks",
+      description: "QA Kostenstelle",
+      active: true,
+    }),
+  );
+  const costObject = JSON.parse(created.body);
+  assert.equal(created.status, 200);
+  assert.equal(costObject.id, "000004");
+  assert.equal(costObject.type, "KS");
+  assert.equal(costObject.changedBy, "ROEPER");
+
+  const valid = await routeRequest(
+    approverRequest("POST", "/odata/CostObjectChecks", {
+      coIdent: "600000000042",
+      type: "KS",
+    }),
+  );
+  assert.equal(JSON.parse(valid.body).valid, true);
+  assert.equal(JSON.parse(valid.body).source, "SAP-CO-Stub");
+  const wrongType = await routeRequest(
+    approverRequest("POST", "/odata/CostObjectChecks", {
+      coIdent: "600000000042",
+      type: "OR",
+    }),
+  );
+  assert.equal(JSON.parse(wrongType.body).valid, false);
+  const unknown = await routeRequest(
+    approverRequest("POST", "/odata/CostObjectChecks", {
+      coIdent: "123",
+      type: "KS",
+    }),
+  );
+  assert.equal(JSON.parse(unknown.body).valid, false);
+  assert.match(JSON.parse(unknown.body).message, /nicht bekannt/);
+});
+
+test("deleted cost objects are no longer offered for planning or timesheets", async () => {
+  await routeRequest(
+    approverRequest("POST", "/odata/CostObjects", {
+      coIdent: "600000000001",
+      type: "KS",
+      description: "SAP-Support, Stephan Schilz",
+      active: true,
+      deleted: true,
+    }),
+  );
+  const listed = await routeRequest(request("GET", "/odata/CostObjects"));
+  assert.ok(
+    !JSON.parse(listed.body).value.some(
+      (item) => item.coIdent === "600000000001",
+    ),
+  );
+  const planning = await routeRequest(
+    approverRequest("GET", "/odata/PlanningOverview?start=2026-03"),
+  );
+  assert.ok(
+    !JSON.parse(planning.body).rows.some(
+      (row) => row.coIdent === "600000000001",
+    ),
+  );
+  const enabled = await routeRequest(
+    request("GET", "/odata/MyEnabledCostObjects"),
+  );
+  assert.ok(
+    !JSON.parse(enabled.body).value.some(
+      (item) => item.coIdent === "600000000001",
+    ),
+  );
+  const saved = await routeRequest(
+    request("POST", "/odata/TimesheetDays", {
+      extNr: "SCHILZ",
+      date: "2026-04-14",
+      startTime: "08:00",
+      endTime: "10:00",
+      breakMinutes: 0,
+      location: "remote",
+      status: "E",
+      lines: [{ coIdent: "600000000001", description: "Support", hours: 2 }],
+    }),
+  );
+  assert.equal(saved.status, 409);
+  assert.equal(JSON.parse(saved.body).error, "COST_OBJECT_NOT_ENABLED");
+});
+
+test("cost object assignments create planning rows and reject overlaps", async () => {
+  await routeRequest(
+    approverRequest("POST", "/odata/CostObjects", {
+      coIdent: "600000000042",
+      type: "KS",
+      description: "QA Kostenstelle",
+      active: true,
+    }),
+  );
+  const unknownCostObject = await routeRequest(
+    approverRequest("POST", "/odata/CostObjectAssignments", {
+      extNr: "SCHILZ",
+      coIdent: "999",
+      validFrom: "2026-01-01",
+      validTo: "2026-12-31",
+    }),
+  );
+  assert.equal(unknownCostObject.status, 409);
+  assert.equal(
+    JSON.parse(unknownCostObject.body).error,
+    "COST_OBJECT_NOT_AVAILABLE",
+  );
+  const missing = await routeRequest(
+    approverRequest("POST", "/odata/CostObjectAssignments", {
+      extNr: "SCHILZ",
+      coIdent: "600000000042",
+      validFrom: "2026-12-31",
+      validTo: "2026-01-01",
+    }),
+  );
+  assert.equal(missing.status, 400);
+  assert.equal(JSON.parse(missing.body).error, "INVALID_ASSIGNMENT");
+
+  const created = await routeRequest(
+    approverRequest("POST", "/odata/CostObjectAssignments", {
+      extNr: "SCHILZ",
+      coIdent: "600000000042",
+      validFrom: "2026-01-01",
+      validTo: "2026-12-31",
+    }),
+  );
+  const assignment = JSON.parse(created.body);
+  assert.equal(created.status, 200);
+  assert.equal(assignment.id, "000005");
+  assert.equal(assignment.description, "QA Kostenstelle, Stephan Schilz");
+
+  const overlap = await routeRequest(
+    approverRequest("POST", "/odata/CostObjectAssignments", {
+      extNr: "SCHILZ",
+      coIdent: "600000000042",
+      validFrom: "2026-06-01",
+      validTo: "2026-08-31",
+    }),
+  );
+  assert.equal(overlap.status, 409);
+  assert.equal(JSON.parse(overlap.body).error, "ASSIGNMENT_OVERLAP");
+
+  const planning = await routeRequest(
+    approverRequest("GET", "/odata/PlanningOverview?start=2026-03"),
+  );
+  const row = JSON.parse(planning.body).rows.find(
+    (item) => item.extNr === "SCHILZ" && item.coIdent === "600000000042",
+  );
+  assert.ok(row);
+  assert.equal(row.description, "QA Kostenstelle, Stephan Schilz");
+  assert.equal(row.cells[1].valid, true);
+
+  await routeRequest(
+    approverRequest("POST", "/odata/CostObjectAssignments", {
+      ...assignment,
+      deleted: true,
+    }),
+  );
+  const afterDelete = await routeRequest(
+    approverRequest("GET", "/odata/PlanningOverview?start=2026-03"),
+  );
+  assert.ok(
+    !JSON.parse(afterDelete.body).rows.some(
+      (item) => item.coIdent === "600000000042",
+    ),
+  );
+});
+
+test("master data writes require the admin role", async () => {
+  for (const path of [
+    "/odata/Employees",
+    "/odata/Teams",
+    "/odata/TeamAssignments",
+    "/odata/CostObjects",
+    "/odata/CostObjectAssignments",
+    "/odata/CostObjectChecks",
+  ]) {
+    const response = await routeRequest(request("POST", path, {}));
+    assert.equal(response.status, 403, path);
+    assert.equal(JSON.parse(response.body).error, "NOT_AUTHORIZED");
+  }
+});

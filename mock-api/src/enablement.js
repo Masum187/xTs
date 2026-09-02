@@ -1,4 +1,10 @@
-import { assignments, costObjects, employees } from "./fixtures.js";
+import {
+  costObjectDescription,
+  findCostObject,
+  findEmployee,
+  store,
+  teamIdsFor,
+} from "./masterdata.js";
 
 // Kontierungsfreischaltung analog ZXTS_MAZUKONT_T (XTS-041/042): abgeleitet
 // aus den Beauftragungen gemaess Regelwerk. Die Fortschreibung von TS_STUNDEN/
@@ -34,13 +40,11 @@ function lastDayOfMonth(month) {
 }
 
 function descriptionFor(extNr, coIdent) {
-  const assignment = assignments.find(
+  const assignment = store.assignments.find(
     (item) => item.extNr === extNr && item.coIdent === coIdent,
   );
   if (assignment) return assignment.description;
-  return (
-    costObjects.find((item) => item.coIdent === coIdent)?.description ?? coIdent
-  );
+  return costObjectDescription(coIdent);
 }
 
 export function bookedHoursFor(days, extNr, coIdent) {
@@ -74,11 +78,13 @@ export function bookedLinesFor(days, extNr, coIdent) {
 /**
  * Erzeugt die Freischaltungen: Aggregation je Mitarbeiter und Kontierung
  * (Regel Infotyp 1), beauftragte Stunden und Zeitraum aus den qualifizierenden
- * Beauftragungen, offene Stunden = beauftragt minus gebucht.
+ * Beauftragungen, offene Stunden = beauftragt minus gebucht. Geloeschte
+ * Kontierungen (XTS-013) werden nicht mehr angeboten.
  */
 export function buildEnablements(orders, days, rules) {
   const byCombo = new Map();
   for (const order of qualifyingOrders(orders, rules)) {
+    if (!findCostObject(order.coIdent)) continue;
     const key = `${order.extNr}|${order.coIdent}`;
     const entry = byCombo.get(key) ?? {
       extNr: order.extNr,
@@ -99,18 +105,20 @@ export function buildEnablements(orders, days, rules) {
   return [...byCombo.values()]
     .map((entry) => {
       const bookedHours = bookedHoursFor(days, entry.extNr, entry.coIdent);
-      const employee = employees.find(
-        (candidate) => candidate.extNr === entry.extNr,
-      );
+      const employee = findEmployee(entry.extNr);
+      const validFrom = `${entry.periodFrom}-01`;
+      const validTo = lastDayOfMonth(entry.periodTo);
+      const teamIds = teamIdsFor(entry.extNr, validFrom, validTo);
       return {
         extNr: entry.extNr,
         displayName: employee?.displayName ?? entry.extNr,
         lastName: employee?.lastName ?? entry.extNr,
-        teamId: employee?.teamId ?? null,
+        teamId: teamIds[0] ?? null,
+        teamIds,
         coIdent: entry.coIdent,
         description: entry.description,
-        validFrom: `${entry.periodFrom}-01`,
-        validTo: lastDayOfMonth(entry.periodTo),
+        validFrom,
+        validTo,
         orderedHours: entry.orderedHours,
         bookedHours,
         remainingHours: entry.orderedHours - bookedHours,

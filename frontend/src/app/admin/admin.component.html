@@ -6,10 +6,685 @@
 </section>
 
 @if (message()) {
-  <section class="panel notice ok" data-testid="admin-message">
+  <section
+    class="panel notice"
+    [class.ok]="messageKind() === 'ok'"
+    [class.error]="messageKind() === 'error'"
+    data-testid="admin-message"
+  >
     {{ message() }}
   </section>
 }
+
+<section class="panel">
+  <div class="section-title">
+    <h2>Mitarbeiter (ZXTS_WIW_T)</h2>
+  </div>
+  <p class="hint">
+    Externe Mitarbeiter mit Status, Firma, Ressourcenmanager und optionalem
+    SAP-Account. Pflichtfelder: EXTNR, Nachname, Vorname, Status. Löschen ist
+    logisch; gelöschte oder inaktive Mitarbeiter verlieren den Zugang.
+  </p>
+  <div class="table-wrap">
+    <table data-testid="employee-table">
+      <thead>
+        <tr>
+          <th>EXTNR</th>
+          <th>Vorname</th>
+          <th>Nachname</th>
+          <th>Firma</th>
+          <th>Ressourcenmanager</th>
+          <th>SAP-Account</th>
+          <th>Aktiv</th>
+          <th>Geändert</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (employee of employees(); track employee.extNr) {
+          <tr
+            [attr.data-testid]="'employee-' + employee.extNr"
+            [class.deleted]="employee.deleted"
+          >
+            <td>
+              <strong>{{ employee.extNr }}</strong>
+              @if (employee.deleted) {
+                <span class="tag">gelöscht</span>
+              }
+            </td>
+            <td>
+              <input
+                [attr.aria-label]="'Vorname ' + employee.extNr"
+                [(ngModel)]="employee.firstName"
+                [disabled]="employee.deleted"
+              />
+            </td>
+            <td>
+              <input
+                [attr.aria-label]="'Nachname ' + employee.extNr"
+                [(ngModel)]="employee.lastName"
+                [disabled]="employee.deleted"
+              />
+            </td>
+            <td>
+              <input
+                [attr.aria-label]="'Firma ' + employee.extNr"
+                [(ngModel)]="employee.company"
+                [disabled]="employee.deleted"
+              />
+            </td>
+            <td>
+              <select
+                [attr.aria-label]="'Ressourcenmanager ' + employee.extNr"
+                [(ngModel)]="employee.resourceManager"
+                [disabled]="employee.deleted"
+              >
+                <option [ngValue]="null">–</option>
+                @for (manager of activeEmployees(); track manager.extNr) {
+                  <option [ngValue]="manager.extNr">
+                    {{ manager.displayName }}
+                  </option>
+                }
+              </select>
+            </td>
+            <td>
+              <input
+                [attr.aria-label]="'SAP-Account ' + employee.extNr"
+                [(ngModel)]="employee.sapAccount"
+                [disabled]="employee.deleted"
+              />
+            </td>
+            <td>
+              <input
+                type="checkbox"
+                [attr.aria-label]="'Aktiv Mitarbeiter ' + employee.extNr"
+                [(ngModel)]="employee.active"
+                [disabled]="employee.deleted"
+              />
+            </td>
+            <td class="stamp">{{ employee.changedBy ?? "–" }}</td>
+            <td class="actions">
+              @if (!employee.deleted) {
+                <button
+                  type="button"
+                  (click)="saveEmployee(employee)"
+                  [attr.data-testid]="'save-employee-' + employee.extNr"
+                >
+                  Speichern
+                </button>
+                <button
+                  type="button"
+                  class="secondary"
+                  (click)="deleteEmployee(employee)"
+                  [attr.data-testid]="'delete-employee-' + employee.extNr"
+                >
+                  Löschen
+                </button>
+              }
+            </td>
+          </tr>
+        }
+        <tr class="new-row" data-testid="new-employee">
+          <td>
+            <input
+              aria-label="Neu: EXTNR"
+              placeholder="EXTNR"
+              [(ngModel)]="newEmployee.extNr"
+            />
+          </td>
+          <td>
+            <input
+              aria-label="Neu: Vorname"
+              placeholder="Vorname"
+              [(ngModel)]="newEmployee.firstName"
+            />
+          </td>
+          <td>
+            <input
+              aria-label="Neu: Nachname"
+              placeholder="Nachname"
+              [(ngModel)]="newEmployee.lastName"
+            />
+          </td>
+          <td>
+            <input aria-label="Neu: Firma" [(ngModel)]="newEmployee.company" />
+          </td>
+          <td>
+            <select
+              aria-label="Neu: Ressourcenmanager"
+              [(ngModel)]="newEmployee.resourceManager"
+            >
+              <option value="">–</option>
+              @for (manager of activeEmployees(); track manager.extNr) {
+                <option [value]="manager.extNr">
+                  {{ manager.displayName }}
+                </option>
+              }
+            </select>
+          </td>
+          <td>
+            <input
+              aria-label="Neu: SAP-Account"
+              [(ngModel)]="newEmployee.sapAccount"
+            />
+          </td>
+          <td>
+            <input
+              type="checkbox"
+              aria-label="Neu: Aktiv Mitarbeiter"
+              [(ngModel)]="newEmployee.active"
+            />
+          </td>
+          <td class="stamp"></td>
+          <td class="actions">
+            <button
+              type="button"
+              (click)="saveEmployee(newEmployee)"
+              data-testid="create-employee"
+            >
+              Anlegen
+            </button>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<section class="panel">
+  <div class="section-title">
+    <h2>Teams (ZXTS_TEAM_T)</h2>
+  </div>
+  <p class="hint">
+    Inaktive oder gelöschte Teams werden in Planung und Reporting nicht mehr zur
+    Auswahl angeboten.
+  </p>
+  <div class="table-wrap">
+    <table data-testid="team-table">
+      <thead>
+        <tr>
+          <th>Team-ID</th>
+          <th>Bezeichnung</th>
+          <th>Aktiv</th>
+          <th>Geändert</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (team of teams(); track team.id) {
+          <tr
+            [attr.data-testid]="'team-' + team.id"
+            [class.deleted]="team.deleted"
+          >
+            <td>
+              <strong>{{ team.id }}</strong>
+              @if (team.deleted) {
+                <span class="tag">gelöscht</span>
+              }
+            </td>
+            <td>
+              <input
+                [attr.aria-label]="'Teamname ' + team.id"
+                [(ngModel)]="team.name"
+                [disabled]="team.deleted"
+              />
+            </td>
+            <td>
+              <input
+                type="checkbox"
+                [attr.aria-label]="'Aktiv Team ' + team.id"
+                [(ngModel)]="team.active"
+                [disabled]="team.deleted"
+              />
+            </td>
+            <td class="stamp">{{ team.changedBy ?? "–" }}</td>
+            <td class="actions">
+              @if (!team.deleted) {
+                <button
+                  type="button"
+                  (click)="saveTeam(team)"
+                  [attr.data-testid]="'save-team-' + team.id"
+                >
+                  Speichern
+                </button>
+                <button
+                  type="button"
+                  class="secondary"
+                  (click)="deleteTeam(team)"
+                  [attr.data-testid]="'delete-team-' + team.id"
+                >
+                  Löschen
+                </button>
+              }
+            </td>
+          </tr>
+        }
+        <tr class="new-row">
+          <td>
+            <input
+              aria-label="Neu: Team-ID"
+              placeholder="TEAM_ID"
+              [(ngModel)]="newTeam.id"
+            />
+          </td>
+          <td>
+            <input
+              aria-label="Neu: Teamname"
+              placeholder="Bezeichnung"
+              [(ngModel)]="newTeam.name"
+            />
+          </td>
+          <td>
+            <input
+              type="checkbox"
+              aria-label="Neu: Aktiv Team"
+              [(ngModel)]="newTeam.active"
+            />
+          </td>
+          <td class="stamp"></td>
+          <td class="actions">
+            <button
+              type="button"
+              (click)="saveTeam(newTeam)"
+              data-testid="create-team"
+            >
+              Anlegen
+            </button>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<section class="panel">
+  <div class="section-title">
+    <h2>Teamzuordnung (ZXTS_MATEAM_T)</h2>
+  </div>
+  <p class="hint">
+    Mitarbeiter gehören je Zeitraum genau einem Team an. Gültig-von und
+    Gültig-bis sind Pflicht, Überschneidungen werden abgelehnt. Planung und
+    Kontingent-Monitor ermitteln das Team zeitraumbezogen.
+  </p>
+  <div class="table-wrap">
+    <table data-testid="team-assignment-table">
+      <thead>
+        <tr>
+          <th>ID</th>
+          <th>Mitarbeiter</th>
+          <th>Team</th>
+          <th>Gültig von</th>
+          <th>Gültig bis</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (item of teamAssignments(); track item.id) {
+          <tr [attr.data-testid]="'team-assignment-' + item.id">
+            <td>{{ item.id }}</td>
+            <td>{{ item.displayName }} ({{ item.extNr }})</td>
+            <td>
+              <select
+                [attr.aria-label]="'Team Zuordnung ' + item.id"
+                [(ngModel)]="item.teamId"
+              >
+                @for (team of activeTeams(); track team.id) {
+                  <option [value]="team.id">{{ team.name }}</option>
+                }
+              </select>
+            </td>
+            <td>
+              <input
+                type="date"
+                [attr.aria-label]="'Gültig von Zuordnung ' + item.id"
+                [(ngModel)]="item.validFrom"
+              />
+            </td>
+            <td>
+              <input
+                type="date"
+                [attr.aria-label]="'Gültig bis Zuordnung ' + item.id"
+                [(ngModel)]="item.validTo"
+              />
+            </td>
+            <td class="actions">
+              <button
+                type="button"
+                (click)="saveTeamAssignment(item)"
+                [attr.data-testid]="'save-team-assignment-' + item.id"
+              >
+                Speichern
+              </button>
+              <button
+                type="button"
+                class="secondary"
+                (click)="deleteTeamAssignment(item)"
+                [attr.data-testid]="'delete-team-assignment-' + item.id"
+              >
+                Löschen
+              </button>
+            </td>
+          </tr>
+        }
+        <tr class="new-row">
+          <td>neu</td>
+          <td>
+            <select
+              aria-label="Neu: Teamzuordnung Mitarbeiter"
+              [(ngModel)]="newTeamAssignment.extNr"
+            >
+              <option value="">– wählen –</option>
+              @for (employee of activeEmployees(); track employee.extNr) {
+                <option [value]="employee.extNr">
+                  {{ employee.displayName }}
+                </option>
+              }
+            </select>
+          </td>
+          <td>
+            <select
+              aria-label="Neu: Teamzuordnung Team"
+              [(ngModel)]="newTeamAssignment.teamId"
+            >
+              <option value="">– wählen –</option>
+              @for (team of activeTeams(); track team.id) {
+                <option [value]="team.id">{{ team.name }}</option>
+              }
+            </select>
+          </td>
+          <td>
+            <input
+              type="date"
+              aria-label="Neu: Teamzuordnung gültig von"
+              [(ngModel)]="newTeamAssignment.validFrom"
+            />
+          </td>
+          <td>
+            <input
+              type="date"
+              aria-label="Neu: Teamzuordnung gültig bis"
+              [(ngModel)]="newTeamAssignment.validTo"
+            />
+          </td>
+          <td class="actions">
+            <button
+              type="button"
+              (click)="saveTeamAssignment(newTeamAssignment)"
+              data-testid="create-team-assignment"
+            >
+              Anlegen
+            </button>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<section class="panel">
+  <div class="section-title">
+    <h2>Kontierungen (ZXTS_KONT_T)</h2>
+  </div>
+  <p class="hint">
+    Zulässige Kontierungsarten: KS, OR, PR, FB, KL. Die Gültigkeit kann gegen
+    SAP CO geprüft werden (Phase 1: Stub). Gelöschte Kontierungen werden in
+    Planung und Stundenschreibung nicht mehr angeboten.
+  </p>
+  <div class="table-wrap">
+    <table data-testid="cost-object-table">
+      <thead>
+        <tr>
+          <th>Kontierung</th>
+          <th>Art</th>
+          <th>Bezeichnung</th>
+          <th>Aktiv</th>
+          <th>Geändert</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (item of costObjects(); track item.coIdent) {
+          <tr
+            [attr.data-testid]="'cost-object-' + item.coIdent"
+            [class.deleted]="item.deleted"
+          >
+            <td>
+              <strong>{{ item.coIdent }}</strong>
+              @if (item.deleted) {
+                <span class="tag">gelöscht</span>
+              }
+            </td>
+            <td>
+              <select
+                [attr.aria-label]="'Kontierungsart ' + item.coIdent"
+                [(ngModel)]="item.type"
+                [disabled]="item.deleted"
+              >
+                @for (type of costObjectTypes; track type) {
+                  <option [value]="type">{{ type }}</option>
+                }
+              </select>
+            </td>
+            <td>
+              <input
+                [attr.aria-label]="'Bezeichnung ' + item.coIdent"
+                [(ngModel)]="item.description"
+                [disabled]="item.deleted"
+              />
+            </td>
+            <td>
+              <input
+                type="checkbox"
+                [attr.aria-label]="'Aktiv Kontierung ' + item.coIdent"
+                [(ngModel)]="item.active"
+                [disabled]="item.deleted"
+              />
+            </td>
+            <td class="stamp">{{ item.changedBy ?? "–" }}</td>
+            <td class="actions">
+              @if (!item.deleted) {
+                <button
+                  type="button"
+                  (click)="saveCostObject(item)"
+                  [attr.data-testid]="'save-cost-object-' + item.coIdent"
+                >
+                  Speichern
+                </button>
+                <button
+                  type="button"
+                  class="secondary"
+                  (click)="checkCostObject(item)"
+                  [attr.data-testid]="'check-cost-object-' + item.coIdent"
+                >
+                  SAP CO prüfen
+                </button>
+                <button
+                  type="button"
+                  class="secondary"
+                  (click)="deleteCostObject(item)"
+                  [attr.data-testid]="'delete-cost-object-' + item.coIdent"
+                >
+                  Löschen
+                </button>
+              }
+            </td>
+          </tr>
+        }
+        <tr class="new-row">
+          <td>
+            <input
+              aria-label="Neu: Kontierung"
+              placeholder="z. B. 600000000042"
+              [(ngModel)]="newCostObject.coIdent"
+            />
+          </td>
+          <td>
+            <select
+              aria-label="Neu: Kontierungsart"
+              [(ngModel)]="newCostObject.type"
+            >
+              @for (type of costObjectTypes; track type) {
+                <option [value]="type">{{ type }}</option>
+              }
+            </select>
+          </td>
+          <td>
+            <input
+              aria-label="Neu: Bezeichnung"
+              placeholder="Bezeichnung"
+              [(ngModel)]="newCostObject.description"
+            />
+          </td>
+          <td>
+            <input
+              type="checkbox"
+              aria-label="Neu: Aktiv Kontierung"
+              [(ngModel)]="newCostObject.active"
+            />
+          </td>
+          <td class="stamp"></td>
+          <td class="actions">
+            <button
+              type="button"
+              (click)="saveCostObject(newCostObject)"
+              data-testid="create-cost-object"
+            >
+              Anlegen
+            </button>
+            <button
+              type="button"
+              class="secondary"
+              (click)="checkCostObject(newCostObject)"
+              data-testid="check-new-cost-object"
+            >
+              SAP CO prüfen
+            </button>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<section class="panel">
+  <div class="section-title">
+    <h2>Mitarbeiter-Kontierungen (Planungsbasis)</h2>
+  </div>
+  <p class="hint">
+    Welche Kontierung ein Mitarbeiter in welchem Zeitraum planen darf. Die
+    Freischaltung für die Stundenschreibung entsteht daraus erst über die
+    Beauftragung (Epic 5).
+  </p>
+  <div class="table-wrap">
+    <table data-testid="assignment-table">
+      <thead>
+        <tr>
+          <th>ID</th>
+          <th>Mitarbeiter</th>
+          <th>Kontierung</th>
+          <th>Gültig von</th>
+          <th>Gültig bis</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (item of assignments(); track item.id) {
+          <tr [attr.data-testid]="'assignment-' + item.id">
+            <td>{{ item.id }}</td>
+            <td>{{ item.displayName }} ({{ item.extNr }})</td>
+            <td>
+              {{ item.coIdent }}
+              <span class="sub">{{ item.description }}</span>
+            </td>
+            <td>
+              <input
+                type="date"
+                [attr.aria-label]="'Gültig von Kontierung ' + item.id"
+                [(ngModel)]="item.validFrom"
+              />
+            </td>
+            <td>
+              <input
+                type="date"
+                [attr.aria-label]="'Gültig bis Kontierung ' + item.id"
+                [(ngModel)]="item.validTo"
+              />
+            </td>
+            <td class="actions">
+              <button
+                type="button"
+                (click)="saveAssignment(item)"
+                [attr.data-testid]="'save-assignment-' + item.id"
+              >
+                Speichern
+              </button>
+              <button
+                type="button"
+                class="secondary"
+                (click)="deleteAssignment(item)"
+                [attr.data-testid]="'delete-assignment-' + item.id"
+              >
+                Löschen
+              </button>
+            </td>
+          </tr>
+        }
+        <tr class="new-row">
+          <td>neu</td>
+          <td>
+            <select
+              aria-label="Neu: Zuordnung Mitarbeiter"
+              [(ngModel)]="newAssignment.extNr"
+            >
+              <option value="">– wählen –</option>
+              @for (employee of activeEmployees(); track employee.extNr) {
+                <option [value]="employee.extNr">
+                  {{ employee.displayName }}
+                </option>
+              }
+            </select>
+          </td>
+          <td>
+            <select
+              aria-label="Neu: Zuordnung Kontierung"
+              [(ngModel)]="newAssignment.coIdent"
+            >
+              <option value="">– wählen –</option>
+              @for (item of availableCostObjects(); track item.coIdent) {
+                <option [value]="item.coIdent">
+                  {{ item.coIdent }} – {{ item.description }}
+                </option>
+              }
+            </select>
+          </td>
+          <td>
+            <input
+              type="date"
+              aria-label="Neu: Zuordnung gültig von"
+              [(ngModel)]="newAssignment.validFrom"
+            />
+          </td>
+          <td>
+            <input
+              type="date"
+              aria-label="Neu: Zuordnung gültig bis"
+              [(ngModel)]="newAssignment.validTo"
+            />
+          </td>
+          <td class="actions">
+            <button
+              type="button"
+              (click)="saveAssignment(newAssignment)"
+              data-testid="create-assignment"
+            >
+              Anlegen
+            </button>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</section>
 
 <section class="panel">
   <div class="section-title">

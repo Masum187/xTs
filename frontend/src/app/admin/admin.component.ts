@@ -1,8 +1,21 @@
 import { Component, inject, signal } from "@angular/core";
 import { FormsModule } from "@angular/forms";
 
-import type { Rule } from "./admin.models";
-import { AdminService } from "./admin.service";
+import type {
+  CostObject,
+  CostObjectAssignment,
+  CostObjectAssignmentDraft,
+  CostObjectDraft,
+  Employee,
+  EmployeeDraft,
+  Rule,
+  Team,
+  TeamAssignment,
+  TeamAssignmentDraft,
+  TeamDraft,
+} from "./admin.models";
+import { COST_OBJECT_TYPES } from "./admin.models";
+import { AdminApiError, AdminService } from "./admin.service";
 
 const INFOTYPE_LABELS: Record<number, string> = {
   1: "Aggregation Beauftragung",
@@ -17,6 +30,50 @@ const VALUE_OPTIONS: Record<number, { value: string; label: string }[]> = {
   ],
 };
 
+const ERROR_TEXTS: Record<string, string> = {
+  INVALID_EMPLOYEE: "Mitarbeiter unvollständig, Pflichtfelder",
+  UNKNOWN_RESOURCE_MANAGER: "Ressourcenmanager ist kein bekannter Mitarbeiter",
+  INVALID_TEAM: "Team unvollständig, Pflichtfelder",
+  INVALID_TEAM_ASSIGNMENT: "Teamzuordnung unvollständig, Pflichtfelder",
+  TEAM_ASSIGNMENT_OVERLAP: "Teamzuordnung überschneidet sich mit Zuordnung",
+  TEAM_NOT_AVAILABLE: "Team ist inaktiv oder gelöscht",
+  UNKNOWN_EMPLOYEE: "Mitarbeiter ist nicht bekannt",
+  INVALID_COST_OBJECT: "Kontierung unvollständig, Pflichtfelder",
+  INVALID_COST_OBJECT_TYPE: "Kontierungsart unzulässig, erlaubt",
+  COST_OBJECT_NOT_AVAILABLE: "Kontierung ist gelöscht oder unbekannt",
+  INVALID_ASSIGNMENT: "Zuordnung unvollständig, Pflichtfelder",
+  ASSIGNMENT_OVERLAP: "Zuordnung überschneidet sich mit Zuordnung",
+  NOT_AUTHORIZED: "Keine Berechtigung",
+};
+
+function emptyEmployee(): EmployeeDraft {
+  return {
+    extNr: "",
+    firstName: "",
+    lastName: "",
+    company: "QualityTimes",
+    sapAccount: "",
+    active: true,
+    resourceManager: "",
+  };
+}
+
+function emptyTeam(): TeamDraft {
+  return { id: "", name: "", active: true };
+}
+
+function emptyTeamAssignment(): TeamAssignmentDraft {
+  return { extNr: "", teamId: "", validFrom: "", validTo: "" };
+}
+
+function emptyCostObject(): CostObjectDraft {
+  return { coIdent: "", type: "KS", description: "", active: true };
+}
+
+function emptyCostObjectAssignment(): CostObjectAssignmentDraft {
+  return { extNr: "", coIdent: "", validFrom: "", validTo: "" };
+}
+
 @Component({
   selector: "xts-admin",
   standalone: true,
@@ -27,11 +84,26 @@ const VALUE_OPTIONS: Record<number, { value: string; label: string }[]> = {
 export class AdminComponent {
   private readonly adminService = inject(AdminService);
 
+  protected readonly costObjectTypes = COST_OBJECT_TYPES;
+
+  protected readonly employees = signal<Employee[]>([]);
+  protected readonly teams = signal<Team[]>([]);
+  protected readonly teamAssignments = signal<TeamAssignment[]>([]);
+  protected readonly costObjects = signal<CostObject[]>([]);
+  protected readonly assignments = signal<CostObjectAssignment[]>([]);
   protected readonly rules = signal<Rule[]>([]);
+
+  protected newEmployee = emptyEmployee();
+  protected newTeam = emptyTeam();
+  protected newTeamAssignment = emptyTeamAssignment();
+  protected newCostObject = emptyCostObject();
+  protected newAssignment = emptyCostObjectAssignment();
+
   protected readonly message = signal<string>("");
+  protected readonly messageKind = signal<"ok" | "error">("ok");
 
   constructor() {
-    void this.load();
+    void this.loadAll();
   }
 
   protected infotypeLabel(rule: Rule): string {
@@ -40,6 +112,18 @@ export class AdminComponent {
 
   protected valueOptions(rule: Rule): { value: string; label: string }[] {
     return VALUE_OPTIONS[rule.infotype];
+  }
+
+  protected activeEmployees(): Employee[] {
+    return this.employees().filter((employee) => !employee.deleted);
+  }
+
+  protected activeTeams(): Team[] {
+    return this.teams().filter((team) => team.active && !team.deleted);
+  }
+
+  protected availableCostObjects(): CostObject[] {
+    return this.costObjects().filter((item) => !item.deleted);
   }
 
   protected updateRule(rule: Rule, patch: Partial<Rule>): void {
@@ -53,16 +137,186 @@ export class AdminComponent {
   }
 
   protected async saveRule(rule: Rule): Promise<void> {
-    const saved = await this.adminService.saveRule(rule);
-    this.message.set(
-      `Regel „${this.infotypeLabel(saved)}" gespeichert (${saved.value}, ${
+    await this.run(async () => {
+      const saved = await this.adminService.saveRule(rule);
+      this.rules.set(await this.adminService.getRules());
+      return `Regel „${this.infotypeLabel(saved)}" gespeichert (${saved.value}, ${
         saved.active ? "aktiv" : "inaktiv"
-      }). Die Freischaltungen werden sofort neu abgeleitet.`,
-    );
-    await this.load();
+      }). Die Freischaltungen werden sofort neu abgeleitet.`;
+    });
   }
 
-  private async load(): Promise<void> {
-    this.rules.set(await this.adminService.getRules());
+  protected async saveEmployee(employee: EmployeeDraft): Promise<void> {
+    await this.run(async () => {
+      const saved = await this.adminService.saveEmployee(employee);
+      await this.loadEmployees();
+      if (employee === this.newEmployee) this.newEmployee = emptyEmployee();
+      return `Mitarbeiter ${saved.extNr} (${saved.displayName}) gespeichert.`;
+    });
+  }
+
+  protected async deleteEmployee(employee: Employee): Promise<void> {
+    await this.run(async () => {
+      await this.adminService.saveEmployee({ ...employee, deleted: true });
+      await this.loadEmployees();
+      return `Mitarbeiter ${employee.extNr} logisch gelöscht.`;
+    });
+  }
+
+  protected async saveTeam(team: TeamDraft): Promise<void> {
+    await this.run(async () => {
+      const saved = await this.adminService.saveTeam(team);
+      await this.loadTeams();
+      if (team === this.newTeam) this.newTeam = emptyTeam();
+      return `Team ${saved.id} gespeichert (${saved.active ? "aktiv" : "inaktiv"}).`;
+    });
+  }
+
+  protected async deleteTeam(team: Team): Promise<void> {
+    await this.run(async () => {
+      await this.adminService.saveTeam({ ...team, deleted: true });
+      await this.loadTeams();
+      return `Team ${team.id} logisch gelöscht.`;
+    });
+  }
+
+  protected async saveTeamAssignment(
+    assignment: TeamAssignmentDraft,
+  ): Promise<void> {
+    await this.run(async () => {
+      const saved = await this.adminService.saveTeamAssignment(assignment);
+      await this.loadTeamAssignments();
+      if (assignment === this.newTeamAssignment) {
+        this.newTeamAssignment = emptyTeamAssignment();
+      }
+      return `Teamzuordnung ${saved.id} gespeichert (${saved.extNr} → ${saved.teamId}, ${saved.validFrom} – ${saved.validTo}).`;
+    });
+  }
+
+  protected async deleteTeamAssignment(
+    assignment: TeamAssignment,
+  ): Promise<void> {
+    await this.run(async () => {
+      await this.adminService.saveTeamAssignment({
+        ...assignment,
+        deleted: true,
+      });
+      await this.loadTeamAssignments();
+      return `Teamzuordnung ${assignment.id} logisch gelöscht.`;
+    });
+  }
+
+  protected async saveCostObject(costObject: CostObjectDraft): Promise<void> {
+    await this.run(async () => {
+      const saved = await this.adminService.saveCostObject(costObject);
+      await this.loadCostObjects();
+      if (costObject === this.newCostObject) {
+        this.newCostObject = emptyCostObject();
+      }
+      return `Kontierung ${saved.coIdent} (${saved.type}) gespeichert.`;
+    });
+  }
+
+  protected async deleteCostObject(costObject: CostObject): Promise<void> {
+    await this.run(async () => {
+      await this.adminService.saveCostObject({ ...costObject, deleted: true });
+      await this.loadCostObjects();
+      await this.loadAssignments();
+      return `Kontierung ${costObject.coIdent} logisch gelöscht. Sie wird in Planung und Stundenschreibung nicht mehr angeboten.`;
+    });
+  }
+
+  protected async checkCostObject(costObject: CostObjectDraft): Promise<void> {
+    await this.run(async () => {
+      const result = await this.adminService.checkCostObject(costObject);
+      if (!result.valid) {
+        throw new AdminApiError(200, "CO_CHECK_FAILED", [result.message]);
+      }
+      return `SAP-CO-Prüfung (${result.source}): ${result.message}`;
+    });
+  }
+
+  protected async saveAssignment(
+    assignment: CostObjectAssignmentDraft,
+  ): Promise<void> {
+    await this.run(async () => {
+      const saved =
+        await this.adminService.saveCostObjectAssignment(assignment);
+      await this.loadAssignments();
+      if (assignment === this.newAssignment) {
+        this.newAssignment = emptyCostObjectAssignment();
+      }
+      return `Zuordnung ${saved.id} gespeichert (${saved.description}, ${saved.validFrom} – ${saved.validTo}).`;
+    });
+  }
+
+  protected async deleteAssignment(
+    assignment: CostObjectAssignment,
+  ): Promise<void> {
+    await this.run(async () => {
+      await this.adminService.saveCostObjectAssignment({
+        ...assignment,
+        deleted: true,
+      });
+      await this.loadAssignments();
+      return `Zuordnung ${assignment.id} logisch gelöscht.`;
+    });
+  }
+
+  private async run(action: () => Promise<string>): Promise<void> {
+    try {
+      this.message.set(await action());
+      this.messageKind.set("ok");
+    } catch (error) {
+      this.messageKind.set("error");
+      this.message.set(this.describeError(error));
+    }
+  }
+
+  private describeError(error: unknown): string {
+    if (error instanceof AdminApiError) {
+      if (error.code === "CO_CHECK_FAILED") {
+        return `SAP-CO-Prüfung nicht bestanden: ${error.fields[0] ?? ""}`;
+      }
+      const text = ERROR_TEXTS[error.code] ?? `Fehler ${error.code}`;
+      const details = error.conflictId
+        ? ` ${error.conflictId}`
+        : error.fields.length > 0
+          ? `: ${error.fields.join(", ")}`
+          : "";
+      return `${text}${details}.`;
+    }
+    return "Speichern fehlgeschlagen.";
+  }
+
+  private async loadAll(): Promise<void> {
+    await Promise.all([
+      this.loadEmployees(),
+      this.loadTeams(),
+      this.loadTeamAssignments(),
+      this.loadCostObjects(),
+      this.loadAssignments(),
+      this.adminService.getRules().then((rules) => this.rules.set(rules)),
+    ]);
+  }
+
+  private async loadEmployees(): Promise<void> {
+    this.employees.set(await this.adminService.getEmployees());
+  }
+
+  private async loadTeams(): Promise<void> {
+    this.teams.set(await this.adminService.getTeams());
+  }
+
+  private async loadTeamAssignments(): Promise<void> {
+    this.teamAssignments.set(await this.adminService.getTeamAssignments());
+  }
+
+  private async loadCostObjects(): Promise<void> {
+    this.costObjects.set(await this.adminService.getCostObjects());
+  }
+
+  private async loadAssignments(): Promise<void> {
+    this.assignments.set(await this.adminService.getCostObjectAssignments());
   }
 }

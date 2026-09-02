@@ -1,14 +1,27 @@
 import { buildEnablements, validateTimesheetEnablement } from "./enablement.js";
 import {
-  costObjects,
-  employees,
   oauthMappings,
   planningEntries,
   rules,
   seedOrders,
-  teams,
   timesheets,
 } from "./fixtures.js";
+import {
+  checkCostObject,
+  displayNameFor,
+  listAssignments,
+  listCostObjects,
+  listEmployees,
+  listTeamAssignments,
+  listTeams,
+  resetMasterData,
+  store as masterData,
+  upsertAssignment,
+  upsertCostObject,
+  upsertEmployee,
+  upsertTeam,
+  upsertTeamAssignment,
+} from "./masterdata.js";
 import {
   buildOrderCandidates,
   createBanf,
@@ -52,12 +65,7 @@ export function resetTimesheetStore() {
   };
   rulesStore = structuredClone(rules);
   weDocumentCounter = 0;
-}
-
-function displayNameFor(extNr) {
-  return (
-    employees.find((employee) => employee.extNr === extNr)?.displayName ?? extNr
-  );
+  resetMasterData();
 }
 
 function resolvePersona(request) {
@@ -66,11 +74,13 @@ function resolvePersona(request) {
   if (!mapping?.extNr) {
     return { error: json({ error: "NO_EXTNR_MAPPING", upn }, 404) };
   }
-  const employee = employees.find((entry) => entry.extNr === mapping.extNr);
+  const employee = masterData.employees.find(
+    (entry) => entry.extNr === mapping.extNr,
+  );
   if (!employee) {
     return { error: json({ error: "NO_EXTNR_MAPPING", upn }, 404) };
   }
-  if (!employee.active) {
+  if (!employee.active || employee.deleted) {
     return {
       error: json({ error: "EMPLOYEE_INACTIVE", extNr: employee.extNr }, 403),
     };
@@ -98,15 +108,65 @@ export async function routeRequest(request) {
   }
 
   if (request.method === "GET" && path === "/odata/Employees") {
-    return json({ value: employees });
+    const includeDeleted = url.searchParams.get("includeDeleted") === "true";
+    return json({ value: listEmployees({ includeDeleted }) });
   }
 
   if (request.method === "GET" && path === "/odata/Teams") {
-    return json({ value: teams });
+    const includeInactive = url.searchParams.get("includeInactive") === "true";
+    return json({ value: listTeams({ includeInactive }) });
   }
 
   if (request.method === "GET" && path === "/odata/CostObjects") {
-    return json({ value: costObjects });
+    const includeDeleted = url.searchParams.get("includeDeleted") === "true";
+    return json({ value: listCostObjects({ includeDeleted }) });
+  }
+
+  if (request.method === "GET" && path === "/odata/TeamAssignments") {
+    return json({
+      value: listTeamAssignments().map((item) => ({
+        ...item,
+        displayName: displayNameFor(item.extNr),
+      })),
+    });
+  }
+
+  if (request.method === "GET" && path === "/odata/CostObjectAssignments") {
+    return json({
+      value: listAssignments().map((item) => ({
+        ...item,
+        displayName: displayNameFor(item.extNr),
+      })),
+    });
+  }
+
+  if (request.method === "POST" && path === "/odata/CostObjectChecks") {
+    const persona = resolvePersona(request);
+    if (persona.error) return persona.error;
+    const roleError = requireRole(persona, "admin");
+    if (roleError) return roleError;
+    return json(checkCostObject(await readJsonBody(request)));
+  }
+
+  const masterDataWrites = {
+    "/odata/Employees": [upsertEmployee, "employee"],
+    "/odata/Teams": [upsertTeam, "team"],
+    "/odata/TeamAssignments": [upsertTeamAssignment, "assignment"],
+    "/odata/CostObjects": [upsertCostObject, "costObject"],
+    "/odata/CostObjectAssignments": [upsertAssignment, "assignment"],
+  };
+  if (request.method === "POST" && masterDataWrites[path]) {
+    const persona = resolvePersona(request);
+    if (persona.error) return persona.error;
+    const roleError = requireRole(persona, "admin");
+    if (roleError) return roleError;
+    const [upsert, key] = masterDataWrites[path];
+    const result = upsert(await readJsonBody(request), persona.employee.extNr);
+    if (result.error) {
+      const { status, ...details } = result.error;
+      return json({ error: details.code, ...details }, status);
+    }
+    return json(result[key]);
   }
 
   if (request.method === "GET" && path === "/odata/MyProfile") {

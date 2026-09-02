@@ -7,7 +7,8 @@ export const employees = [
     company: "QualityTimes",
     sapAccount: "SSCHILZ",
     active: true,
-    teamId: "TRANSFORMATION_MC",
+    deleted: false,
+    resourceManager: "ROEPER",
     roles: ["user"],
   },
   {
@@ -18,7 +19,8 @@ export const employees = [
     company: "QualityTimes",
     sapAccount: "CROEPER",
     active: true,
-    teamId: "ENTW_SUPPORT",
+    deleted: false,
+    resourceManager: null,
     roles: ["user", "approver", "planner", "admin"],
   },
   {
@@ -29,7 +31,8 @@ export const employees = [
     company: "QualityTimes",
     sapAccount: null,
     active: false,
-    teamId: "ENTW_SUPPORT",
+    deleted: false,
+    resourceManager: "ROEPER",
     roles: ["user"],
   },
 ];
@@ -44,19 +47,52 @@ export const oauthMappings = [
   { upn: "neu.extern@qualitytimes.de", extNr: null },
 ];
 
+// Teams analog ZXTS_TEAM_T (XTS-011).
 export const teams = [
   {
     id: "TRANSFORMATION_MC",
     name: "Transformation MC",
     active: true,
+    deleted: false,
   },
   {
     id: "ENTW_SUPPORT",
     name: "Entw.-Support",
     active: true,
+    deleted: false,
   },
 ];
 
+// Zeitliche Teamzuordnung analog ZXTS_MATEAM_T (XTS-012): ein Mitarbeiter
+// gehoert je Zeitraum genau einem Team an; Ueberlappungen sind unzulaessig.
+export const teamAssignments = [
+  {
+    id: "MT-000001",
+    extNr: "SCHILZ",
+    teamId: "TRANSFORMATION_MC",
+    validFrom: "2026-01-01",
+    validTo: "2026-12-31",
+    deleted: false,
+  },
+  {
+    id: "MT-000002",
+    extNr: "ROEPER",
+    teamId: "ENTW_SUPPORT",
+    validFrom: "2026-01-01",
+    validTo: "2027-12-31",
+    deleted: false,
+  },
+  {
+    id: "MT-000003",
+    extNr: "ALTMANN",
+    teamId: "ENTW_SUPPORT",
+    validFrom: "2025-01-01",
+    validTo: "2025-12-31",
+    deleted: false,
+  },
+];
+
+// Kontierungen analog ZXTS_KONT_T (XTS-013).
 export const costObjects = [
   {
     id: "000001",
@@ -64,6 +100,7 @@ export const costObjects = [
     type: "OR",
     description: "SAP-Implementierung, Stephan Schilz",
     active: true,
+    deleted: false,
   },
   {
     id: "000002",
@@ -71,6 +108,7 @@ export const costObjects = [
     type: "KS",
     description: "SAP-Support, Stephan Schilz",
     active: true,
+    deleted: false,
   },
   {
     id: "000003",
@@ -78,8 +116,20 @@ export const costObjects = [
     type: "KS",
     description: "Altprojekt Migration, Stephan Schilz",
     active: true,
+    deleted: false,
   },
 ];
+
+// Stub fuer die Gueltigkeitspruefung gegen SAP CO (XTS-013, Phase 1):
+// bekannte Kontierungen mit ihrer CO-Objektart. Alles andere gilt als
+// "in SAP CO nicht gefunden".
+export const sapCostObjectStub = {
+  700000000004: "OR",
+  600000000001: "KS",
+  600000000009: "KS",
+  600000000042: "KS",
+  700000000010: "PR",
+};
 
 // Ampelgrenzen fuer den Budget-Monitor (XTS-071): simuliertes Customizing,
 // spaeter aus ZXTS_REGELN_T.

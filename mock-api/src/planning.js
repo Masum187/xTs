@@ -1,4 +1,9 @@
-import { assignments, employees, workCalendar } from "./fixtures.js";
+import { workCalendar } from "./fixtures.js";
+import {
+  availableAssignments,
+  findEmployee,
+  teamIdsFor,
+} from "./masterdata.js";
 
 const LOCKED_STATUSES = ["F", "P", "B"];
 
@@ -31,16 +36,22 @@ function isMonthInRange(month, validFrom, validTo) {
   return month >= validFrom.slice(0, 7) && month <= validTo.slice(0, 7);
 }
 
+function lastDayOfMonth(month) {
+  const [year, monthPart] = month.split("-").map(Number);
+  const day = new Date(Date.UTC(year, monthPart, 0)).getUTCDate();
+  return `${month}-${String(day).padStart(2, "0")}`;
+}
+
 /**
- * Gueltige Planungszeilen sind aktive Mitarbeiter mit Kontierungsfreischaltung
- * (XTS-020: "gueltig und nicht geloescht").
+ * Gueltige Planungszeilen sind aktive, nicht geloeschte Mitarbeiter mit
+ * Mitarbeiter-Kontierungs-Zuordnung auf eine nicht geloeschte Kontierung
+ * (XTS-020: "gueltig und nicht geloescht"). Die Teamzugehoerigkeit wird
+ * zeitlich aus ZXTS_MATEAM_T fuer den betrachteten Zeitraum ermittelt.
  */
 export function planningCombinations(months = null) {
-  return assignments
+  return availableAssignments()
     .map((item) => {
-      const employee = employees.find(
-        (candidate) => candidate.extNr === item.extNr,
-      );
+      const employee = findEmployee(item.extNr);
       if (!employee?.active) return null;
       if (
         months &&
@@ -50,10 +61,16 @@ export function planningCombinations(months = null) {
       ) {
         return null;
       }
+      const periodFrom = months ? `${months[0]}-01` : item.validFrom;
+      const periodTo = months
+        ? lastDayOfMonth(months[months.length - 1])
+        : item.validTo;
+      const teamIds = teamIdsFor(employee.extNr, periodFrom, periodTo);
       return {
         extNr: employee.extNr,
         displayName: employee.displayName,
-        teamId: employee.teamId,
+        teamId: teamIds[0] ?? null,
+        teamIds,
         coIdent: item.coIdent,
         description: item.description,
         validFrom: item.validFrom,
@@ -70,7 +87,7 @@ export function buildPlanningOverview(entries, filters) {
 
   const rows = planningCombinations(months)
     .filter((combo) => !extNr || combo.extNr === extNr)
-    .filter((combo) => !team || combo.teamId === team)
+    .filter((combo) => !team || combo.teamIds.includes(team))
     .filter((combo) => !coIdent || combo.coIdent === coIdent);
 
   // Ueberplanung (XTS-022): Summe aller Planstunden eines Mitarbeiters im
