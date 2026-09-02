@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  authIdentifier,
+  claimsFromErrorPayload,
   entraConfigured,
   hasRole,
   resolveAuthority,
@@ -38,6 +40,43 @@ describe("auth logic", () => {
     expect(resolveAuthority(config)).toBe(
       "https://login.microsoftonline.com/11111111-2222-3333-4444-555555555555",
     );
+  });
+
+  it("extracts Entra claims from error payloads for the not-mapped panel", () => {
+    expect(
+      claimsFromErrorPayload({
+        oid: " 00000000-0000-4000-8000-000000000099 ",
+        upn: " neu.extern@qualitytimes.de ",
+      }),
+    ).toEqual({
+      oid: "00000000-0000-4000-8000-000000000099",
+      upn: "neu.extern@qualitytimes.de",
+    });
+    expect(claimsFromErrorPayload({ oid: 123, upn: null })).toEqual({
+      oid: "",
+      upn: "",
+    });
+  });
+
+  it("shows the real Entra identifier instead of the mock persona", () => {
+    expect(
+      authIdentifier(true, "stephan.schilz@qualitytimes.de", "Konto", {
+        oid: "",
+        upn: "neu.extern@qualitytimes.de",
+      }),
+    ).toBe("neu.extern@qualitytimes.de");
+    expect(
+      authIdentifier(true, "stephan.schilz@qualitytimes.de", "Konto", {
+        oid: "",
+        upn: "",
+      }),
+    ).toBe("Konto");
+    expect(
+      authIdentifier(false, "stephan.schilz@qualitytimes.de", "Konto", {
+        oid: "",
+        upn: "neu.extern@qualitytimes.de",
+      }),
+    ).toBe("stephan.schilz@qualitytimes.de");
   });
 
   it("checks roles against the profile", () => {

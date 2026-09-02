@@ -1,7 +1,13 @@
 import { Injectable, signal } from "@angular/core";
 
 import { environment } from "../../environments/environment";
-import { entraConfigured, hasRole, stateFromStatus } from "./auth.logic";
+import {
+  authIdentifier,
+  claimsFromErrorPayload,
+  entraConfigured,
+  hasRole,
+  stateFromStatus,
+} from "./auth.logic";
 import type {
   AuthClaims,
   AuthProfile,
@@ -31,6 +37,7 @@ export class AuthService {
 
   /** Token der echten Anmeldung (Modus "entra"); im Modus "mock" ungenutzt. */
   readonly accessToken = signal<string | null>(null);
+  private readonly entraClaims = signal<AuthClaims>({ oid: "", upn: "" });
 
   /**
    * Auth-Header fuer alle OData-Aufrufe (XTS-050). Modus "mock": die
@@ -48,10 +55,20 @@ export class AuthService {
   }
 
   claims(): AuthClaims {
+    if (this.usesEntra) return this.entraClaims();
     const persona = MOCK_PERSONAS.find(
       (item) => item.upn === this.personaUpn(),
     );
     return { oid: persona?.oid ?? "", upn: this.personaUpn() };
+  }
+
+  loginIdentifier(): string {
+    return authIdentifier(
+      this.usesEntra,
+      this.personaUpn(),
+      this.accountName(),
+      this.claims(),
+    );
   }
 
   hasRole(role: AuthRole): boolean {
@@ -110,6 +127,7 @@ export class AuthService {
         return "signed-out";
       }
       this.accountName.set(account.name ?? account.username);
+      this.entraClaims.set({ oid: "", upn: account.username ?? "" });
       const token = await this.entraAuth().acquireToken();
       if (!token) {
         // Interaktive Anmeldung laeuft per Redirect.
@@ -131,8 +149,11 @@ export class AuthService {
         headers: this.authHeaders(),
       });
       const state = stateFromStatus(response.status);
+      const body = await response.json();
       if (state === "ready") {
-        this.profile.set((await response.json()) as AuthProfile);
+        this.profile.set(body as AuthProfile);
+      } else if (this.usesEntra) {
+        this.entraClaims.set(claimsFromErrorPayload(body));
       }
       this.state.set(state);
       return state;

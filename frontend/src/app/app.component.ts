@@ -84,7 +84,7 @@ import { AuthService } from "./auth/auth.service";
         }
         @case ("not-mapped") {
           <section class="auth-panel auth-error" data-testid="auth-not-mapped">
-            <h2>Kein xTS-Zugang für {{ auth.personaUpn() }}</h2>
+            <h2>Kein xTS-Zugang für {{ auth.loginIdentifier() }}</h2>
             <p>
               Ihr Benutzerkonto ist angemeldet, aber noch keinem xTS-Mitarbeiter
               (EXTNR) zugeordnet. Bitte wenden Sie sich an die

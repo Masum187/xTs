@@ -1,4 +1,9 @@
-import type { AuthProfile, AuthRole, AuthState } from "./auth.models";
+import type {
+  AuthClaims,
+  AuthProfile,
+  AuthRole,
+  AuthState,
+} from "./auth.models";
 
 export function stateFromStatus(status: number): AuthState {
   if (status === 200) return "ready";
@@ -22,6 +27,27 @@ export function entraConfigured(config: EntraConfig): boolean {
 
 export function resolveAuthority(config: EntraConfig): string {
   return config.authority.replace("<tenantId>", config.tenantId.trim());
+}
+
+function nonEmptyString(value: unknown): string {
+  return typeof value === "string" ? value.trim() : "";
+}
+
+export function claimsFromErrorPayload(payload: unknown): AuthClaims {
+  if (!payload || typeof payload !== "object") return { oid: "", upn: "" };
+  const body = payload as { oid?: unknown; upn?: unknown };
+  return { oid: nonEmptyString(body.oid), upn: nonEmptyString(body.upn) };
+}
+
+export function authIdentifier(
+  usesEntra: boolean,
+  personaUpn: string,
+  accountName: string | null,
+  claims: AuthClaims,
+): string {
+  return usesEntra
+    ? claims.upn || accountName || "Microsoft-Konto"
+    : personaUpn;
 }
 
 export function hasRole(profile: AuthProfile | null, role: AuthRole): boolean {

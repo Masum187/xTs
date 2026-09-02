@@ -96,19 +96,38 @@ function decodeJwtClaims(token) {
   }
 }
 
+function firstHeaderValue(value) {
+  return Array.isArray(value) ? value[0] : value;
+}
+
+function stringClaim(value) {
+  return typeof value === "string" && value.trim() ? value.trim() : null;
+}
+
 function claimsFromRequest(request) {
-  const authorization = request.headers?.authorization ?? "";
+  const authorization =
+    stringClaim(firstHeaderValue(request.headers?.authorization)) ?? "";
   if (/^Bearer\s+/i.test(authorization)) {
     const claims = decodeJwtClaims(authorization.replace(/^Bearer\s+/i, ""));
     if (!claims) return { error: "INVALID_TOKEN" };
+    const oid = stringClaim(claims.oid);
+    const upn =
+      stringClaim(claims.preferred_username) ??
+      stringClaim(claims.upn) ??
+      stringClaim(claims.email);
+    if (!oid && !upn) return { error: "INVALID_TOKEN" };
     return {
-      oid: claims.oid ?? null,
-      upn: claims.preferred_username ?? claims.upn ?? claims.email ?? null,
+      oid,
+      upn,
       source: "bearer",
     };
   }
-  const oid = request.headers?.[OAUTH_OID_HEADER] ?? null;
-  const upn = request.headers?.[OAUTH_UPN_HEADER] ?? (oid ? null : DEFAULT_UPN);
+  const oid = stringClaim(
+    firstHeaderValue(request.headers?.[OAUTH_OID_HEADER]),
+  );
+  const upn =
+    stringClaim(firstHeaderValue(request.headers?.[OAUTH_UPN_HEADER])) ??
+    (oid ? null : DEFAULT_UPN);
   return { oid, upn, source: "header" };
 }
 

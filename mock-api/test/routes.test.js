@@ -2216,6 +2216,17 @@ test("bearer tokens are mapped via their oid or preferred_username claims", asyn
   assert.equal(JSON.parse(garbage.body).error, "INVALID_TOKEN");
   assert.match(JSON.parse(garbage.body).message, /erneut an/);
 
+  const malformedClaims = await routeRequest(
+    request("GET", "/odata/MyProfile", undefined, {
+      authorization: `Bearer ${unsignedJwt({
+        oid: 123,
+        preferred_username: { value: "stephan.schilz@qualitytimes.de" },
+      })}`,
+    }),
+  );
+  assert.equal(malformedClaims.status, 401);
+  assert.equal(JSON.parse(malformedClaims.body).error, "INVALID_TOKEN");
+
   // Bearer hat Vorrang vor den Pseudo-Headern.
   const precedence = await routeRequest(
     request("GET", "/odata/MyProfile", undefined, {

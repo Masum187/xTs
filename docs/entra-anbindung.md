@@ -54,7 +54,7 @@ Start: `npm run start:entra` (entspricht `ng serve --configuration entra`, Angul
 
 ## 5. Serverseite
 
-- **Mock-API** (`mock-api/src/routes.js`): liest bei `Authorization: Bearer` den JWT-Payload und mappt `oid` bzw. `preferred_username`/`upn`/`email`. **Keine Signatur-, Aussteller- oder Ablaufpruefung** – der Mock ist kein Sicherheitsbaustein. Bearer hat Vorrang vor den Pseudo-Headern. Nicht lesbare Tokens: `401 INVALID_TOKEN`.
+- **Mock-API** (`mock-api/src/routes.js`): liest bei `Authorization: Bearer` den JWT-Payload und mappt `oid` bzw. `preferred_username`/`upn`/`email`. **Keine Signatur-, Aussteller- oder Ablaufpruefung** – der Mock ist kein Sicherheitsbaustein. Bearer hat Vorrang vor den Pseudo-Headern. Nicht lesbare Tokens oder Tokens ohne verwertbare Text-Claims: `401 INVALID_TOKEN`.
 - **SAP-OData-Service** (offen, Epic 14/XTS-080): Token gegen die Entra-Metadaten validieren (`iss`, `aud` = Client-/API-ID, `exp`, Signatur ueber JWKS), `oid` gegen `ZXTS_WIW_T-AAD_OID` und Fallback `preferred_username` gegen `AAD_UPN` mappen, Rollen aus xTS-Stammdaten (spaeter AD-Gruppen).
 - **DDIC**: `ZXTS_WIW_T` um `AAD_OID` (CHAR36) und `AAD_UPN` (CHAR241) erweitern; Pflege in der xTS-Verwaltung ist im WebClient bereits vorhanden.
 
