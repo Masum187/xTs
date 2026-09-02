@@ -1740,3 +1740,63 @@ test("master data writes require the admin role", async () => {
     assert.equal(JSON.parse(response.body).error, "NOT_AUTHORIZED");
   }
 });
+
+test("test data reset restores the documented UAT package", async () => {
+  await routeRequest(
+    approverRequest("POST", "/odata/Teams", {
+      id: "QA",
+      name: "QA",
+      active: true,
+    }),
+  );
+  await routeRequest(
+    approverRequest("POST", "/odata/TimesheetApprovals", {
+      extNr: "SCHILZ",
+      date: "2026-04-08",
+      action: "approve",
+    }),
+  );
+  await routeRequest(
+    approverRequest("POST", "/odata/PlanningReleases", {
+      extNr: "SCHILZ",
+      coIdent: "700000000004",
+      month: "2026-04",
+    }),
+  );
+
+  const denied = await routeRequest(request("POST", "/odata/TestDataResets"));
+  assert.equal(denied.status, 403);
+
+  const reset = await routeRequest(
+    approverRequest("POST", "/odata/TestDataResets"),
+  );
+  const body = JSON.parse(reset.body);
+  assert.equal(reset.status, 200);
+  assert.equal(body.package, "uat-v0.1");
+  assert.equal(body.resetBy, "ROEPER");
+  assert.deepEqual(body.counts, {
+    employees: 3,
+    teams: 2,
+    costObjects: 3,
+    assignments: 4,
+    planningEntries: 4,
+    orders: 4,
+    timesheetDays: 6,
+  });
+
+  const teams = await routeRequest(request("GET", "/odata/Teams"));
+  assert.equal(JSON.parse(teams.body).value.length, 2);
+  const approvals = await routeRequest(
+    approverRequest("GET", "/odata/ApprovalTimesheets"),
+  );
+  assert.equal(JSON.parse(approvals.body).value.length, 3);
+  const planning = await routeRequest(
+    approverRequest("GET", "/odata/PlanningOverview?start=2026-03"),
+  );
+  const cell = JSON.parse(planning.body)
+    .rows.find(
+      (row) => row.extNr === "SCHILZ" && row.coIdent === "700000000004",
+    )
+    .cells.find((item) => item.month === "2026-04");
+  assert.equal(cell.status, "V");
+});

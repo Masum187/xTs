@@ -263,6 +263,14 @@ export class AdminComponent {
     });
   }
 
+  protected async resetTestData(): Promise<void> {
+    await this.run(async () => {
+      const result = await this.adminService.resetTestData();
+      await this.loadAll();
+      return `Testdatenpaket ${result.package} zurückgesetzt (${result.counts["timesheetDays"]} Stundenzettel-Tage, ${result.counts["orders"]} Beauftragungen, ${result.counts["planningEntries"]} Planzeilen).`;
+    });
+  }
+
   private async run(action: () => Promise<string>): Promise<void> {
     try {
       this.message.set(await action());

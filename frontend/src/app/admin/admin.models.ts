@@ -70,6 +70,13 @@ export interface CostObjectAssignment extends ChangeStamp {
   deleted: boolean;
 }
 
+export interface TestDataReset {
+  package: string;
+  resetBy: string;
+  resetAt: string;
+  counts: Record<string, number>;
+}
+
 export type EmployeeDraft = Pick<
   Employee,
   | "extNr"
