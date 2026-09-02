@@ -51,12 +51,20 @@ Diese Datei beschreibt die fachlichen Service-Kontrakte fuer SAP-OData und die M
 - `POST /odata/PurchaseOrderSyncRuns` simuliert den Bestelldaten-Job (XTS-033): zu jeder BANF wird die Bestellung aus der Fixture `purchaseOrders` gelesen, `EBELN`/`EBELP` rueckgeschrieben, Status `bestellt`, Planung `B`. Nicht gefundene Faelle landen im Fehlerprotokoll; Bestellungen werden nie aktiv angelegt.
 - `GET /odata/OrderProtocol` liefert das Fehlerprotokoll (BANF-Ablehnungen und Job-Fehler) fachlich lesbar.
 
+## Freischaltung Stundenschreibung (Epic 5)
+
+- `GET /odata/Rules` / `POST /odata/Rules` (Rolle `admin`): Regelwerk analog `ZXTS_REGELN_T`. Infotyp `1` steuert die Aggregation der Beauftragungskandidaten (`MA_KONT`), Infotyp `2` die Freischaltung (`P` = ab BANF vorhanden, MVP-Default; `B` = erst ab Bestellung). Ungueltige Regelwerte: HTTP 400.
+- Die Kontierungsfreischaltung (`ZXTS_MAZUKONT_T`, XTS-041) wird aus den Beauftragungen abgeleitet, nicht mehr statisch gepflegt: qualifizierende Beauftragungen (Status gemaess Regel Infotyp 2) werden je Mitarbeiter und Kontierung aggregiert; Gueltigkeit = beauftragter Zeitraum, `orderedHours` = beauftragte Stunden.
+- `GET /odata/MyEnabledCostObjects` liefert diese abgeleiteten Freischaltungen fuer den angemeldeten Benutzer: `orderedHours`, `bookedHours`, `remainingHours` (= offen).
+- Fortschreibung (XTS-042): `bookedHours` zaehlen ab Speichern/Freigeben (Status `E`/`F`/`G`); zurueckgewiesene Tage (`A`) geben ihr Kontingent wieder frei. Die Werte werden bei jedem Zugriff aus dem Buchungsbestand berechnet — eine Nightly Reconciliation ist im Mock dadurch gegenstandslos und bleibt der SAP-Implementierung vorbehalten. Negative Reststunden sperren die Kontierung fuer weitere Buchungen.
+- Bewusste Semantik-Trennung: Die Freischaltung reserviert Kontingent ab Erfassung (`E`/`F`/`G`), das Reporting zaehlt als Verbrauch nur Genehmigtes (`G`).
+
 ## Reporting-Verhalten
 
 - Beide Reporting-Endpunkte erfordern die Rolle `approver`.
-- Verbrauchte/gebuchte Stunden zaehlen nur genehmigte Tage (Status `G`). Die verbindliche Budgetbetrachtung ab Status `P`/BANF (XTS-071) folgt mit Planung und Beauftragung (Epics 3/4); bis dahin ist die Kontierungsfreischaltung (`budgetHours`) die Budgetquelle.
+- Budgetquelle ist seit Epic 5 die Beauftragung: Budget je Kontierung = beauftragte Stunden qualifizierender Beauftragungen (Regel Infotyp 2, MVP: ab Status BANF/`P`). Verbrauch zaehlt nur genehmigte Tage (Status `G`).
 - `GET /odata/BudgetMonitor` liefert je Kontierung: Budget-, Verbrauchs-, Rest-Stunden, Verbrauch in % und Ampel (`green`/`yellow`/`red`, Grenzen aus simuliertem Customizing `budgetTrafficLight`, spaeter `ZXTS_REGELN_T`). Detailstufen via `?detail=employee` (Summe je Mitarbeiter) bzw. `?detail=day` (alle Tagesdetails).
-- `GET /odata/CostObjectQuota` liefert je Mitarbeiter und Kontierung: Gueltigkeitszeitraum, Budget-, gebuchte und Rest-Stunden. Filter: `?lastName=` (Teilstring), `?team=`, `?from=`/`?to=` (Buchungsdatum); `?detail=day` blendet Tagesdetails ein.
+- `GET /odata/CostObjectQuota` liefert die abgeleiteten Freischaltungen je Mitarbeiter und Kontierung: Gueltigkeitszeitraum, beauftragte (`orderedHours`), gebuchte (`bookedHours`, Status `E`/`F`/`G`) und offene Stunden. Filter: `?lastName=` (Teilstring), `?team=`, `?from=`/`?to=` (Buchungsdatum); `?detail=day` blendet Tagesdetails inkl. Status ein.
 
 ## Auth-Simulation (bis XTS-050 entschieden ist)
 
@@ -68,7 +76,6 @@ Diese Datei beschreibt die fachlichen Service-Kontrakte fuer SAP-OData und die M
 
 ## Timesheet-Verhalten
 
-- `GET /odata/MyEnabledCostObjects` berechnet `remainingHours` einheitlich als `budgetHours` minus genehmigte Stunden (Status `G`) — dieselbe Quelle wie Budget- und Kontingent-Monitor; statische Reststunden gibt es nicht mehr.
 - `GET /odata/MyTimesheets` liefert alle eigenen Tage absteigend nach Datum, optional gefiltert mit `?date=YYYY-MM-DD`.
 - `POST /odata/TimesheetDays` ist ein Upsert je `EXTNR` + Datum; `extNr` und `date` sind Pflicht (sonst HTTP 400). Die Mock-API haelt die Tage im Speicher, damit Navigation und Korrektur-Flows entwickelbar sind.
 - Zurueckgewiesene Tage (Status `A`) tragen den Grund im Feld `rejectionReason`. Beim erneuten Speichern/Freigeben durch den Mitarbeiter wird das Feld entfernt (Flow `A -> E -> F`).

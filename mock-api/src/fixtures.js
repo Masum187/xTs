@@ -19,7 +19,7 @@ export const employees = [
     sapAccount: "CROEPER",
     active: true,
     teamId: "ENTW_SUPPORT",
-    roles: ["user", "approver", "planner"],
+    roles: ["user", "approver", "planner", "admin"],
   },
   {
     extNr: "ALTMANN",
@@ -88,7 +88,18 @@ export const budgetTrafficLight = {
   criticalPercent: 95,
 };
 
-export const enabledCostObjects = [
+// Regelwerk analog ZXTS_REGELN_T (XTS-040). Infotyp 1 steuert die
+// Aggregation je Mitarbeiter/Kontierung, Infotyp 2 die Freischaltung der
+// Stundenschreibung (MVP-Default: P = ab BANF vorhanden; B = ab Bestellung).
+export const rules = [
+  { infotype: 1, value: "MA_KONT", active: true },
+  { infotype: 2, value: "P", active: true },
+];
+
+// Stammdaten-Zuordnung Mitarbeiter/Kontierung mit Gueltigkeit (Planungsbasis).
+// Die Freischaltung fuer die Stundenschreibung (ZXTS_MAZUKONT_T) wird seit
+// Epic 5 aus den Beauftragungen abgeleitet, nicht mehr hier gepflegt.
+export const assignments = [
   {
     id: "000001",
     extNr: "SCHILZ",
@@ -96,7 +107,6 @@ export const enabledCostObjects = [
     description: "SAP-Implementierung, Stephan Schilz",
     validFrom: "2026-02-01",
     validTo: "2027-02-28",
-    budgetHours: 320,
   },
   {
     id: "000002",
@@ -105,7 +115,6 @@ export const enabledCostObjects = [
     description: "SAP-Support, Stephan Schilz",
     validFrom: "2026-02-01",
     validTo: "2026-04-30",
-    budgetHours: 160,
   },
   {
     id: "000003",
@@ -114,7 +123,6 @@ export const enabledCostObjects = [
     description: "Altprojekt Migration, Stephan Schilz",
     validFrom: "2026-01-01",
     validTo: "2026-03-31",
-    budgetHours: 80,
   },
   {
     id: "000004",
@@ -123,7 +131,6 @@ export const enabledCostObjects = [
     description: "SAP-Support, Christian Roeper",
     validFrom: "2026-02-01",
     validTo: "2026-04-30",
-    budgetHours: 100,
   },
 ];
 
@@ -276,3 +283,72 @@ export const planningEntries = [
 export const purchaseOrders = {
   700000000004: { ebeln: "4500001234" },
 };
+
+// Bestandsdaten der Beauftragung (Epic 4/5): bereits bestellte Beauftragungen,
+// aus denen die Kontierungsfreischaltung (XTS-041) abgeleitet wird.
+export const seedOrders = [
+  {
+    orderId: "BEAUF-9001",
+    extNr: "SCHILZ",
+    displayName: "Stephan Schilz",
+    coIdent: "700000000004",
+    text: "SAP-Implementierung Stephan Schilz",
+    periodFrom: "2026-02",
+    periodTo: "2027-02",
+    hours: 320,
+    planningRefs: [],
+    status: "bestellt",
+    banfNumber: "10009001",
+    banfItem: "00010",
+    ebeln: "4500001234",
+    ebelp: "00010",
+  },
+  {
+    orderId: "BEAUF-9002",
+    extNr: "SCHILZ",
+    displayName: "Stephan Schilz",
+    coIdent: "600000000001",
+    text: "SAP-Support Stephan Schilz",
+    periodFrom: "2026-02",
+    periodTo: "2026-04",
+    hours: 160,
+    planningRefs: [],
+    status: "bestellt",
+    banfNumber: "10009002",
+    banfItem: "00010",
+    ebeln: "4500002001",
+    ebelp: "00010",
+  },
+  {
+    orderId: "BEAUF-9003",
+    extNr: "SCHILZ",
+    displayName: "Stephan Schilz",
+    coIdent: "600000000009",
+    text: "Altprojekt Migration Stephan Schilz",
+    periodFrom: "2026-01",
+    periodTo: "2026-03",
+    hours: 80,
+    planningRefs: [],
+    status: "bestellt",
+    banfNumber: "10009003",
+    banfItem: "00010",
+    ebeln: "4500002002",
+    ebelp: "00010",
+  },
+  {
+    orderId: "BEAUF-9004",
+    extNr: "ROEPER",
+    displayName: "Christian Roeper",
+    coIdent: "600000000001",
+    text: "SAP-Support Christian Roeper",
+    periodFrom: "2026-02",
+    periodTo: "2026-04",
+    hours: 100,
+    planningRefs: [],
+    status: "bestellt",
+    banfNumber: "10009004",
+    banfItem: "00010",
+    ebeln: "4500002003",
+    ebelp: "00010",
+  },
+];

@@ -36,6 +36,9 @@ import { AuthService } from "./auth/auth.service";
           <a routerLink="/planning" routerLinkActive="active">Planung</a>
           <a routerLink="/orders" routerLinkActive="active">Beauftragung</a>
         }
+        @if (isAdmin()) {
+          <a routerLink="/admin" routerLinkActive="active">Verwaltung</a>
+        }
       </nav>
       <label class="persona">
         Dev-Persona
@@ -105,6 +108,9 @@ export class AppComponent {
   );
   protected readonly isPlanner = computed(
     () => this.auth.profile()?.roles.includes("planner") ?? false,
+  );
+  protected readonly isAdmin = computed(
+    () => this.auth.profile()?.roles.includes("admin") ?? false,
   );
 
   constructor() {

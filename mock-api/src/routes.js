@@ -1,9 +1,11 @@
+import { buildEnablements } from "./enablement.js";
 import {
   costObjects,
   employees,
-  enabledCostObjects,
   oauthMappings,
   planningEntries,
+  rules,
+  seedOrders,
   teams,
   timesheets,
 } from "./fixtures.js";
@@ -20,11 +22,7 @@ import {
   releasePlanningEntry,
   upsertPlanningEntry,
 } from "./planning.js";
-import {
-  buildBudgetMonitor,
-  buildCostObjectQuota,
-  withRemainingHours,
-} from "./reporting.js";
+import { buildBudgetMonitor, buildCostObjectQuota } from "./reporting.js";
 
 const timesheetKey = (day) => `${day.extNr}|${day.date}`;
 
@@ -36,6 +34,7 @@ const DEFAULT_UPN = "stephan.schilz@qualitytimes.de";
 let timesheetStore = new Map();
 let planningStore = [];
 let ordersState = null;
+let rulesStore = [];
 let weDocumentCounter = 0;
 resetTimesheetStore();
 
@@ -44,7 +43,13 @@ export function resetTimesheetStore() {
     timesheets.map((day) => [timesheetKey(day), structuredClone(day)]),
   );
   planningStore = structuredClone(planningEntries);
-  ordersState = { orders: [], protocol: [], orderCounter: 0, banfCounter: 0 };
+  ordersState = {
+    orders: structuredClone(seedOrders),
+    protocol: [],
+    orderCounter: 0,
+    banfCounter: 0,
+  };
+  rulesStore = structuredClone(rules);
   weDocumentCounter = 0;
 }
 
@@ -113,13 +118,43 @@ export async function routeRequest(request) {
   if (request.method === "GET" && path === "/odata/MyEnabledCostObjects") {
     const persona = resolvePersona(request);
     if (persona.error) return persona.error;
-    const value = withRemainingHours(
-      enabledCostObjects.filter(
-        (item) => item.extNr === persona.employee.extNr,
-      ),
+    const value = buildEnablements(
+      ordersState.orders,
       [...timesheetStore.values()],
-    );
+      rulesStore,
+    ).filter((item) => item.extNr === persona.employee.extNr);
     return json({ value });
+  }
+
+  if (request.method === "GET" && path === "/odata/Rules") {
+    const persona = resolvePersona(request);
+    if (persona.error) return persona.error;
+    const roleError = requireRole(persona, "admin");
+    if (roleError) return roleError;
+    return json({ value: rulesStore.map((rule) => ({ ...rule })) });
+  }
+
+  if (request.method === "POST" && path === "/odata/Rules") {
+    const persona = resolvePersona(request);
+    if (persona.error) return persona.error;
+    const roleError = requireRole(persona, "admin");
+    if (roleError) return roleError;
+    const body = await readJsonBody(request);
+    const allowedValues = { 1: ["MA_KONT"], 2: ["P", "B"] };
+    const allowed = allowedValues[body.infotype];
+    if (
+      !allowed ||
+      !allowed.includes(body.value) ||
+      typeof body.active !== "boolean"
+    ) {
+      return json({ error: "INVALID_RULE" }, 400);
+    }
+    const rule = rulesStore.find(
+      (candidate) => candidate.infotype === body.infotype,
+    );
+    rule.value = body.value;
+    rule.active = body.active;
+    return json({ ...rule });
   }
 
   if (request.method === "GET" && path === "/odata/MyTimesheets") {
@@ -269,7 +304,12 @@ export async function routeRequest(request) {
     const roleError = requireApprover(persona);
     if (roleError) return roleError;
     const detail = url.searchParams.get("detail") ?? "none";
-    const value = buildBudgetMonitor([...timesheetStore.values()], detail);
+    const value = buildBudgetMonitor(
+      [...timesheetStore.values()],
+      detail,
+      ordersState.orders,
+      rulesStore,
+    );
     return json({ value });
   }
 
@@ -278,13 +318,18 @@ export async function routeRequest(request) {
     if (persona.error) return persona.error;
     const roleError = requireApprover(persona);
     if (roleError) return roleError;
-    const value = buildCostObjectQuota([...timesheetStore.values()], {
-      lastName: url.searchParams.get("lastName") ?? "",
-      team: url.searchParams.get("team") ?? "",
-      from: url.searchParams.get("from") ?? "",
-      to: url.searchParams.get("to") ?? "",
-      detail: url.searchParams.get("detail") ?? "none",
-    });
+    const value = buildCostObjectQuota(
+      [...timesheetStore.values()],
+      {
+        lastName: url.searchParams.get("lastName") ?? "",
+        team: url.searchParams.get("team") ?? "",
+        from: url.searchParams.get("from") ?? "",
+        to: url.searchParams.get("to") ?? "",
+        detail: url.searchParams.get("detail") ?? "none",
+      },
+      ordersState.orders,
+      rulesStore,
+    );
     return json({ value });
   }
 

@@ -36,7 +36,7 @@ test("returns approver role for the approver persona", async () => {
   );
   const body = JSON.parse(response.body);
   assert.equal(body.extNr, "ROEPER");
-  assert.deepEqual(body.roles, ["user", "approver", "planner"]);
+  assert.deepEqual(body.roles, ["user", "approver", "planner", "admin"]);
 });
 
 test("rejects an OAuth user without EXTNR mapping", async () => {
@@ -101,9 +101,9 @@ test("denies saving timesheets for a foreign extNr", async () => {
   assert.equal(JSON.parse(response.body).error, "NOT_AUTHORIZED");
 });
 
-test("returns enabled cost objects with computed remaining hours", async () => {
+test("derives enabled cost objects from qualifying orders", async () => {
   const response = await routeRequest(
-    request("GET", "/odata/MyEnabledCostObjects?date=2026-04-13"),
+    request("GET", "/odata/MyEnabledCostObjects"),
   );
   const body = JSON.parse(response.body);
   assert.equal(response.status, 200);
@@ -111,16 +111,35 @@ test("returns enabled cost objects with computed remaining hours", async () => {
   const implementation = body.value.find(
     (item) => item.coIdent === "700000000004",
   );
-  assert.equal(implementation.budgetHours, 320);
-  assert.equal(implementation.remainingHours, 312);
+  assert.equal(implementation.orderedHours, 320);
+  assert.equal(implementation.bookedHours, 18);
+  assert.equal(implementation.remainingHours, 302);
+  assert.equal(implementation.validFrom, "2026-02-01");
+  assert.equal(implementation.validTo, "2027-02-28");
 });
 
-test("remaining hours shrink when a day gets approved", async () => {
+test("rejected days release their quota again", async () => {
+  const response = await routeRequest(
+    request("GET", "/odata/MyEnabledCostObjects"),
+  );
+  const support = JSON.parse(response.body).value.find(
+    (item) => item.coIdent === "600000000001",
+  );
+  assert.equal(support.bookedHours, 0);
+  assert.equal(support.remainingHours, 160);
+});
+
+test("remaining hours shrink as soon as hours are saved", async () => {
   await routeRequest(
-    approverRequest("POST", "/odata/TimesheetApprovals", {
+    request("POST", "/odata/TimesheetDays", {
       extNr: "SCHILZ",
-      date: "2026-04-08",
-      action: "approve",
+      date: "2026-04-14",
+      startTime: "08:30",
+      endTime: "13:00",
+      breakMinutes: 0,
+      location: "remote",
+      status: "E",
+      lines: [{ coIdent: "700000000004", description: "Konzept", hours: 4 }],
     }),
   );
   const response = await routeRequest(
@@ -129,7 +148,7 @@ test("remaining hours shrink when a day gets approved", async () => {
   const implementation = JSON.parse(response.body).value.find(
     (item) => item.coIdent === "700000000004",
   );
-  assert.equal(implementation.remainingHours, 304);
+  assert.equal(implementation.remainingHours, 298);
 });
 
 test("returns own timesheets sorted by date descending", async () => {
@@ -374,7 +393,7 @@ test("budget monitor traffic light turns red from customizing thresholds", async
   assert.equal(row.remainingHours, -70);
 });
 
-test("cost object quota lists enabled cost objects with booked hours", async () => {
+test("cost object quota lists derived enablements with booked hours", async () => {
   const response = await routeRequest(
     approverRequest("GET", "/odata/CostObjectQuota"),
   );
@@ -382,11 +401,15 @@ test("cost object quota lists enabled cost objects with booked hours", async () 
   assert.equal(response.status, 200);
   assert.equal(body.value.length, 4);
   assert.equal(body.value[0].lastName, "Roeper");
+  assert.equal(body.value[0].orderedHours, 100);
+  assert.equal(body.value[0].bookedHours, 15.5);
+  assert.equal(body.value[0].remainingHours, 84.5);
   const booked = body.value.find(
     (row) => row.extNr === "SCHILZ" && row.coIdent === "700000000004",
   );
-  assert.equal(booked.bookedHours, 8);
-  assert.equal(booked.remainingHours, 312);
+  assert.equal(booked.orderedHours, 320);
+  assert.equal(booked.bookedHours, 18);
+  assert.equal(booked.remainingHours, 302);
   assert.equal(booked.teamId, "TRANSFORMATION_MC");
   assert.equal(booked.days, undefined);
 });
@@ -413,10 +436,10 @@ test("cost object quota filters by last name, team and booking date", async () =
   const dateRow = JSON.parse(byDate.body).value.find(
     (row) => row.extNr === "SCHILZ" && row.coIdent === "700000000004",
   );
-  assert.equal(dateRow.bookedHours, 0);
+  assert.equal(dateRow.bookedHours, 2);
 });
 
-test("cost object quota exposes day details on request", async () => {
+test("cost object quota exposes day details with status on request", async () => {
   const response = await routeRequest(
     approverRequest("GET", "/odata/CostObjectQuota?detail=day"),
   );
@@ -424,7 +447,24 @@ test("cost object quota exposes day details on request", async () => {
     (item) => item.extNr === "SCHILZ" && item.coIdent === "700000000004",
   );
   assert.deepEqual(row.days, [
-    { date: "2026-04-09", description: "Datenmodell Review", hours: 8 },
+    {
+      date: "2026-04-08",
+      status: "F",
+      description: "Migrationskonzept Kapitel 3",
+      hours: 8,
+    },
+    {
+      date: "2026-04-09",
+      status: "G",
+      description: "Datenmodell Review",
+      hours: 8,
+    },
+    {
+      date: "2026-04-13",
+      status: "E",
+      description: "Daily Projektabstimmung",
+      hours: 2,
+    },
   ]);
 });
 
@@ -895,4 +935,99 @@ test("order endpoints require the planner role", async () => {
     request("POST", "/odata/PurchaseOrderSyncRuns"),
   );
   assert.equal(sync.status, 403);
+});
+
+test("rules are readable and validated for admins", async () => {
+  const list = await routeRequest(approverRequest("GET", "/odata/Rules"));
+  const body = JSON.parse(list.body);
+  assert.equal(list.status, 200);
+  assert.deepEqual(body.value, [
+    { infotype: 1, value: "MA_KONT", active: true },
+    { infotype: 2, value: "P", active: true },
+  ]);
+
+  const invalidValue = await routeRequest(
+    approverRequest("POST", "/odata/Rules", {
+      infotype: 2,
+      value: "X",
+      active: true,
+    }),
+  );
+  assert.equal(invalidValue.status, 400);
+
+  const invalidActive = await routeRequest(
+    approverRequest("POST", "/odata/Rules", {
+      infotype: 2,
+      value: "P",
+      active: "ja",
+    }),
+  );
+  assert.equal(invalidActive.status, 400);
+
+  const nonAdmin = await routeRequest(request("GET", "/odata/Rules"));
+  assert.equal(nonAdmin.status, 403);
+});
+
+test("switching the enablement rule to B drops BANF-only orders", async () => {
+  await seedReleasedRow("SCHILZ", "700000000004", "2026-06", 50);
+  await routeRequest(
+    approverRequest("POST", "/odata/Orders", {
+      extNr: "SCHILZ",
+      coIdent: "700000000004",
+      months: ["2026-06"],
+    }),
+  );
+  await routeRequest(
+    approverRequest("POST", "/odata/OrderBanfs", { orderId: "BEAUF-000001" }),
+  );
+
+  const withBanf = await routeRequest(
+    request("GET", "/odata/MyEnabledCostObjects"),
+  );
+  const enabledWithBanf = JSON.parse(withBanf.body).value.find(
+    (item) => item.coIdent === "700000000004",
+  );
+  assert.equal(enabledWithBanf.orderedHours, 370);
+  assert.equal(enabledWithBanf.validTo, "2027-02-28");
+
+  await routeRequest(
+    approverRequest("POST", "/odata/Rules", {
+      infotype: 2,
+      value: "B",
+      active: true,
+    }),
+  );
+  const withOrderOnly = await routeRequest(
+    request("GET", "/odata/MyEnabledCostObjects"),
+  );
+  const enabledOrdered = JSON.parse(withOrderOnly.body).value.find(
+    (item) => item.coIdent === "700000000004",
+  );
+  assert.equal(enabledOrdered.orderedHours, 320);
+
+  const budget = await routeRequest(
+    approverRequest("GET", "/odata/BudgetMonitor"),
+  );
+  const budgetRow = JSON.parse(budget.body).value.find(
+    (row) => row.coIdent === "700000000004",
+  );
+  assert.equal(budgetRow.budgetHours, 320);
+});
+
+test("deactivating the enablement rule disables timesheet cost objects", async () => {
+  await routeRequest(
+    approverRequest("POST", "/odata/Rules", {
+      infotype: 2,
+      value: "P",
+      active: false,
+    }),
+  );
+  const enabled = await routeRequest(
+    request("GET", "/odata/MyEnabledCostObjects"),
+  );
+  assert.equal(JSON.parse(enabled.body).value.length, 0);
+  const budget = await routeRequest(
+    approverRequest("GET", "/odata/BudgetMonitor"),
+  );
+  assert.equal(JSON.parse(budget.body).value.length, 0);
 });

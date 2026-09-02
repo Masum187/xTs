@@ -1,4 +1,4 @@
-import { employees, enabledCostObjects, workCalendar } from "./fixtures.js";
+import { assignments, employees, workCalendar } from "./fixtures.js";
 
 const LOCKED_STATUSES = ["F", "P", "B"];
 
@@ -36,7 +36,7 @@ function isMonthInRange(month, validFrom, validTo) {
  * (XTS-020: "gueltig und nicht geloescht").
  */
 export function planningCombinations(months = null) {
-  return enabledCostObjects
+  return assignments
     .map((item) => {
       const employee = employees.find(
         (candidate) => candidate.extNr === item.extNr,

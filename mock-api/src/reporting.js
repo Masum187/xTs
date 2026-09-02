@@ -1,12 +1,13 @@
+import { budgetTrafficLight, costObjects, employees } from "./fixtures.js";
 import {
-  budgetTrafficLight,
-  employees,
-  enabledCostObjects,
-} from "./fixtures.js";
+  bookedLinesFor,
+  buildEnablements,
+  qualifyingOrders,
+} from "./enablement.js";
 
-// Verbraucht zaehlen nur genehmigte Stunden (Status G). Die verbindliche
-// Budgetbetrachtung ab Status P/BANF (XTS-071) folgt erst mit Planung und
-// Beauftragung (Epics 3/4); bis dahin ist die Freischaltung die Budgetquelle.
+// Verbraucht zaehlen im Reporting nur genehmigte Stunden (Status G). Budget
+// ist seit Epic 5 die beauftragte Stundenmenge ab Status P/BANF (Regelwerk),
+// nicht mehr eine statische Freischaltung.
 const APPROVED_STATUS = "G";
 
 function displayNameFor(extNr) {
@@ -35,31 +36,20 @@ function approvedLines(days) {
     );
 }
 
-// Einheitliche Reststunden-Quelle fuer Timesheet und Reporting:
-// Rest = budgetHours der Freischaltung minus genehmigte Stunden (Status G).
-export function withRemainingHours(items, days) {
-  const lines = approvedLines(days);
-  return items.map((item) => {
-    const bookedHours = lines
-      .filter(
-        (line) => line.extNr === item.extNr && line.coIdent === item.coIdent,
-      )
-      .reduce((sum, line) => sum + line.hours, 0);
-    return { ...item, remainingHours: item.budgetHours - bookedHours };
-  });
-}
-
-export function buildBudgetMonitor(days, detail) {
+export function buildBudgetMonitor(days, detail, orders, rules) {
   const lines = approvedLines(days);
   const byCoIdent = new Map();
-  for (const item of enabledCostObjects) {
-    const row = byCoIdent.get(item.coIdent) ?? {
-      coIdent: item.coIdent,
-      description: item.description.split(",")[0],
+  for (const order of qualifyingOrders(orders, rules)) {
+    const row = byCoIdent.get(order.coIdent) ?? {
+      coIdent: order.coIdent,
+      description: (
+        costObjects.find((item) => item.coIdent === order.coIdent)
+          ?.description ?? order.coIdent
+      ).split(",")[0],
       budgetHours: 0,
     };
-    row.budgetHours += item.budgetHours;
-    byCoIdent.set(item.coIdent, row);
+    row.budgetHours += order.hours;
+    byCoIdent.set(order.coIdent, row);
   }
 
   return [...byCoIdent.values()]
@@ -105,42 +95,29 @@ export function buildBudgetMonitor(days, detail) {
     .sort((a, b) => a.coIdent.localeCompare(b.coIdent));
 }
 
-export function buildCostObjectQuota(days, filters) {
+export function buildCostObjectQuota(days, filters, orders, rules) {
   const { lastName, team, from, to, detail } = filters;
-  const lines = approvedLines(days).filter(
-    (line) => (!from || line.date >= from) && (!to || line.date <= to),
-  );
 
-  return enabledCostObjects
-    .map((item) => {
-      const employee = employees.find(
-        (candidate) => candidate.extNr === item.extNr,
+  return buildEnablements(orders, days, rules)
+    .map((enablement) => {
+      const bookedLines = bookedLinesFor(
+        days,
+        enablement.extNr,
+        enablement.coIdent,
+      ).filter(
+        (line) => (!from || line.date >= from) && (!to || line.date <= to),
       );
-      const itemLines = lines.filter(
-        (line) => line.extNr === item.extNr && line.coIdent === item.coIdent,
+      const bookedHours = bookedLines.reduce(
+        (sum, line) => sum + line.hours,
+        0,
       );
-      const bookedHours = itemLines.reduce((sum, line) => sum + line.hours, 0);
       const row = {
-        extNr: item.extNr,
-        displayName: employee?.displayName ?? item.extNr,
-        lastName: employee?.lastName ?? item.extNr,
-        teamId: employee?.teamId ?? null,
-        coIdent: item.coIdent,
-        description: item.description,
-        validFrom: item.validFrom,
-        validTo: item.validTo,
-        budgetHours: item.budgetHours,
+        ...enablement,
         bookedHours,
-        remainingHours: item.budgetHours - bookedHours,
+        remainingHours: enablement.orderedHours - bookedHours,
       };
       if (detail === "day") {
-        row.days = itemLines
-          .map(({ date, description, hours }) => ({
-            date,
-            description,
-            hours,
-          }))
-          .sort((a, b) => a.date.localeCompare(b.date));
+        row.days = bookedLines;
       }
       return row;
     })
@@ -149,10 +126,5 @@ export function buildCostObjectQuota(days, filters) {
         !lastName ||
         row.lastName.toLowerCase().includes(lastName.toLowerCase()),
     )
-    .filter((row) => !team || row.teamId === team)
-    .sort(
-      (a, b) =>
-        a.lastName.localeCompare(b.lastName) ||
-        a.coIdent.localeCompare(b.coIdent),
-    );
+    .filter((row) => !team || row.teamId === team);
 }

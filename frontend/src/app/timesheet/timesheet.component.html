@@ -89,8 +89,10 @@
         <span>{{ item.coIdent }}</span>
         <span>{{ item.description }}</span>
         <span>
-          {{ item.remainingHours }} Std. Rest ({{ item.validFrom }} –
-          {{ item.validTo }})
+          {{ item.remainingHours }} von {{ item.orderedHours }} Std. offen ({{
+            item.validFrom
+          }}
+          – {{ item.validTo }})
           @if (!isBookable(item)) {
             <em class="blocked-hint">nicht buchbar</em>
           }

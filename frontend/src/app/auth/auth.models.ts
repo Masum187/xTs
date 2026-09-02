@@ -1,4 +1,4 @@
-export type AuthRole = "user" | "approver" | "planner";
+export type AuthRole = "user" | "approver" | "planner" | "admin";
 
 export type AuthState =
   "loading" | "ready" | "not-mapped" | "inactive" | "error";
@@ -20,7 +20,7 @@ export const MOCK_PERSONAS: MockPersona[] = [
   { upn: "stephan.schilz@qualitytimes.de", label: "Stephan Schilz (User)" },
   {
     upn: "christian.roeper@qualitytimes.de",
-    label: "Christian Roeper (Projektleiter & RM)",
+    label: "Christian Roeper (PL, RM & Admin)",
   },
   { upn: "petra.altmann@qualitytimes.de", label: "Petra Altmann (inaktiv)" },
   { upn: "neu.extern@qualitytimes.de", label: "Neuer Externer (ohne Mapping)" },

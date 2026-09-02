@@ -1,12 +1,13 @@
 export type TimesheetStatus = "E" | "F" | "G" | "A";
 
 export interface EnabledCostObject {
-  id: string;
+  extNr: string;
   coIdent: string;
   description: string;
   validFrom: string;
   validTo: string;
-  budgetHours: number;
+  orderedHours: number;
+  bookedHours: number;
   remainingHours: number;
 }
 

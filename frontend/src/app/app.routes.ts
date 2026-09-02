@@ -2,6 +2,7 @@ import { inject } from "@angular/core";
 import type { CanActivateFn, Routes } from "@angular/router";
 import { Router } from "@angular/router";
 
+import { AdminComponent } from "./admin/admin.component";
 import { ApprovalComponent } from "./approval/approval.component";
 import type { AuthRole } from "./auth/auth.models";
 import { AuthService } from "./auth/auth.service";
@@ -48,5 +49,11 @@ export const routes: Routes = [
     component: OrdersComponent,
     title: "xTS Beauftragung",
     canActivate: [roleGuard("planner")],
+  },
+  {
+    path: "admin",
+    component: AdminComponent,
+    title: "xTS Verwaltung",
+    canActivate: [roleGuard("admin")],
   },
 ];
