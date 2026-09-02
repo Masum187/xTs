@@ -22,6 +22,7 @@ import {
   releasePlanningEntry,
   upsertPlanningEntry,
 } from "./planning.js";
+import { buildResourceLifecycle } from "./lifecycle.js";
 import { buildBudgetMonitor, buildCostObjectQuota } from "./reporting.js";
 
 const timesheetKey = (day) => `${day.extNr}|${day.date}`;
@@ -334,6 +335,25 @@ export async function routeRequest(request) {
       },
       ordersState.orders,
       rulesStore,
+    );
+    return json({ value });
+  }
+
+  if (request.method === "GET" && path === "/odata/ResourceLifecycle") {
+    const persona = resolvePersona(request);
+    if (persona.error) return persona.error;
+    const roleError = requireApprover(persona);
+    if (roleError) return roleError;
+    const value = buildResourceLifecycle(
+      planningStore,
+      ordersState.orders,
+      [...timesheetStore.values()],
+      {
+        from: url.searchParams.get("from") ?? "",
+        to: url.searchParams.get("to") ?? "",
+        ebeln: url.searchParams.get("ebeln") ?? "",
+        ebelp: url.searchParams.get("ebelp") ?? "",
+      },
     );
     return json({ value });
   }

@@ -132,3 +132,34 @@ th {
   color: #60718f;
   font-size: 13px;
 }
+
+.hint {
+  color: #60718f;
+  font-size: 13px;
+  margin: 0;
+}
+
+.sub {
+  color: #60718f;
+  display: block;
+  font-size: 12px;
+  white-space: nowrap;
+}
+
+.sub.pending {
+  color: #8a5a12;
+}
+
+.empty {
+  color: #9aa8bd;
+}
+
+table.lifecycle td {
+  vertical-align: top;
+}
+
+.footnote {
+  color: #60718f;
+  font-size: 12px;
+  margin: 12px 0 0;
+}

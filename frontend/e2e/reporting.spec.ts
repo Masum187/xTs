@@ -61,6 +61,59 @@ test("quota monitor shows optional day details", async ({ page }) => {
   );
 });
 
+test("resource lifecycle shows the chain and goods receipts after approval", async ({
+  page,
+  request,
+}) => {
+  const date = "2026-04-06";
+  await request.post("http://127.0.0.1:4010/odata/TimesheetDays", {
+    data: {
+      extNr: "SCHILZ",
+      date,
+      startTime: "08:30",
+      endTime: "12:30",
+      breakMinutes: 0,
+      location: "remote",
+      status: "F",
+      lines: [
+        { coIdent: "700000000004", description: "Live-Circle Probe", hours: 4 },
+      ],
+    },
+  });
+  await request.post("http://127.0.0.1:4010/odata/TimesheetApprovals", {
+    data: { extNr: "SCHILZ", date, action: "approve" },
+    headers: { "x-mock-oauth-upn": "christian.roeper@qualitytimes.de" },
+  });
+
+  await openReportingAsApprover(page);
+
+  const row = page.getByTestId("lifecycle-SCHILZ-700000000004");
+  await expect(row).toContainText("SAP-Implementierung");
+  await expect(row).toContainText("BEAUF-9001");
+  await expect(row).toContainText("10009001/00010");
+  await expect(row).toContainText("4500001234/00010");
+  await expect(page.getByTestId("we-SCHILZ-700000000004")).toContainText("WE-");
+  await expect(page.getByTestId("we-SCHILZ-700000000004")).toContainText(
+    "WE ausstehend",
+  );
+  await expect(page.getByTestId("invoice-SCHILZ-700000000004")).toHaveText("–");
+
+  await page.getByLabel("Einkaufsbeleg").fill("4500002001");
+  await expect(row).toBeHidden();
+  await expect(page.getByTestId("lifecycle-SCHILZ-600000000001")).toBeVisible();
+
+  await page.getByLabel("Bestellposition").fill("00020");
+  await expect(page.getByTestId("lifecycle-empty")).toBeVisible();
+
+  await page.getByLabel("Einkaufsbeleg").fill("");
+  await page.getByLabel("Bestellposition").fill("");
+  await expect(page.getByTestId("lifecycle-SCHILZ-600000000009")).toBeVisible();
+  await page.getByLabel("Zeitraum von").fill("2026-05");
+  await page.getByLabel("Zeitraum bis").fill("2026-05");
+  await expect(page.getByTestId("lifecycle-SCHILZ-600000000009")).toBeHidden();
+  await expect(row).toBeVisible();
+});
+
 test("reporting is not reachable for regular users", async ({ page }) => {
   await page.goto("/reports");
   await expect(
