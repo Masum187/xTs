@@ -1,3 +1,4 @@
+// Mitarbeiter analog ZXTS_WIW_T (XTS-010) inkl. AAD_OID/AAD_UPN (XTS-050).
 export const employees = [
   {
     extNr: "SCHILZ",
@@ -6,6 +7,8 @@ export const employees = [
     lastName: "Schilz",
     company: "QualityTimes",
     sapAccount: "SSCHILZ",
+    aadOid: "3f1c2a7e-5b3d-4c8e-9a1f-0d2e4b6c8a10",
+    aadUpn: "stephan.schilz@qualitytimes.de",
     active: true,
     deleted: false,
     resourceManager: "ROEPER",
@@ -18,6 +21,8 @@ export const employees = [
     lastName: "Roeper",
     company: "QualityTimes",
     sapAccount: "CROEPER",
+    aadOid: "7a9e4d21-6c1b-4f3a-8e2d-5b7c9d1e3f42",
+    aadUpn: "christian.roeper@qualitytimes.de",
     active: true,
     deleted: false,
     resourceManager: null,
@@ -30,6 +35,8 @@ export const employees = [
     lastName: "Altmann",
     company: "QualityTimes",
     sapAccount: null,
+    aadOid: "c2d4e6f8-1a3b-4c5d-8e9f-0a1b2c3d4e5f",
+    aadUpn: "petra.altmann@qualitytimes.de",
     active: false,
     deleted: false,
     resourceManager: "ROEPER",
@@ -37,15 +44,10 @@ export const employees = [
   },
 ];
 
-// Simuliert das AD/OAuth-Mapping aus der Entscheidungsvorlage
-// docs/entscheidungsvorlage-extnr-mapping.md. Ein Eintrag ohne extNr steht
-// fuer einen OAuth-User, der (noch) nicht auf ZXTS_WIW_T gemappt ist.
-export const oauthMappings = [
-  { upn: "stephan.schilz@qualitytimes.de", extNr: "SCHILZ" },
-  { upn: "christian.roeper@qualitytimes.de", extNr: "ROEPER" },
-  { upn: "petra.altmann@qualitytimes.de", extNr: "ALTMANN" },
-  { upn: "neu.extern@qualitytimes.de", extNr: null },
-];
+// AD/OAuth-Mapping (XTS-050, Entscheidungsvorlage Option B, technisch
+// vorbereitet): ZXTS_WIW_T traegt AAD_OID (Entra objectId, Claim `oid`) als
+// fuehrendes Mapping und AAD_UPN als Anzeige-/Fallback-Attribut. Ein
+// Token ohne Treffer (z. B. Persona "Neuer Externer") ist nicht gemappt.
 
 // Teams analog ZXTS_TEAM_T (XTS-011).
 export const teams = [

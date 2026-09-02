@@ -16,6 +16,8 @@ export interface Employee extends ChangeStamp {
   displayName: string;
   company: string;
   sapAccount: string | null;
+  aadOid: string | null;
+  aadUpn: string | null;
   active: boolean;
   deleted: boolean;
   resourceManager: string | null;
@@ -107,6 +109,8 @@ export type EmployeeDraft = Pick<
   | "lastName"
   | "company"
   | "sapAccount"
+  | "aadOid"
+  | "aadUpn"
   | "active"
   | "resourceManager"
 >;

@@ -47,6 +47,8 @@ function emptyEmployee(): EmployeeDraft {
     lastName: "",
     company: "QualityTimes",
     sapAccount: "",
+    aadOid: "",
+    aadUpn: "",
     active: true,
     resourceManager: "",
   };

@@ -15,6 +15,8 @@ import {
 // lesen aus diesem Store, damit Pflegeaenderungen sofort wirken.
 
 export const COST_OBJECT_TYPES = ["KS", "OR", "PR", "FB", "KL"];
+const GUID_PATTERN =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 export const store = {
   employees: [],
@@ -66,6 +68,25 @@ export function findEmployee(extNr) {
   return store.employees.find(
     (employee) => employee.extNr === extNr && !isDeleted(employee),
   );
+}
+
+/** Mapping des OAuth-Tokens auf den Mitarbeiter: `oid` fuehrend (Option B),
+ * `upn` als Fallback (Option A). Geloeschte und inaktive Mitarbeiter werden
+ * gefunden und vom Aufrufer als gesperrt abgewiesen (403). */
+export function findEmployeeByClaims({ oid, upn }) {
+  const byOid =
+    oid &&
+    store.employees.find(
+      (employee) => employee.aadOid?.toLowerCase() === oid.toLowerCase(),
+    );
+  if (byOid) return { employee: byOid, mappedBy: "oid" };
+  const byUpn =
+    upn &&
+    store.employees.find(
+      (employee) => employee.aadUpn?.toLowerCase() === upn.toLowerCase(),
+    );
+  if (byUpn) return { employee: byUpn, mappedBy: "upn" };
+  return null;
 }
 
 export function displayNameFor(extNr) {
@@ -157,6 +178,46 @@ export function upsertEmployee(payload, changedBy) {
     return { error: { status: 400, code: "UNKNOWN_RESOURCE_MANAGER" } };
   }
   const existing = store.employees.find((item) => item.extNr === extNr);
+  // Entra-Felder bleiben erhalten, wenn der Aufrufer sie nicht mitschickt.
+  const aadOid =
+    payload.aadOid === undefined
+      ? (existing?.aadOid ?? "")
+      : trimmed(payload.aadOid).toLowerCase();
+  const aadUpn =
+    payload.aadUpn === undefined
+      ? (existing?.aadUpn ?? "")
+      : trimmed(payload.aadUpn).toLowerCase();
+  if (aadOid && !GUID_PATTERN.test(aadOid)) {
+    return { error: { status: 400, code: "INVALID_AAD_OID" } };
+  }
+  const oidOwner =
+    aadOid &&
+    store.employees.find(
+      (item) => item.extNr !== extNr && item.aadOid?.toLowerCase() === aadOid,
+    );
+  if (oidOwner) {
+    return {
+      error: {
+        status: 409,
+        code: "AAD_OID_IN_USE",
+        conflictId: oidOwner.extNr,
+      },
+    };
+  }
+  const upnOwner =
+    aadUpn &&
+    store.employees.find(
+      (item) => item.extNr !== extNr && item.aadUpn?.toLowerCase() === aadUpn,
+    );
+  if (upnOwner) {
+    return {
+      error: {
+        status: 409,
+        code: "AAD_UPN_IN_USE",
+        conflictId: upnOwner.extNr,
+      },
+    };
+  }
   const employee = existing ?? {
     extNr,
     company: "",
@@ -169,6 +230,8 @@ export function upsertEmployee(payload, changedBy) {
   employee.company = trimmed(payload.company) || employee.company;
   employee.sapAccount = trimmed(payload.sapAccount) || null;
   employee.resourceManager = resourceManager || null;
+  employee.aadOid = aadOid || null;
+  employee.aadUpn = aadUpn || null;
   employee.active = payload.active;
   employee.deleted = payload.deleted === true;
   stamp(employee, changedBy);
