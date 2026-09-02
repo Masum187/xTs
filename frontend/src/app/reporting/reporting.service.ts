@@ -5,6 +5,8 @@ import { AuthService } from "../auth/auth.service";
 import type {
   BudgetDetailLevel,
   BudgetRow,
+  LifecycleFilters,
+  LifecycleRow,
   QuotaFilters,
   QuotaRow,
   Team,
@@ -35,6 +37,20 @@ export class ReportingService {
     if (filters.detail !== "none") params.set("detail", filters.detail);
     const query = params.size > 0 ? `?${params.toString()}` : "";
     return this.readValues<QuotaRow>(`${this.baseUrl}/CostObjectQuota${query}`);
+  }
+
+  async getResourceLifecycle(
+    filters: LifecycleFilters,
+  ): Promise<LifecycleRow[]> {
+    const params = new URLSearchParams();
+    if (filters.from) params.set("from", filters.from);
+    if (filters.to) params.set("to", filters.to);
+    if (filters.ebeln) params.set("ebeln", filters.ebeln);
+    if (filters.ebelp) params.set("ebelp", filters.ebelp);
+    const query = params.size > 0 ? `?${params.toString()}` : "";
+    return this.readValues<LifecycleRow>(
+      `${this.baseUrl}/ResourceLifecycle${query}`,
+    );
   }
 
   async getTeams(): Promise<Team[]> {

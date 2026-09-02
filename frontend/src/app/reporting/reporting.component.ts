@@ -4,6 +4,8 @@ import { FormsModule } from "@angular/forms";
 import type {
   BudgetDetailLevel,
   BudgetRow,
+  LifecycleRow,
+  OrderStatus,
   QuotaRow,
   Team,
   TrafficLight,
@@ -16,6 +18,12 @@ const TRAFFIC_LABELS: Record<TrafficLight, string> = {
   red: "kritisch",
 };
 
+const ORDER_STATUS_LABELS: Record<OrderStatus, string> = {
+  created: "angelegt",
+  banf: "BANF",
+  bestellt: "bestellt",
+};
+
 @Component({
   selector: "xts-reporting",
   standalone: true,
@@ -25,6 +33,12 @@ const TRAFFIC_LABELS: Record<TrafficLight, string> = {
 })
 export class ReportingComponent {
   private readonly reportingService = inject(ReportingService);
+
+  protected readonly lifecycleRows = signal<LifecycleRow[]>([]);
+  protected readonly lifecycleFrom = signal<string>("");
+  protected readonly lifecycleTo = signal<string>("");
+  protected readonly lifecycleEbeln = signal<string>("");
+  protected readonly lifecycleEbelp = signal<string>("");
 
   protected readonly budgetRows = signal<BudgetRow[]>([]);
   protected readonly budgetDetail = signal<BudgetDetailLevel>("none");
@@ -42,12 +56,36 @@ export class ReportingComponent {
     void this.reportingService.getTeams().then((teams) => {
       this.teams.set(teams);
     });
+    void this.loadLifecycle();
     void this.loadBudget();
     void this.loadQuota();
   }
 
   protected trafficLabel(light: TrafficLight): string {
     return TRAFFIC_LABELS[light];
+  }
+
+  protected orderStatusLabel(status: OrderStatus): string {
+    return ORDER_STATUS_LABELS[status];
+  }
+
+  protected hasAny(row: LifecycleRow, field: "banfNumber" | "ebeln"): boolean {
+    return row.orders.some((order) => order[field] !== null);
+  }
+
+  protected async updateLifecycleFilter(
+    patch: Partial<{
+      from: string;
+      to: string;
+      ebeln: string;
+      ebelp: string;
+    }>,
+  ): Promise<void> {
+    if (patch.from !== undefined) this.lifecycleFrom.set(patch.from);
+    if (patch.to !== undefined) this.lifecycleTo.set(patch.to);
+    if (patch.ebeln !== undefined) this.lifecycleEbeln.set(patch.ebeln);
+    if (patch.ebelp !== undefined) this.lifecycleEbelp.set(patch.ebelp);
+    await this.loadLifecycle();
   }
 
   protected async setBudgetDetail(detail: BudgetDetailLevel): Promise<void> {
@@ -70,6 +108,17 @@ export class ReportingComponent {
     if (patch.to !== undefined) this.quotaTo.set(patch.to);
     if (patch.dayDetail !== undefined) this.quotaDayDetail.set(patch.dayDetail);
     await this.loadQuota();
+  }
+
+  private async loadLifecycle(): Promise<void> {
+    this.lifecycleRows.set(
+      await this.reportingService.getResourceLifecycle({
+        from: this.lifecycleFrom(),
+        to: this.lifecycleTo(),
+        ebeln: this.lifecycleEbeln().trim(),
+        ebelp: this.lifecycleEbelp().trim(),
+      }),
+    );
   }
 
   private async loadBudget(): Promise<void> {

@@ -537,11 +537,205 @@ test("cost object quota exposes day details with status on request", async () =>
   ]);
 });
 
+test("resource lifecycle aggregates the chain per employee and cost object", async () => {
+  const response = await routeRequest(
+    approverRequest("GET", "/odata/ResourceLifecycle"),
+  );
+  const body = JSON.parse(response.body);
+  assert.equal(response.status, 200);
+  assert.deepEqual(
+    body.value.map((row) => `${row.extNr}|${row.coIdent}`),
+    [
+      "ROEPER|600000000001",
+      "SCHILZ|600000000001",
+      "SCHILZ|600000000009",
+      "SCHILZ|700000000004",
+    ],
+  );
+
+  const implementation = body.value.find(
+    (row) => row.extNr === "SCHILZ" && row.coIdent === "700000000004",
+  );
+  assert.equal(implementation.description, "SAP-Implementierung");
+  assert.equal(implementation.plannedHours, 140);
+  assert.equal(implementation.orderedHours, 320);
+  assert.equal(implementation.purchaseOrderHours, 320);
+  assert.deepEqual(implementation.orders, [
+    {
+      orderId: "BEAUF-9001",
+      status: "bestellt",
+      hours: 320,
+      periodFrom: "2026-02",
+      periodTo: "2027-02",
+      banfNumber: "10009001",
+      banfItem: "00010",
+      ebeln: "4500001234",
+      ebelp: "00010",
+    },
+  ]);
+  assert.equal(implementation.recordedHours, 18);
+  assert.equal(implementation.approvedHours, 8);
+  // Genehmigter Bestandstag ohne WE-Beleg: nicht als Wareneingang zaehlen.
+  assert.equal(implementation.goodsReceiptHours, 0);
+  assert.equal(implementation.pendingGoodsReceiptHours, 8);
+  assert.deepEqual(implementation.goodsReceipts, []);
+
+  const roeper = body.value[0];
+  assert.equal(roeper.displayName, "Christian Roeper");
+  assert.equal(roeper.plannedHours, 20);
+  assert.equal(roeper.orderedHours, 100);
+  assert.equal(roeper.recordedHours, 15.5);
+  assert.equal(roeper.approvedHours, 0);
+
+  const legacy = body.value.find((row) => row.coIdent === "600000000009");
+  assert.equal(legacy.plannedHours, 0);
+  assert.equal(legacy.recordedHours, 0);
+});
+
+test("resource lifecycle leaves unknown purchase price and invoice data empty", async () => {
+  const response = await routeRequest(
+    approverRequest("GET", "/odata/ResourceLifecycle"),
+  );
+  for (const row of JSON.parse(response.body).value) {
+    assert.equal(row.purchaseOrderPrice, null);
+    assert.equal(row.invoicedHours, null);
+    assert.equal(row.invoiceNumber, null);
+  }
+});
+
+test("resource lifecycle filters by period, purchase order and item", async () => {
+  const april = await routeRequest(
+    approverRequest("GET", "/odata/ResourceLifecycle?from=2026-04&to=2026-04"),
+  );
+  const aprilRows = JSON.parse(april.body).value;
+  assert.deepEqual(
+    aprilRows.map((row) => `${row.extNr}|${row.coIdent}`),
+    ["ROEPER|600000000001", "SCHILZ|600000000001", "SCHILZ|700000000004"],
+  );
+  const implementation = aprilRows.find(
+    (row) => row.coIdent === "700000000004",
+  );
+  assert.equal(implementation.plannedHours, 60);
+  assert.equal(implementation.recordedHours, 18);
+  assert.equal(aprilRows[0].recordedHours, 8);
+  const support = aprilRows.find(
+    (row) => row.extNr === "SCHILZ" && row.coIdent === "600000000001",
+  );
+  assert.equal(support.plannedHours, 0);
+  assert.equal(support.orderedHours, 160);
+
+  const byOrder = await routeRequest(
+    approverRequest("GET", "/odata/ResourceLifecycle?ebeln=4500002001"),
+  );
+  const byOrderRows = JSON.parse(byOrder.body).value;
+  assert.equal(byOrderRows.length, 1);
+  assert.equal(byOrderRows[0].extNr, "SCHILZ");
+  assert.equal(byOrderRows[0].coIdent, "600000000001");
+
+  const byItem = await routeRequest(
+    approverRequest(
+      "GET",
+      "/odata/ResourceLifecycle?ebeln=4500002001&ebelp=00020",
+    ),
+  );
+  assert.deepEqual(JSON.parse(byItem.body).value, []);
+
+  const allItems = await routeRequest(
+    approverRequest("GET", "/odata/ResourceLifecycle?ebelp=00010"),
+  );
+  assert.equal(JSON.parse(allItems.body).value.length, 4);
+});
+
+test("resource lifecycle rejects invalid period filters", async () => {
+  const badFormat = await routeRequest(
+    approverRequest("GET", "/odata/ResourceLifecycle?from=04.2026"),
+  );
+  assert.equal(badFormat.status, 400);
+  assert.equal(JSON.parse(badFormat.body).error, "INVALID_LIFECYCLE_PERIOD");
+
+  const reversedRange = await routeRequest(
+    approverRequest("GET", "/odata/ResourceLifecycle?from=2026-05&to=2026-04"),
+  );
+  assert.equal(reversedRange.status, 400);
+  assert.equal(
+    JSON.parse(reversedRange.body).error,
+    "INVALID_LIFECYCLE_PERIOD",
+  );
+});
+
+test("resource lifecycle shows goods receipts from approved days", async () => {
+  await routeRequest(
+    approverRequest("POST", "/odata/TimesheetApprovals", {
+      extNr: "SCHILZ",
+      date: "2026-04-08",
+      action: "approve",
+    }),
+  );
+  const response = await routeRequest(
+    approverRequest("GET", "/odata/ResourceLifecycle?ebeln=4500001234"),
+  );
+  const row = JSON.parse(response.body).value[0];
+  assert.equal(row.approvedHours, 16);
+  assert.equal(row.goodsReceiptHours, 8);
+  assert.equal(row.pendingGoodsReceiptHours, 8);
+  assert.deepEqual(row.goodsReceipts, [
+    { weDocument: "WE-000001", date: "2026-04-08", hours: 8 },
+  ]);
+});
+
+test("resource lifecycle picks up new orders, BANF and purchase orders", async () => {
+  await routeRequest(
+    approverRequest("POST", "/odata/PlanningReleases", {
+      extNr: "SCHILZ",
+      coIdent: "700000000004",
+      month: "2026-05",
+    }),
+  );
+  const created = await routeRequest(
+    approverRequest("POST", "/odata/Orders", {
+      extNr: "SCHILZ",
+      coIdent: "700000000004",
+      months: ["2026-05"],
+    }),
+  );
+  const { orderId } = JSON.parse(created.body);
+
+  const beforeBanf = await routeRequest(
+    approverRequest("GET", "/odata/ResourceLifecycle?ebeln=4500001234"),
+  );
+  const rowBefore = JSON.parse(beforeBanf.body).value[0];
+  assert.equal(rowBefore.orderedHours, 400);
+  assert.equal(rowBefore.purchaseOrderHours, 320);
+  const openOrder = rowBefore.orders.find((order) => order.orderId === orderId);
+  assert.equal(openOrder.status, "created");
+  assert.equal(openOrder.banfNumber, null);
+  assert.equal(openOrder.ebeln, null);
+
+  await routeRequest(approverRequest("POST", "/odata/OrderBanfs", { orderId }));
+  await routeRequest(approverRequest("POST", "/odata/PurchaseOrderSyncRuns"));
+
+  const afterSync = await routeRequest(
+    approverRequest("GET", "/odata/ResourceLifecycle?ebeln=4500001234"),
+  );
+  const rowAfter = JSON.parse(afterSync.body).value[0];
+  assert.equal(rowAfter.purchaseOrderHours, 400);
+  const syncedOrder = rowAfter.orders.find(
+    (order) => order.orderId === orderId,
+  );
+  assert.equal(syncedOrder.status, "bestellt");
+  assert.equal(syncedOrder.banfNumber, "10000001");
+  assert.equal(syncedOrder.ebeln, "4500001234");
+});
+
 test("reporting endpoints require the approver role", async () => {
   const budget = await routeRequest(request("GET", "/odata/BudgetMonitor"));
   assert.equal(budget.status, 403);
   const quota = await routeRequest(request("GET", "/odata/CostObjectQuota"));
   assert.equal(quota.status, 403);
+  const lifecycle = await routeRequest(
+    request("GET", "/odata/ResourceLifecycle"),
+  );
+  assert.equal(lifecycle.status, 403);
 });
 
 test("planning overview shows 12 months with valid combinations", async () => {

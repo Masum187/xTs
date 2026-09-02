@@ -15,6 +15,7 @@ Diese Datei beschreibt die fachlichen Service-Kontrakte fuer SAP-OData und die M
 | Timesheet    | `/odata/TimesheetDays`         | Tageskopf mit Leistungspositionen speichern         |
 | Genehmigung  | `/odata/ApprovalTimesheets`    | Freigegebene Tage (Status `F`) fuer Projektleiter   |
 | Genehmigung  | `/odata/TimesheetApprovals`    | Tag genehmigen oder zurueckweisen                   |
+| Reporting    | `/odata/ResourceLifecycle`     | Ressourcen-Live-Circle Plan bis Rechnung (XTS-070)  |
 | Reporting    | `/odata/BudgetMonitor`         | Budget-Monitor je Kontierung (XTS-071)              |
 | Reporting    | `/odata/CostObjectQuota`       | Stundenkontingent-Monitor je Mitarbeiter (XTS-072)  |
 | Planung      | `/odata/PlanningOverview`      | 12-Monatsuebersicht der Planstunden (XTS-020)       |
@@ -62,7 +63,9 @@ Diese Datei beschreibt die fachlichen Service-Kontrakte fuer SAP-OData und die M
 
 ## Reporting-Verhalten
 
-- Beide Reporting-Endpunkte erfordern die Rolle `approver`.
+- Alle Reporting-Endpunkte erfordern die Rolle `approver`.
+- `GET /odata/ResourceLifecycle` (XTS-070, analog `ZXRLM`) liefert je Mitarbeiter und Kontierung die Kette Planung -> Beauftragung -> BANF -> Bestellung -> Ist-Stunden -> Wareneingang -> Rechnung: `plannedHours` (alle Planstatus), `orderedHours` und `orders` (alle Beauftragungen inkl. Status, BANF-Nummer/-Position, `EBELN`/`EBELP`), `purchaseOrderHours` (Bestellmenge = Stunden bestellter Beauftragungen), `recordedHours` (Status `E`/`F`/`G`), `approvedHours` (`G`), `goodsReceiptHours` und `goodsReceipts` (genehmigte Tage mit `weDocument`), `pendingGoodsReceiptHours` (genehmigt ohne WE-Beleg = WE ausstehend). Filter: `?from=`/`?to=` (Monate `YYYY-MM`; Planung und Buchungen im Zeitraum, Beauftragungen mit Ueberschneidung; ungueltige oder umgekehrte Zeitraeume: HTTP 400), `?ebeln=`/`?ebelp=` (Zeilen mit passender Bestellung/Position).
+- Nicht vorhandene Daten werden leer geliefert, nie berechnet: `purchaseOrderPrice`, `invoicedHours` und `invoiceNumber` sind im Mock immer `null` (Bestellpreis und Rechnung sind nicht Teil des MVP).
 - Budgetquelle ist seit Epic 5 die Beauftragung: Budget je Kontierung = beauftragte Stunden qualifizierender Beauftragungen (Regel Infotyp 2, MVP: ab Status BANF/`P`). Verbrauch zaehlt nur genehmigte Tage (Status `G`).
 - `GET /odata/BudgetMonitor` liefert je Kontierung: Budget-, Verbrauchs-, Rest-Stunden, Verbrauch in % und Ampel (`green`/`yellow`/`red`, Grenzen aus simuliertem Customizing `budgetTrafficLight`, spaeter `ZXTS_REGELN_T`). Detailstufen via `?detail=employee` (Summe je Mitarbeiter) bzw. `?detail=day` (alle Tagesdetails).
 - `GET /odata/CostObjectQuota` liefert die abgeleiteten Freischaltungen je Mitarbeiter und Kontierung: Gueltigkeitszeitraum, beauftragte (`orderedHours`), gebuchte (`bookedHours`, Status `E`/`F`/`G`) und offene Stunden. Filter: `?lastName=` (Teilstring), `?team=`, `?from=`/`?to=` (Buchungsdatum); `?detail=day` blendet Tagesdetails inkl. Status ein.

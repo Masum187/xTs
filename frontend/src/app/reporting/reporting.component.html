@@ -7,6 +7,174 @@
 
 <section class="panel">
   <div class="section-title">
+    <h2>Ressourcen-Live-Circle</h2>
+    <p class="hint">
+      Planung → Beauftragung → BANF → Bestellung → Ist-Stunden → Wareneingang →
+      Rechnung je Mitarbeiter und Kontierung
+    </p>
+  </div>
+
+  <div class="filters">
+    <label>
+      Zeitraum von
+      <input
+        type="month"
+        aria-label="Zeitraum von"
+        [ngModel]="lifecycleFrom()"
+        (ngModelChange)="updateLifecycleFilter({ from: $event })"
+      />
+    </label>
+    <label>
+      Zeitraum bis
+      <input
+        type="month"
+        aria-label="Zeitraum bis"
+        [ngModel]="lifecycleTo()"
+        (ngModelChange)="updateLifecycleFilter({ to: $event })"
+      />
+    </label>
+    <label>
+      Einkaufsbeleg
+      <input
+        aria-label="Einkaufsbeleg"
+        placeholder="z. B. 4500001234"
+        [ngModel]="lifecycleEbeln()"
+        (ngModelChange)="updateLifecycleFilter({ ebeln: $event })"
+      />
+    </label>
+    <label>
+      Bestellposition
+      <input
+        aria-label="Bestellposition"
+        placeholder="z. B. 00010"
+        [ngModel]="lifecycleEbelp()"
+        (ngModelChange)="updateLifecycleFilter({ ebelp: $event })"
+      />
+    </label>
+  </div>
+
+  <div class="table-wrap">
+    <table data-testid="lifecycle-table" class="lifecycle">
+      <thead>
+        <tr>
+          <th>Mitarbeiter</th>
+          <th>Kontierung</th>
+          <th class="num">Plan</th>
+          <th>Beauftragung</th>
+          <th>BANF</th>
+          <th>Bestellung</th>
+          <th class="num">Bestellmenge</th>
+          <th class="num">Bestellpreis</th>
+          <th class="num">Ist erfasst</th>
+          <th class="num">Genehmigt</th>
+          <th>Wareneingang</th>
+          <th>Rechnung</th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (row of lifecycleRows(); track row.extNr + row.coIdent) {
+          <tr [attr.data-testid]="'lifecycle-' + row.extNr + '-' + row.coIdent">
+            <td>{{ row.displayName }}</td>
+            <td>
+              {{ row.coIdent }}
+              <span class="sub">{{ row.description }}</span>
+            </td>
+            <td class="num">{{ row.plannedHours }}</td>
+            <td>
+              @if (row.orders.length > 0) {
+                <strong>{{ row.orderedHours }} Std.</strong>
+                @for (order of row.orders; track order.orderId) {
+                  <span class="sub">
+                    {{ order.orderId }} · {{ order.hours }} Std. ·
+                    {{ orderStatusLabel(order.status) }}
+                  </span>
+                }
+              } @else {
+                <span class="empty">–</span>
+              }
+            </td>
+            <td>
+              @for (order of row.orders; track order.orderId) {
+                @if (order.banfNumber) {
+                  <span class="sub"
+                    >{{ order.banfNumber }}/{{ order.banfItem }}</span
+                  >
+                }
+              }
+              @if (!hasAny(row, "banfNumber")) {
+                <span class="empty">–</span>
+              }
+            </td>
+            <td>
+              @for (order of row.orders; track order.orderId) {
+                @if (order.ebeln) {
+                  <span class="sub">{{ order.ebeln }}/{{ order.ebelp }}</span>
+                }
+              }
+              @if (!hasAny(row, "ebeln")) {
+                <span class="empty">–</span>
+              }
+            </td>
+            <td class="num">
+              @if (row.purchaseOrderHours > 0) {
+                {{ row.purchaseOrderHours }}
+              } @else {
+                <span class="empty">–</span>
+              }
+            </td>
+            <td class="num">
+              @if (row.purchaseOrderPrice !== null) {
+                {{ row.purchaseOrderPrice }}
+              } @else {
+                <span class="empty">–</span>
+              }
+            </td>
+            <td class="num">{{ row.recordedHours }}</td>
+            <td class="num">{{ row.approvedHours }}</td>
+            <td [attr.data-testid]="'we-' + row.extNr + '-' + row.coIdent">
+              @if (row.goodsReceipts.length > 0) {
+                <strong>{{ row.goodsReceiptHours }} Std.</strong>
+                @for (receipt of row.goodsReceipts; track receipt.weDocument) {
+                  <span class="sub">
+                    {{ receipt.weDocument }} · {{ receipt.date }} ·
+                    {{ receipt.hours }} Std.
+                  </span>
+                }
+              } @else if (row.pendingGoodsReceiptHours === 0) {
+                <span class="empty">–</span>
+              }
+              @if (row.pendingGoodsReceiptHours > 0) {
+                <span class="sub pending">
+                  {{ row.pendingGoodsReceiptHours }} Std. WE ausstehend
+                </span>
+              }
+            </td>
+            <td [attr.data-testid]="'invoice-' + row.extNr + '-' + row.coIdent">
+              @if (row.invoiceNumber !== null) {
+                {{ row.invoiceNumber }}
+              } @else {
+                <span class="empty">–</span>
+              }
+            </td>
+          </tr>
+        } @empty {
+          <tr>
+            <td colspan="12" class="empty-hint" data-testid="lifecycle-empty">
+              Keine Daten für die aktuelle Selektion.
+            </td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  </div>
+  <p class="footnote">
+    „–" = keine Daten vorhanden. Bestellpreis und Rechnung sind nicht Teil des
+    MVP; genehmigte Stunden ohne WE-Beleg gelten als „WE ausstehend".
+  </p>
+</section>
+
+<section class="panel">
+  <div class="section-title">
     <h2>Budget-Monitor</h2>
     <label>
       Detailstufe
