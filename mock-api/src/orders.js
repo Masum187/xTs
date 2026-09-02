@@ -26,12 +26,20 @@ function releasedRows(planningEntries, orders) {
   );
 }
 
+function hasActiveAggregationRule(rules = []) {
+  return rules.some(
+    (rule) =>
+      rule.infotype === 1 && rule.active === true && rule.value === "MA_KONT",
+  );
+}
+
 /**
  * Kandidaten sind F-Planzeilen ohne Beauftragungsreferenz. Die vorgeschlagene
  * Zusammenfassung simuliert ZXTS_REGELN_T Infotyp 1: Aggregation je
  * Mitarbeiter und Kontierung, niemals ueber mehrere Mitarbeiter.
  */
-export function buildOrderCandidates(planningEntries, orders, filters) {
+export function buildOrderCandidates(planningEntries, orders, filters, rules) {
+  if (!hasActiveAggregationRule(rules)) return [];
   const { extNr, coIdent, from, to } = filters;
   const rows = releasedRows(planningEntries, orders)
     .filter((entry) => !extNr || entry.extNr === extNr)

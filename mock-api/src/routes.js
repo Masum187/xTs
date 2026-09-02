@@ -1,4 +1,4 @@
-import { buildEnablements } from "./enablement.js";
+import { buildEnablements, validateTimesheetEnablement } from "./enablement.js";
 import {
   costObjects,
   employees,
@@ -237,12 +237,17 @@ export async function routeRequest(request) {
     if (persona.error) return persona.error;
     const roleError = requireRole(persona, "planner");
     if (roleError) return roleError;
-    const value = buildOrderCandidates(planningStore, ordersState.orders, {
-      extNr: url.searchParams.get("extNr") ?? "",
-      coIdent: url.searchParams.get("coIdent") ?? "",
-      from: url.searchParams.get("from") ?? "",
-      to: url.searchParams.get("to") ?? "",
-    });
+    const value = buildOrderCandidates(
+      planningStore,
+      ordersState.orders,
+      {
+        extNr: url.searchParams.get("extNr") ?? "",
+        coIdent: url.searchParams.get("coIdent") ?? "",
+        from: url.searchParams.get("from") ?? "",
+        to: url.searchParams.get("to") ?? "",
+      },
+      rulesStore,
+    );
     return json({ value });
   }
 
@@ -385,6 +390,21 @@ export async function routeRequest(request) {
       return json({ error: "NOT_AUTHORIZED", reason: "foreign extNr" }, 403);
     }
     const saved = structuredClone(body);
+    const enablementError = validateTimesheetEnablement(
+      saved,
+      [...timesheetStore.values()],
+      ordersState.orders,
+      rulesStore,
+    );
+    if (enablementError) {
+      return json(
+        {
+          error: enablementError.code,
+          coIdent: enablementError.coIdent,
+        },
+        enablementError.status,
+      );
+    }
     timesheetStore.set(timesheetKey(saved), saved);
     return json(saved, 201);
   }

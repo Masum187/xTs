@@ -47,9 +47,13 @@ export class TimesheetService {
   }
 
   private async readJson<T>(response: Response): Promise<T> {
+    const body = (await response.json().catch(() => null)) as
+      ({ error?: string } & Partial<T>) | null;
     if (!response.ok) {
-      throw new Error(`Request failed with HTTP ${response.status}`);
+      throw new Error(
+        body?.error ?? `Request failed with HTTP ${response.status}`,
+      );
     }
-    return (await response.json()) as T;
+    return body as T;
   }
 }

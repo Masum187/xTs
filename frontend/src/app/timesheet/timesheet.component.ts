@@ -124,29 +124,37 @@ export class TimesheetComponent {
   }
 
   protected async save(): Promise<void> {
-    const draft: TimesheetDay = {
-      ...this.day(),
-      status: "E",
-      rejectionReason: undefined,
-    };
-    const saved = await this.persist(draft);
-    this.message.set(
-      this.day().status === "A"
-        ? "Korrektur als Entwurf gespeichert."
-        : "Entwurf gespeichert.",
-    );
-    this.day.set(saved);
+    try {
+      const draft: TimesheetDay = {
+        ...this.day(),
+        status: "E",
+        rejectionReason: undefined,
+      };
+      const saved = await this.persist(draft);
+      this.message.set(
+        this.day().status === "A"
+          ? "Korrektur als Entwurf gespeichert."
+          : "Entwurf gespeichert.",
+      );
+      this.day.set(saved);
+    } catch (error) {
+      this.message.set(this.saveErrorMessage(error));
+    }
   }
 
   protected async submit(): Promise<void> {
     if (!this.canSubmit()) return;
-    const saved = await this.persist({
-      ...this.day(),
-      status: "F",
-      rejectionReason: undefined,
-    });
-    this.day.set(saved);
-    this.message.set("Zur Genehmigung freigegeben.");
+    try {
+      const saved = await this.persist({
+        ...this.day(),
+        status: "F",
+        rejectionReason: undefined,
+      });
+      this.day.set(saved);
+      this.message.set("Zur Genehmigung freigegeben.");
+    } catch (error) {
+      this.message.set(this.saveErrorMessage(error));
+    }
   }
 
   private async persist(day: TimesheetDay): Promise<TimesheetDay> {
@@ -167,6 +175,13 @@ export class TimesheetComponent {
     if (!stillValid) {
       this.selectedCostObject.set(bookable[0]?.coIdent ?? "");
     }
+  }
+
+  private saveErrorMessage(error: unknown): string {
+    if (error instanceof Error && error.message === "COST_OBJECT_NOT_ENABLED") {
+      return "Kontierung ist für diesen Tag nicht freigeschaltet oder das Kontingent ist ausgeschöpft.";
+    }
+    return "Stundenzettel konnte nicht gespeichert werden.";
   }
 
   private async loadInitialData(): Promise<void> {

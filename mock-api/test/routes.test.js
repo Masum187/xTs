@@ -151,6 +151,59 @@ test("remaining hours shrink as soon as hours are saved", async () => {
   assert.equal(implementation.remainingHours, 298);
 });
 
+test("rejects timesheet lines without active enablement", async () => {
+  await routeRequest(
+    approverRequest("POST", "/odata/Rules", {
+      infotype: 2,
+      value: "P",
+      active: false,
+    }),
+  );
+  const response = await routeRequest(
+    request("POST", "/odata/TimesheetDays", {
+      extNr: "SCHILZ",
+      date: "2026-04-14",
+      startTime: "08:30",
+      endTime: "17:30",
+      breakMinutes: 30,
+      location: "remote",
+      status: "F",
+      lines: [
+        {
+          coIdent: "700000000004",
+          description: "nicht freigeschaltet",
+          hours: 8,
+        },
+      ],
+    }),
+  );
+  assert.equal(response.status, 409);
+  assert.equal(JSON.parse(response.body).error, "COST_OBJECT_NOT_ENABLED");
+});
+
+test("rejects timesheet lines outside the enabled period", async () => {
+  const response = await routeRequest(
+    request("POST", "/odata/TimesheetDays", {
+      extNr: "SCHILZ",
+      date: "2027-03-01",
+      startTime: "08:30",
+      endTime: "17:30",
+      breakMinutes: 30,
+      location: "remote",
+      status: "E",
+      lines: [
+        {
+          coIdent: "700000000004",
+          description: "nach Beauftragungsende",
+          hours: 4,
+        },
+      ],
+    }),
+  );
+  assert.equal(response.status, 409);
+  assert.equal(JSON.parse(response.body).coIdent, "700000000004");
+});
+
 test("returns own timesheets sorted by date descending", async () => {
   const response = await routeRequest(request("GET", "/odata/MyTimesheets"));
   const body = JSON.parse(response.body);
@@ -391,6 +444,22 @@ test("budget monitor traffic light turns red from customizing thresholds", async
   assert.equal(row.consumedPercent, 187.5);
   assert.equal(row.trafficLight, "red");
   assert.equal(row.remainingHours, -70);
+
+  const followUp = await routeRequest(
+    request("POST", "/odata/TimesheetDays", {
+      extNr: "SCHILZ",
+      date: "2026-03-21",
+      startTime: "08:00",
+      endTime: "09:00",
+      breakMinutes: 0,
+      location: "remote",
+      status: "E",
+      lines: [
+        { coIdent: "600000000009", description: "Nachbuchung", hours: 1 },
+      ],
+    }),
+  );
+  assert.equal(followUp.status, 409);
 });
 
 test("cost object quota lists derived enablements with booked hours", async () => {
@@ -734,6 +803,25 @@ test("order candidates support employee, cost object and period filters", async 
     approverRequest("GET", "/odata/OrderCandidates?from=2026-05&to=2026-12"),
   );
   assert.equal(JSON.parse(byPeriod.body).value.length, 0);
+});
+
+test("deactivating the aggregation rule disables order candidates", async () => {
+  const initial = await routeRequest(
+    approverRequest("GET", "/odata/OrderCandidates"),
+  );
+  assert.ok(JSON.parse(initial.body).value.length > 0);
+
+  await routeRequest(
+    approverRequest("POST", "/odata/Rules", {
+      infotype: 1,
+      value: "MA_KONT",
+      active: false,
+    }),
+  );
+  const response = await routeRequest(
+    approverRequest("GET", "/odata/OrderCandidates"),
+  );
+  assert.deepEqual(JSON.parse(response.body).value, []);
 });
 
 test("creates an order from planning rows and keeps references", async () => {

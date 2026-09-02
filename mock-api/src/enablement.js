@@ -122,3 +122,32 @@ export function buildEnablements(orders, days, rules) {
         a.coIdent.localeCompare(b.coIdent),
     );
 }
+
+export function validateTimesheetEnablement(day, days, orders, rules) {
+  const lines = day.lines ?? [];
+  if (day.status === "A" || lines.length === 0) return null;
+
+  const otherDays = days.filter(
+    (existing) => existing.extNr !== day.extNr || existing.date !== day.date,
+  );
+  const enablements = buildEnablements(orders, otherDays, rules);
+
+  for (const line of lines) {
+    const enabled = enablements.find(
+      (item) =>
+        item.extNr === day.extNr &&
+        item.coIdent === line.coIdent &&
+        item.remainingHours > 0 &&
+        item.validFrom <= day.date &&
+        day.date <= item.validTo,
+    );
+    if (!enabled) {
+      return {
+        status: 409,
+        code: "COST_OBJECT_NOT_ENABLED",
+        coIdent: line.coIdent,
+      };
+    }
+  }
+  return null;
+}
