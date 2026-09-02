@@ -107,6 +107,7 @@
     <h2>Leistungspositionen</h2>
     <div>
       <select
+        aria-label="Kontierung"
         [disabled]="!canEdit()"
         [ngModel]="selectedCostObject()"
         (ngModelChange)="selectedCostObject.set($event)"
@@ -122,6 +123,7 @@
       </select>
       <button
         type="button"
+        data-testid="add-line"
         [disabled]="!canEdit() || bookableCostObjects().length === 0"
         (click)="addLine()"
       >

@@ -12,6 +12,7 @@ Diese Datei beschreibt die fachlichen Service-Kontrakte fuer SAP-OData und die M
 | Stammdaten   | `/odata/CostObjects`           | Kontierungen lesen/pflegen (XTS-013)                |
 | Stammdaten   | `/odata/CostObjectChecks`      | Kontierung gegen SAP CO pruefen (Stub, XTS-013)     |
 | Stammdaten   | `/odata/CostObjectAssignments` | Mitarbeiter-Kontierungs-Zuordnung (Planungsbasis)   |
+| Betrieb      | `/odata/TestDataResets`        | Testdatenpaket UAT zuruecksetzen (XTS-082)          |
 | Timesheet    | `/odata/MyProfile`             | Angemeldeten Benutzer auf `EXTNR` abbilden          |
 | Timesheet    | `/odata/MyEnabledCostObjects`  | Freigeschaltete Kontierungen mit Reststunden        |
 | Timesheet    | `/odata/MyTimesheets`          | Eigene Stundeneintraege                             |
@@ -39,6 +40,10 @@ Diese Datei beschreibt die fachlichen Service-Kontrakte fuer SAP-OData und die M
 - `POST /odata/CostObjects` (analog `ZXTS_KONT_T`, XTS-013): Pflichtfelder `coIdent`, `description`, `active` (HTTP 400 `INVALID_COST_OBJECT`); `type` muss `KS`, `OR`, `PR`, `FB` oder `KL` sein (HTTP 400 `INVALID_COST_OBJECT_TYPE` mit `allowed`). `GET /odata/CostObjects` liefert nur nicht geloeschte Kontierungen; `?includeDeleted=true` alle. Geloeschte Kontierungen fallen aus Planungszeilen und Freischaltungen heraus; Buchungen darauf werden mit HTTP 409 `COST_OBJECT_NOT_ENABLED` abgelehnt.
 - `POST /odata/CostObjectChecks` mit `{ coIdent, type }` prueft gegen den SAP-CO-Stub (`sapCostObjectStub`, Phase 1): Antwort `{ valid, source: "SAP-CO-Stub", message }`; unbekannte Kontierung oder abweichende Objektart ergeben `valid: false`.
 - `POST /odata/CostObjectAssignments` (Mitarbeiter-Kontierung als Planungsbasis): `extNr`, `coIdent`, `validFrom`, `validTo` sind Pflicht (HTTP 400 `INVALID_ASSIGNMENT`); Mitarbeiter muss existieren (HTTP 404 `UNKNOWN_EMPLOYEE`), Kontierung darf nicht geloescht sein (HTTP 409 `COST_OBJECT_NOT_AVAILABLE`); Ueberschneidungen je Mitarbeiter und Kontierung: HTTP 409 `ASSIGNMENT_OVERLAP`. Die Beschreibung wird aus Kontierung und Mitarbeiter abgeleitet. Neue Zuordnungen erscheinen sofort als Planungszeilen.
+
+## Testdatenpaket (XTS-082)
+
+- `POST /odata/TestDataResets` (Rolle `admin`) setzt Stamm- und Bewegungsdaten der Mock-API auf den in [testdaten-uat-v0.1.md](testdaten-uat-v0.1.md) dokumentierten Ausgangsstand zurueck und liefert `package`, `resetBy`, `resetAt` und `counts` (Mitarbeiter, Teams, Kontierungen, Zuordnungen, Planzeilen, Beauftragungen, Stundenzettel-Tage).
 
 ## Genehmigungs-Verhalten
 

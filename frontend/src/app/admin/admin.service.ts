@@ -10,6 +10,7 @@ import type {
   Rule,
   Team,
   TeamAssignment,
+  TestDataReset,
 } from "./admin.models";
 
 interface ODataResponse<T> {
@@ -98,6 +99,10 @@ export class AdminService {
     assignment: Partial<CostObjectAssignment>,
   ): Promise<CostObjectAssignment> {
     return this.post<CostObjectAssignment>("CostObjectAssignments", assignment);
+  }
+
+  resetTestData(): Promise<TestDataReset> {
+    return this.post<TestDataReset>("TestDataResets", {});
   }
 
   private async list<T>(path: string, query = ""): Promise<T[]> {

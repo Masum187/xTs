@@ -210,3 +210,11 @@ tr.deleted td {
   display: block;
   font-size: 12px;
 }
+
+.testdata .section-title {
+  align-items: flex-start;
+}
+
+.testdata .hint {
+  margin-top: 4px;
+}

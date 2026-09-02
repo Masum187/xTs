@@ -140,6 +140,30 @@ export async function routeRequest(request) {
     });
   }
 
+  // Testdatenpaket (XTS-082): setzt Stamm- und Bewegungsdaten auf den
+  // dokumentierten UAT-Ausgangsstand zurueck (docs/testdaten-uat-v0.1.md).
+  if (request.method === "POST" && path === "/odata/TestDataResets") {
+    const persona = resolvePersona(request);
+    if (persona.error) return persona.error;
+    const roleError = requireRole(persona, "admin");
+    if (roleError) return roleError;
+    resetTimesheetStore();
+    return json({
+      package: "uat-v0.1",
+      resetBy: persona.employee.extNr,
+      resetAt: new Date().toISOString(),
+      counts: {
+        employees: masterData.employees.length,
+        teams: masterData.teams.length,
+        costObjects: masterData.costObjects.length,
+        assignments: masterData.assignments.length,
+        planningEntries: planningStore.length,
+        orders: ordersState.orders.length,
+        timesheetDays: timesheetStore.size,
+      },
+    });
+  }
+
   if (request.method === "POST" && path === "/odata/CostObjectChecks") {
     const persona = resolvePersona(request);
     if (persona.error) return persona.error;

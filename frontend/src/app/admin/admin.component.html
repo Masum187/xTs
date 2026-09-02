@@ -16,6 +16,27 @@
   </section>
 }
 
+<section class="panel testdata">
+  <div class="section-title">
+    <div>
+      <h2>Testdatenpaket UAT</h2>
+      <p class="hint">
+        Setzt Stamm- und Bewegungsdaten der Mock-API auf den dokumentierten
+        Ausgangsstand zurück (docs/testdaten-uat-v0.1.md), z. B. vor einem neuen
+        UAT-Durchlauf.
+      </p>
+    </div>
+    <button
+      type="button"
+      class="secondary"
+      (click)="resetTestData()"
+      data-testid="reset-test-data"
+    >
+      Testdaten zurücksetzen
+    </button>
+  </div>
+</section>
+
 <section class="panel">
   <div class="section-title">
     <h2>Mitarbeiter (ZXTS_WIW_T)</h2>
