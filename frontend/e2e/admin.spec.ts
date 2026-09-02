@@ -147,6 +147,57 @@ test("admin maintains master data and sees the effect in planning", async ({
   ).toBeHidden();
 });
 
+test("admin sees status changes and job errors in the audit log", async ({
+  page,
+  request,
+}) => {
+  const API = "http://127.0.0.1:4010/odata";
+  const ADMIN = { "x-mock-oauth-upn": "christian.roeper@qualitytimes.de" };
+  await request.post(`${API}/TimesheetDays`, {
+    data: {
+      extNr: "SCHILZ",
+      date: "2026-04-02",
+      startTime: "08:30",
+      endTime: "12:30",
+      breakMinutes: 0,
+      location: "remote",
+      status: "F",
+      lines: [
+        { coIdent: "700000000004", description: "Protokollprobe", hours: 4 },
+      ],
+    },
+  });
+  await request.post(`${API}/TimesheetApprovals`, {
+    headers: ADMIN,
+    data: { extNr: "SCHILZ", date: "2026-04-02", action: "approve" },
+  });
+  const duplicateBanf = await request.post(`${API}/OrderBanfs`, {
+    headers: ADMIN,
+    data: { orderId: "BEAUF-9001" },
+  });
+  expect(duplicateBanf.status()).toBe(409);
+  expect((await duplicateBanf.json()).message).toContain("bereits eine BANF");
+
+  await page.goto("/");
+  await page
+    .getByTestId("persona-select")
+    .selectOption("christian.roeper@qualitytimes.de");
+  await page.getByRole("link", { name: "Verwaltung" }).click();
+
+  const table = page.getByTestId("audit-table");
+  await expect(table).toContainText("SCHILZ/2026-04-02");
+  await expect(table).toContainText("Wareneingang WE-");
+  await expect(table).toContainText("F → G");
+
+  await page.getByLabel("Protokoll Schweregrad").selectOption("error");
+  await expect(table).toContainText("BANF-Anlage abgelehnt");
+  await expect(table).not.toContainText("Wareneingang WE-");
+
+  await page.getByLabel("Protokoll Schweregrad").selectOption("");
+  await page.getByLabel("Protokoll Suche").fill("gibtesnicht");
+  await expect(page.getByTestId("audit-empty")).toBeVisible();
+});
+
 test("admin area is not reachable without admin role", async ({ page }) => {
   await page.goto("/admin");
   await expect(

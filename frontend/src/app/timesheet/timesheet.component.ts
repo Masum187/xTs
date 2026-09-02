@@ -1,6 +1,8 @@
 import { Component, computed, inject, signal } from "@angular/core";
 import { FormsModule } from "@angular/forms";
 
+import { describeApiError } from "../shared/api-error";
+
 import {
   canEditTimesheet,
   canSubmitTimesheet,
@@ -178,10 +180,10 @@ export class TimesheetComponent {
   }
 
   private saveErrorMessage(error: unknown): string {
-    if (error instanceof Error && error.message === "COST_OBJECT_NOT_ENABLED") {
-      return "Kontierung ist für diesen Tag nicht freigeschaltet oder das Kontingent ist ausgeschöpft.";
-    }
-    return "Stundenzettel konnte nicht gespeichert werden.";
+    return describeApiError(
+      error,
+      "Stundenzettel konnte nicht gespeichert werden.",
+    );
   }
 
   private async loadInitialData(): Promise<void> {

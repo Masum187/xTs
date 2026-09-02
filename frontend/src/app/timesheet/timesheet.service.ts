@@ -2,6 +2,7 @@ import { Injectable, inject } from "@angular/core";
 
 import { environment } from "../../environments/environment";
 import { AuthService } from "../auth/auth.service";
+import { readApiJson } from "../shared/api-error";
 import type { EnabledCostObject, TimesheetDay } from "./timesheet.models";
 
 interface ODataResponse<T> {
@@ -46,14 +47,7 @@ export class TimesheetService {
     return this.readJson<TimesheetDay>(response);
   }
 
-  private async readJson<T>(response: Response): Promise<T> {
-    const body = (await response.json().catch(() => null)) as
-      ({ error?: string } & Partial<T>) | null;
-    if (!response.ok) {
-      throw new Error(
-        body?.error ?? `Request failed with HTTP ${response.status}`,
-      );
-    }
-    return body as T;
+  private readJson<T>(response: Response): Promise<T> {
+    return readApiJson<T>(response);
   }
 }

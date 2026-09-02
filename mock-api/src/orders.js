@@ -178,6 +178,7 @@ export function createBanf(state, planningEntries, payload) {
 export function runPurchaseOrderSync(state, planningEntries) {
   let updated = 0;
   const errors = [];
+  const updatedOrders = [];
   for (const order of state.orders) {
     if (order.status !== "banf") continue;
     const purchaseOrder = purchaseOrders[order.coIdent];
@@ -196,6 +197,7 @@ export function runPurchaseOrderSync(state, planningEntries) {
     order.status = "bestellt";
     setPlanningStatus(planningEntries, order, "B");
     updated += 1;
+    updatedOrders.push({ ...order });
   }
-  return { updated, errors };
+  return { updated, errors, updatedOrders };
 }

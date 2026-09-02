@@ -1,7 +1,9 @@
 import { Component, inject, signal } from "@angular/core";
 import { FormsModule } from "@angular/forms";
 
+import { ApiError, describeApiError } from "../shared/api-error";
 import type {
+  AuditEntry,
   CostObject,
   CostObjectAssignment,
   CostObjectAssignmentDraft,
@@ -15,7 +17,7 @@ import type {
   TeamDraft,
 } from "./admin.models";
 import { COST_OBJECT_TYPES } from "./admin.models";
-import { AdminApiError, AdminService } from "./admin.service";
+import { AdminService } from "./admin.service";
 
 const INFOTYPE_LABELS: Record<number, string> = {
   1: "Aggregation Beauftragung",
@@ -30,20 +32,12 @@ const VALUE_OPTIONS: Record<number, { value: string; label: string }[]> = {
   ],
 };
 
-const ERROR_TEXTS: Record<string, string> = {
-  INVALID_EMPLOYEE: "Mitarbeiter unvollständig, Pflichtfelder",
-  UNKNOWN_RESOURCE_MANAGER: "Ressourcenmanager ist kein bekannter Mitarbeiter",
-  INVALID_TEAM: "Team unvollständig, Pflichtfelder",
-  INVALID_TEAM_ASSIGNMENT: "Teamzuordnung unvollständig, Pflichtfelder",
-  TEAM_ASSIGNMENT_OVERLAP: "Teamzuordnung überschneidet sich mit Zuordnung",
-  TEAM_NOT_AVAILABLE: "Team ist inaktiv oder gelöscht",
-  UNKNOWN_EMPLOYEE: "Mitarbeiter ist nicht bekannt",
-  INVALID_COST_OBJECT: "Kontierung unvollständig, Pflichtfelder",
-  INVALID_COST_OBJECT_TYPE: "Kontierungsart unzulässig, erlaubt",
-  COST_OBJECT_NOT_AVAILABLE: "Kontierung ist gelöscht oder unbekannt",
-  INVALID_ASSIGNMENT: "Zuordnung unvollständig, Pflichtfelder",
-  ASSIGNMENT_OVERLAP: "Zuordnung überschneidet sich mit Zuordnung",
-  NOT_AUTHORIZED: "Keine Berechtigung",
+const CATEGORY_LABELS: Record<string, string> = {
+  status: "Statuswechsel",
+  job: "Job",
+  masterdata: "Stammdaten",
+  rule: "Regelwerk",
+  system: "System",
 };
 
 function emptyEmployee(): EmployeeDraft {
@@ -93,6 +87,11 @@ export class AdminComponent {
   protected readonly assignments = signal<CostObjectAssignment[]>([]);
   protected readonly rules = signal<Rule[]>([]);
 
+  protected readonly auditEntries = signal<AuditEntry[]>([]);
+  protected readonly auditCategory = signal<string>("");
+  protected readonly auditSeverity = signal<string>("");
+  protected readonly auditSearch = signal<string>("");
+
   protected newEmployee = emptyEmployee();
   protected newTeam = emptyTeam();
   protected newTeamAssignment = emptyTeamAssignment();
@@ -112,6 +111,27 @@ export class AdminComponent {
 
   protected valueOptions(rule: Rule): { value: string; label: string }[] {
     return VALUE_OPTIONS[rule.infotype];
+  }
+
+  protected categoryLabel(category: string): string {
+    return CATEGORY_LABELS[category] ?? category;
+  }
+
+  protected formatTime(iso: string): string {
+    return iso.replace("T", " ").slice(0, 19);
+  }
+
+  protected async updateAuditFilter(
+    patch: Partial<{ category: string; severity: string; q: string }>,
+  ): Promise<void> {
+    if (patch.category !== undefined) this.auditCategory.set(patch.category);
+    if (patch.severity !== undefined) this.auditSeverity.set(patch.severity);
+    if (patch.q !== undefined) this.auditSearch.set(patch.q);
+    await this.loadAuditLog();
+  }
+
+  protected async reloadAuditLog(): Promise<void> {
+    await this.loadAuditLog();
   }
 
   protected activeEmployees(): Employee[] {
@@ -230,7 +250,7 @@ export class AdminComponent {
     await this.run(async () => {
       const result = await this.adminService.checkCostObject(costObject);
       if (!result.valid) {
-        throw new AdminApiError(200, "CO_CHECK_FAILED", [result.message]);
+        throw new ApiError(200, "CO_CHECK_FAILED", result.message);
       }
       return `SAP-CO-Prüfung (${result.source}): ${result.message}`;
     });
@@ -279,22 +299,14 @@ export class AdminComponent {
       this.messageKind.set("error");
       this.message.set(this.describeError(error));
     }
+    await this.loadAuditLog();
   }
 
   private describeError(error: unknown): string {
-    if (error instanceof AdminApiError) {
-      if (error.code === "CO_CHECK_FAILED") {
-        return `SAP-CO-Prüfung nicht bestanden: ${error.fields[0] ?? ""}`;
-      }
-      const text = ERROR_TEXTS[error.code] ?? `Fehler ${error.code}`;
-      const details = error.conflictId
-        ? ` ${error.conflictId}`
-        : error.fields.length > 0
-          ? `: ${error.fields.join(", ")}`
-          : "";
-      return `${text}${details}.`;
+    if (error instanceof ApiError && error.code === "CO_CHECK_FAILED") {
+      return `SAP-CO-Prüfung nicht bestanden: ${error.message}`;
     }
-    return "Speichern fehlgeschlagen.";
+    return describeApiError(error, "Speichern fehlgeschlagen.");
   }
 
   private async loadAll(): Promise<void> {
@@ -305,7 +317,18 @@ export class AdminComponent {
       this.loadCostObjects(),
       this.loadAssignments(),
       this.adminService.getRules().then((rules) => this.rules.set(rules)),
+      this.loadAuditLog(),
     ]);
+  }
+
+  private async loadAuditLog(): Promise<void> {
+    this.auditEntries.set(
+      await this.adminService.getAuditLog({
+        category: this.auditCategory(),
+        severity: this.auditSeverity(),
+        q: this.auditSearch().trim(),
+      }),
+    );
   }
 
   private async loadEmployees(): Promise<void> {

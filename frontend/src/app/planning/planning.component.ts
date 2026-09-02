@@ -1,6 +1,8 @@
 import { Component, computed, inject, signal } from "@angular/core";
 import { FormsModule } from "@angular/forms";
 
+import { describeApiError } from "../shared/api-error";
+
 import type { Team } from "../reporting/reporting.models";
 import { ReportingService } from "../reporting/reporting.service";
 import { formatMonthLabel, parseStartMonth } from "./planning.logic";
@@ -79,20 +81,29 @@ export class PlanningComponent {
   ): Promise<void> {
     const hours = Number(rawValue);
     if (Number.isNaN(hours) || hours < 0) return;
-    const result = await this.planningService.saveEntry(
-      row.extNr,
-      row.coIdent,
-      cell.month,
-      hours,
-    );
-    this.message.set(
-      `Planstunden für ${row.displayName}, ${this.formatMonth(cell.month)} gespeichert.`,
-    );
-    this.warning.set(
-      result.overbooked
-        ? `Überplanung: ${result.plannedTotal} Std. geplant bei ${result.availableHours} Std. verfügbar (${row.displayName}, ${this.formatMonth(cell.month)}).`
-        : "",
-    );
+    try {
+      const result = await this.planningService.saveEntry(
+        row.extNr,
+        row.coIdent,
+        cell.month,
+        hours,
+      );
+      this.message.set(
+        `Planstunden für ${row.displayName}, ${this.formatMonth(cell.month)} gespeichert.`,
+      );
+      this.warning.set(
+        result.overbooked
+          ? `Überplanung: ${result.plannedTotal} Std. geplant bei ${result.availableHours} Std. verfügbar (${row.displayName}, ${this.formatMonth(cell.month)}).`
+          : "",
+      );
+    } catch (error) {
+      this.message.set(
+        describeApiError(
+          error,
+          "Planstunden konnten nicht gespeichert werden.",
+        ),
+      );
+    }
     await this.load();
   }
 
@@ -100,10 +111,20 @@ export class PlanningComponent {
     row: PlanningRow,
     cell: PlanningCell,
   ): Promise<void> {
-    await this.planningService.releaseEntry(row.extNr, row.coIdent, cell.month);
-    this.message.set(
-      `Planzeile ${row.displayName}, ${this.formatMonth(cell.month)} für BANF freigegeben.`,
-    );
+    try {
+      await this.planningService.releaseEntry(
+        row.extNr,
+        row.coIdent,
+        cell.month,
+      );
+      this.message.set(
+        `Planzeile ${row.displayName}, ${this.formatMonth(cell.month)} für BANF freigegeben.`,
+      );
+    } catch (error) {
+      this.message.set(
+        describeApiError(error, "Planzeile konnte nicht freigegeben werden."),
+      );
+    }
     await this.load();
   }
 

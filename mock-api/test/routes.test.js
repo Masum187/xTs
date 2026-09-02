@@ -1800,3 +1800,255 @@ test("test data reset restores the documented UAT package", async () => {
     .cells.find((item) => item.month === "2026-04");
   assert.equal(cell.status, "V");
 });
+
+test("critical status changes are written to the audit log", async () => {
+  await routeRequest(
+    request("POST", "/odata/TimesheetDays", {
+      extNr: "SCHILZ",
+      date: "2026-04-13",
+      startTime: "08:30",
+      endTime: "17:30",
+      breakMinutes: 30,
+      location: "remote",
+      status: "F",
+      lines: [{ coIdent: "700000000004", description: "Daily", hours: 2 }],
+    }),
+  );
+  await routeRequest(
+    approverRequest("POST", "/odata/TimesheetApprovals", {
+      extNr: "SCHILZ",
+      date: "2026-04-13",
+      action: "approve",
+    }),
+  );
+  await routeRequest(
+    approverRequest("POST", "/odata/TimesheetApprovals", {
+      extNr: "ROEPER",
+      date: "2026-04-08",
+      action: "reject",
+      reason: "Bitte präzisieren.",
+    }),
+  );
+  await routeRequest(
+    approverRequest("POST", "/odata/PlanningReleases", {
+      extNr: "SCHILZ",
+      coIdent: "700000000004",
+      month: "2026-04",
+    }),
+  );
+  await routeRequest(
+    approverRequest("POST", "/odata/Rules", {
+      infotype: 2,
+      value: "B",
+      active: true,
+    }),
+  );
+
+  const response = await routeRequest(
+    approverRequest("GET", "/odata/AuditLog"),
+  );
+  const log = JSON.parse(response.body).value;
+  assert.equal(response.status, 200);
+  assert.deepEqual(
+    log.map(
+      (entry) => `${entry.category}:${entry.object}:${entry.from}>${entry.to}`,
+    ),
+    [
+      "rule:rule:P/aktiv>B/aktiv",
+      "status:planning:V>F",
+      "status:timesheet:F>A",
+      "status:timesheet:F>G",
+      "status:timesheet:E>F",
+    ],
+  );
+  const approval = log.find((entry) => entry.to === "G");
+  assert.equal(approval.actor, "ROEPER");
+  assert.equal(approval.objectKey, "SCHILZ/2026-04-13");
+  assert.equal(approval.details.weDocument, "WE-000001");
+  assert.match(approval.message, /Wareneingang WE-000001/);
+  const rejection = log.find((entry) => entry.to === "A");
+  assert.equal(rejection.details.reason, "Bitte präzisieren.");
+  const submission = log.find(
+    (entry) => entry.to === "F" && entry.object === "timesheet",
+  );
+  assert.equal(submission.actor, "SCHILZ");
+  assert.match(submission.message, /vorher Entwurf/);
+  assert.match(log[0].id, /^LOG-\d{6}$/);
+  assert.match(log[0].at, /^\d{4}-\d{2}-\d{2}T/);
+});
+
+test("jobs write technical errors to the audit log with details", async () => {
+  await routeRequest(
+    approverRequest("POST", "/odata/PlanningReleases", {
+      extNr: "ROEPER",
+      coIdent: "600000000001",
+      month: "2026-04",
+    }),
+  );
+  const created = await routeRequest(
+    approverRequest("POST", "/odata/Orders", {
+      extNr: "ROEPER",
+      coIdent: "600000000001",
+      months: ["2026-04"],
+    }),
+  );
+  const { orderId } = JSON.parse(created.body);
+  await routeRequest(approverRequest("POST", "/odata/OrderBanfs", { orderId }));
+  await routeRequest(approverRequest("POST", "/odata/OrderBanfs", { orderId }));
+  await routeRequest(approverRequest("POST", "/odata/PurchaseOrderSyncRuns"));
+
+  const errors = await routeRequest(
+    approverRequest("GET", "/odata/AuditLog?severity=error"),
+  );
+  const errorLog = JSON.parse(errors.body).value;
+  assert.equal(errorLog.length, 2);
+  assert.ok(errorLog.every((entry) => entry.category === "job"));
+  const syncError = errorLog.find(
+    (entry) => entry.details.source === "po-sync",
+  );
+  assert.equal(syncError.objectKey, orderId);
+  assert.equal(syncError.details.banfNumber, "10000001");
+  assert.equal(syncError.details.coIdent, "600000000001");
+  assert.match(syncError.message, /Keine Bestellung zur BANF/);
+  const banfError = errorLog.find((entry) => entry.details.source === "banf");
+  assert.equal(banfError.details.code, "BANF_ALREADY_EXISTS");
+
+  const statusLog = JSON.parse(
+    (
+      await routeRequest(
+        approverRequest("GET", "/odata/AuditLog?category=status&object=order"),
+      )
+    ).body,
+  ).value;
+  assert.deepEqual(
+    statusLog.map((entry) => entry.to),
+    ["banf", "created"],
+  );
+});
+
+test("audit log supports filters, search, limit and admin role", async () => {
+  await routeRequest(
+    approverRequest("POST", "/odata/Teams", {
+      id: "QA",
+      name: "QA",
+      active: true,
+    }),
+  );
+  await routeRequest(
+    approverRequest("POST", "/odata/CostObjects", {
+      coIdent: "600000000042",
+      type: "KS",
+      description: "QA Kostenstelle",
+      active: true,
+    }),
+  );
+  await routeRequest(approverRequest("POST", "/odata/TestDataResets"));
+
+  const afterReset = JSON.parse(
+    (await routeRequest(approverRequest("GET", "/odata/AuditLog"))).body,
+  ).value;
+  assert.equal(afterReset.length, 1);
+  assert.equal(afterReset[0].category, "system");
+
+  await routeRequest(
+    approverRequest("POST", "/odata/Teams", {
+      id: "QA",
+      name: "QA",
+      active: true,
+    }),
+  );
+  await routeRequest(
+    approverRequest("POST", "/odata/Teams", {
+      id: "QA",
+      name: "QA",
+      active: true,
+      deleted: true,
+    }),
+  );
+  const masterdata = JSON.parse(
+    (
+      await routeRequest(
+        approverRequest("GET", "/odata/AuditLog?category=masterdata"),
+      )
+    ).body,
+  ).value;
+  assert.deepEqual(
+    masterdata.map((entry) => `${entry.object}:${entry.objectKey}:${entry.to}`),
+    ["Team:QA:gelöscht", "Team:QA:gespeichert"],
+  );
+  const search = JSON.parse(
+    (
+      await routeRequest(
+        approverRequest("GET", "/odata/AuditLog?q=gel%C3%B6scht"),
+      )
+    ).body,
+  ).value;
+  assert.equal(search.length, 1);
+  const limited = JSON.parse(
+    (await routeRequest(approverRequest("GET", "/odata/AuditLog?limit=1")))
+      .body,
+  ).value;
+  assert.equal(limited.length, 1);
+  assert.equal(limited[0].to, "gelöscht");
+  const today = new Date().toISOString().slice(0, 10);
+  const dated = JSON.parse(
+    (
+      await routeRequest(
+        approverRequest("GET", `/odata/AuditLog?from=${today}&to=${today}`),
+      )
+    ).body,
+  ).value;
+  assert.equal(dated.length, 3);
+
+  const denied = await routeRequest(request("GET", "/odata/AuditLog"));
+  assert.equal(denied.status, 403);
+});
+
+test("error responses carry a user-readable message", async () => {
+  const notEnabled = await routeRequest(
+    request("POST", "/odata/TimesheetDays", {
+      extNr: "SCHILZ",
+      date: "2026-04-14",
+      startTime: "08:00",
+      endTime: "10:00",
+      breakMinutes: 0,
+      location: "remote",
+      status: "E",
+      lines: [{ coIdent: "600000000009", description: "Alt", hours: 2 }],
+    }),
+  );
+  const notEnabledBody = JSON.parse(notEnabled.body);
+  assert.equal(notEnabledBody.error, "COST_OBJECT_NOT_ENABLED");
+  assert.equal(
+    notEnabledBody.message,
+    "Kontierung ist für diesen Tag nicht freigeschaltet oder das Kontingent ist ausgeschöpft. (600000000009)",
+  );
+
+  const locked = await routeRequest(
+    approverRequest("POST", "/odata/PlanningEntries", {
+      extNr: "SCHILZ",
+      coIdent: "600000000001",
+      month: "2026-03",
+      hours: 10,
+    }),
+  );
+  assert.match(
+    JSON.parse(locked.body).message,
+    /bereits freigegeben oder beauftragt/,
+  );
+
+  const invalidEmployee = await routeRequest(
+    approverRequest("POST", "/odata/Employees", { extNr: "X", active: true }),
+  );
+  assert.equal(
+    JSON.parse(invalidEmployee.body).message,
+    "Der Mitarbeiter kann nicht gespeichert werden, Pflichtfelder fehlen. (NACHNAME, VORNAME)",
+  );
+
+  const denied = await routeRequest(request("GET", "/odata/AuditLog"));
+  assert.match(JSON.parse(denied.body).message, /Berechtigung/);
+
+  const unknown = await routeRequest(request("GET", "/odata/Nichts"));
+  assert.equal(unknown.status, 404);
+  assert.match(JSON.parse(unknown.body).message, /nicht verarbeitet/);
+});

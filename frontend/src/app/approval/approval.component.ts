@@ -1,6 +1,8 @@
 import { Component, computed, inject, signal } from "@angular/core";
 import { FormsModule } from "@angular/forms";
 
+import { describeApiError } from "../shared/api-error";
+
 import { sumLineHours } from "../timesheet/timesheet.logic";
 import type { ApprovalDay } from "../timesheet/timesheet.models";
 import {
@@ -46,11 +48,20 @@ export class ApprovalComponent {
   }
 
   protected async approve(day: ApprovalDay): Promise<void> {
-    const approved = await this.approvalService.approveDay(day.extNr, day.date);
-    this.removeDay(day);
-    this.message.set(
-      `Tag ${day.date} von ${day.displayName} genehmigt, Wareneingang ${approved.weDocument} gebucht.`,
-    );
+    try {
+      const approved = await this.approvalService.approveDay(
+        day.extNr,
+        day.date,
+      );
+      this.removeDay(day);
+      this.message.set(
+        `Tag ${day.date} von ${day.displayName} genehmigt, Wareneingang ${approved.weDocument} gebucht.`,
+      );
+    } catch (error) {
+      this.message.set(
+        describeApiError(error, "Tag konnte nicht genehmigt werden."),
+      );
+    }
   }
 
   protected startReject(day: ApprovalDay): void {
@@ -66,10 +77,18 @@ export class ApprovalComponent {
   protected async confirmReject(day: ApprovalDay): Promise<void> {
     const reason = this.rejectReason().trim();
     if (!reason) return;
-    await this.approvalService.rejectDay(day.extNr, day.date, reason);
-    this.removeDay(day);
-    this.cancelReject();
-    this.message.set(`Tag ${day.date} von ${day.displayName} zurückgewiesen.`);
+    try {
+      await this.approvalService.rejectDay(day.extNr, day.date, reason);
+      this.removeDay(day);
+      this.cancelReject();
+      this.message.set(
+        `Tag ${day.date} von ${day.displayName} zurückgewiesen.`,
+      );
+    } catch (error) {
+      this.message.set(
+        describeApiError(error, "Tag konnte nicht zurückgewiesen werden."),
+      );
+    }
   }
 
   private removeDay(day: ApprovalDay): void {
