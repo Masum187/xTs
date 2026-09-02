@@ -6,9 +6,12 @@ Diese Datei beschreibt die fachlichen Service-Kontrakte fuer SAP-OData und die M
 
 | Service      | Pfad                           | Zweck                                               |
 | ------------ | ------------------------------ | --------------------------------------------------- |
-| Stammdaten   | `/odata/Employees`             | Mitarbeiter lesen                                   |
-| Stammdaten   | `/odata/Teams`                 | Teams lesen                                         |
-| Stammdaten   | `/odata/CostObjects`           | Kontierungen lesen                                  |
+| Stammdaten   | `/odata/Employees`             | Mitarbeiter lesen/pflegen (XTS-010)                 |
+| Stammdaten   | `/odata/Teams`                 | Teams lesen/pflegen (XTS-011)                       |
+| Stammdaten   | `/odata/TeamAssignments`       | Zeitliche Teamzuordnung lesen/pflegen (XTS-012)     |
+| Stammdaten   | `/odata/CostObjects`           | Kontierungen lesen/pflegen (XTS-013)                |
+| Stammdaten   | `/odata/CostObjectChecks`      | Kontierung gegen SAP CO pruefen (Stub, XTS-013)     |
+| Stammdaten   | `/odata/CostObjectAssignments` | Mitarbeiter-Kontierungs-Zuordnung (Planungsbasis)   |
 | Timesheet    | `/odata/MyProfile`             | Angemeldeten Benutzer auf `EXTNR` abbilden          |
 | Timesheet    | `/odata/MyEnabledCostObjects`  | Freigeschaltete Kontierungen mit Reststunden        |
 | Timesheet    | `/odata/MyTimesheets`          | Eigene Stundeneintraege                             |
@@ -26,6 +29,16 @@ Diese Datei beschreibt die fachlichen Service-Kontrakte fuer SAP-OData und die M
 | Beauftragung | `/odata/OrderBanfs`            | BANF simuliert anlegen und rueckschreiben (XTS-032) |
 | Beauftragung | `/odata/PurchaseOrderSyncRuns` | Bestelldaten-Job simuliert ausfuehren (XTS-033)     |
 | Beauftragung | `/odata/OrderProtocol`         | Fehlerprotokoll zu BANF und Bestelldaten-Job        |
+
+## Stammdaten-Verhalten (Epic 2)
+
+- Lesen ist fuer alle angemeldeten Personas moeglich; alle Schreibzugriffe (`POST`) erfordern die Rolle `admin` (sonst HTTP 403 `NOT_AUTHORIZED`). Jeder `POST` ist ein Upsert; `deleted: true` loescht logisch. `changedBy` (EXTNR des Aenderers) und `changedAt` (ISO-Zeitstempel) werden bei jedem Schreiben gesetzt.
+- `POST /odata/Employees` (analog `ZXTS_WIW_T`, XTS-010): Pflichtfelder `extNr`, `lastName`, `firstName`, `active` (Status); fehlende Felder: HTTP 400 `INVALID_EMPLOYEE` mit `fields` (`EXTNR`, `NACHNAME`, `VORNAME`, `STATUS`). Optional `company`, `sapAccount`, `resourceManager` (muss bekannter Mitarbeiter sein, sonst HTTP 400 `UNKNOWN_RESOURCE_MANAGER`). `GET /odata/Employees` liefert nur nicht geloeschte Mitarbeiter; `?includeDeleted=true` alle. Geloeschte oder inaktive Mitarbeiter erhalten in `MyProfile` HTTP 403 `EMPLOYEE_INACTIVE` und erscheinen nicht in der Planung.
+- `POST /odata/Teams` (analog `ZXTS_TEAM_T`, XTS-011): Pflichtfelder `id`, `name`, `active` (HTTP 400 `INVALID_TEAM`). `GET /odata/Teams` liefert nur aktive, nicht geloeschte Teams (Selektionen in Planung und Reporting); `?includeInactive=true` alle.
+- `POST /odata/TeamAssignments` (analog `ZXTS_MATEAM_T`, XTS-012): `extNr`, `teamId`, `validFrom`, `validTo` sind Pflicht (HTTP 400 `INVALID_TEAM_ASSIGNMENT` mit `fields`); Team muss aktiv sein (HTTP 409 `TEAM_NOT_AVAILABLE`); ueberlappende Zuordnungen desselben Mitarbeiters werden abgelehnt (HTTP 409 `TEAM_ASSIGNMENT_OVERLAP` mit `conflictId`). Planung (`?team=`) und Kontingent-Monitor (`?team=`) ermitteln das Team zeitraumbezogen: eine Zeile passt, wenn eine Zuordnung den betrachteten Zeitraum (12-Monatsfenster bzw. Freischaltungsgueltigkeit) ueberschneidet; `teamId` ist die erste passende Zuordnung, `teamIds` alle.
+- `POST /odata/CostObjects` (analog `ZXTS_KONT_T`, XTS-013): Pflichtfelder `coIdent`, `description`, `active` (HTTP 400 `INVALID_COST_OBJECT`); `type` muss `KS`, `OR`, `PR`, `FB` oder `KL` sein (HTTP 400 `INVALID_COST_OBJECT_TYPE` mit `allowed`). `GET /odata/CostObjects` liefert nur nicht geloeschte Kontierungen; `?includeDeleted=true` alle. Geloeschte Kontierungen fallen aus Planungszeilen und Freischaltungen heraus; Buchungen darauf werden mit HTTP 409 `COST_OBJECT_NOT_ENABLED` abgelehnt.
+- `POST /odata/CostObjectChecks` mit `{ coIdent, type }` prueft gegen den SAP-CO-Stub (`sapCostObjectStub`, Phase 1): Antwort `{ valid, source: "SAP-CO-Stub", message }`; unbekannte Kontierung oder abweichende Objektart ergeben `valid: false`.
+- `POST /odata/CostObjectAssignments` (Mitarbeiter-Kontierung als Planungsbasis): `extNr`, `coIdent`, `validFrom`, `validTo` sind Pflicht (HTTP 400 `INVALID_ASSIGNMENT`); Mitarbeiter muss existieren (HTTP 404 `UNKNOWN_EMPLOYEE`), Kontierung darf nicht geloescht sein (HTTP 409 `COST_OBJECT_NOT_AVAILABLE`); Ueberschneidungen je Mitarbeiter und Kontierung: HTTP 409 `ASSIGNMENT_OVERLAP`. Die Beschreibung wird aus Kontierung und Mitarbeiter abgeleitet. Neue Zuordnungen erscheinen sofort als Planungszeilen.
 
 ## Genehmigungs-Verhalten
 

@@ -113,3 +113,100 @@ button {
   min-height: 38px;
   padding: 0 14px;
 }
+
+.notice.error {
+  background: #fdecea;
+  border-color: #f2c4bf;
+  color: #a3392f;
+}
+
+.table-wrap {
+  margin-top: 16px;
+  overflow-x: auto;
+}
+
+table {
+  border-collapse: collapse;
+  width: 100%;
+}
+
+th,
+td {
+  border-bottom: 1px solid #e5ebf4;
+  color: #2b3a52;
+  font-size: 14px;
+  padding: 8px 10px;
+  text-align: left;
+  vertical-align: middle;
+}
+
+th {
+  color: #465873;
+  font-size: 13px;
+  white-space: nowrap;
+}
+
+td input:not([type="checkbox"]),
+td select {
+  border: 1px solid #cbd6e6;
+  border-radius: 6px;
+  min-height: 34px;
+  min-width: 90px;
+  padding: 0 8px;
+  width: 100%;
+}
+
+td input[type="date"] {
+  min-width: 150px;
+}
+
+td input:disabled,
+td select:disabled {
+  background: #f3f6fa;
+  color: #9aa8bd;
+}
+
+.actions {
+  white-space: nowrap;
+}
+
+.actions button {
+  margin-right: 6px;
+  min-height: 34px;
+  padding: 0 12px;
+}
+
+button.secondary {
+  background: #ffffff;
+  border: 1px solid #cbd6e6;
+  color: #174b86;
+}
+
+.new-row td {
+  background: #f7fafd;
+}
+
+tr.deleted td {
+  color: #9aa8bd;
+}
+
+.tag {
+  background: #eef2f8;
+  border-radius: 999px;
+  color: #60718f;
+  font-size: 11px;
+  font-weight: 700;
+  margin-left: 6px;
+  padding: 2px 8px;
+}
+
+.stamp {
+  color: #60718f;
+  font-size: 13px;
+}
+
+.sub {
+  color: #60718f;
+  display: block;
+  font-size: 12px;
+}

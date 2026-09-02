@@ -1,13 +1,8 @@
-import { employees, purchaseOrders } from "./fixtures.js";
+import { purchaseOrders } from "./fixtures.js";
+import { displayNameFor } from "./masterdata.js";
 
 // Beauftragung (Epic 4) analog ZXTS_MABEAUF_T. Statusmodell:
 // created = angelegt, banf = BANF vorhanden, bestellt = Bestellung vorhanden.
-
-function displayNameFor(extNr) {
-  return (
-    employees.find((employee) => employee.extNr === extNr)?.displayName ?? extNr
-  );
-}
 
 function isReferenced(orders, extNr, coIdent, month) {
   return orders.some(

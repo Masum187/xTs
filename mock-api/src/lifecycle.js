@@ -1,4 +1,4 @@
-import { costObjects, employees } from "./fixtures.js";
+import { costObjectDescription, displayNameFor } from "./masterdata.js";
 
 // Ressourcen-Live-Circle (XTS-070) analog ZXRLM: je Mitarbeiter und Kontierung
 // (Aggregationseinheit MA_KONT) die Kette Planung -> Beauftragung -> BANF ->
@@ -26,15 +26,7 @@ function matchesPurchaseOrder(order, ebeln, ebelp) {
 }
 
 function descriptionFor(coIdent) {
-  return (
-    costObjects.find((item) => item.coIdent === coIdent)?.description ?? coIdent
-  ).split(",")[0];
-}
-
-function displayNameFor(extNr) {
-  return (
-    employees.find((employee) => employee.extNr === extNr)?.displayName ?? extNr
-  );
+  return costObjectDescription(coIdent).split(",")[0];
 }
 
 function emptyRow(extNr, coIdent) {
