@@ -101,10 +101,10 @@ Offener Folgepunkt:
 - Welches AD/OAuth-Attribut das Mapping traegt, ist noch nicht entschieden.
   Entscheidungsvorlage mit Optionen und Empfehlung:
   [entscheidungsvorlage-extnr-mapping.md](entscheidungsvorlage-extnr-mapping.md)
-- Stand 2026-09-02: Option B (Entra `oid` als `AAD_OID`, `AAD_UPN` als
-  Fallback) ist in Mock-API, WebClient und Verwaltung technisch vorbereitet
-  und getestet; die fachliche Entscheidung und die SAP-DDIC-Erweiterung
-  stehen aus.
+- Entschieden am 2026-09-02: **Option B** (Entra `oid` als `AAD_OID`,
+  `AAD_UPN` als Fallback). WebClient meldet ueber Entra ID (MSAL) an, die
+  Mock-API mappt Bearer-Token-Claims; Anleitung und offene SAP-Punkte in
+  [entra-anbindung.md](entra-anbindung.md).
 
 ## Entscheidung 7 - Abwesenheitsmanagement
 

@@ -1,7 +1,7 @@
 # Entscheidungsvorlage: AD/OAuth-Attribut fuer das EXTNR-Mapping (XTS-050)
 
 Stand: 2026-09-02  
-Status: fachlich offen, Entscheidung durch Fachverantwortliche und IT/AD-Team erforderlich; **Option B ist technisch vorbereitet** (Mock-API, WebClient, Verwaltung), siehe Abschnitt "Umsetzungsstand"  
+Status: **entschieden am 2026-09-02 fuer Option B** (Entra `oid` als `AAD_OID`, `AAD_UPN` als Fallback). Umsetzung im WebClient und in der Mock-API abgeschlossen (siehe Abschnitt "Umsetzungsstand" und [entra-anbindung.md](entra-anbindung.md)); SAP-seitig stehen DDIC-Erweiterung und Token-Validierung aus.  
 Bezug: Entscheidung 6 in `entscheidungen-v0.1.md`, Story XTS-050 in `backlog-v0.1.md`
 
 ## Fragestellung

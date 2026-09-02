@@ -32,6 +32,14 @@
                 }
               ],
               "outputHashing": "all"
+            },
+            "entra": {
+              "fileReplacements": [
+                {
+                  "replace": "src/environments/environment.ts",
+                  "with": "src/environments/environment.entra.ts"
+                }
+              ]
             }
           }
         },
@@ -39,6 +47,11 @@
           "builder": "@angular-devkit/build-angular:dev-server",
           "options": {
             "buildTarget": "xts-frontend:build"
+          },
+          "configurations": {
+            "entra": {
+              "buildTarget": "xts-frontend:build:entra"
+            }
           }
         }
       }

@@ -7,6 +7,23 @@ export function stateFromStatus(status: number): AuthState {
   return "error";
 }
 
+export interface EntraConfig {
+  tenantId: string;
+  clientId: string;
+  authority: string;
+  scopes: readonly string[];
+  tokenKind: "id" | "access";
+}
+
+/** Entra ist nutzbar, sobald Tenant und Client-ID eingetragen sind. */
+export function entraConfigured(config: EntraConfig): boolean {
+  return config.tenantId.trim() !== "" && config.clientId.trim() !== "";
+}
+
+export function resolveAuthority(config: EntraConfig): string {
+  return config.authority.replace("<tenantId>", config.tenantId.trim());
+}
+
 export function hasRole(profile: AuthProfile | null, role: AuthRole): boolean {
   return profile?.roles.includes(role) ?? false;
 }

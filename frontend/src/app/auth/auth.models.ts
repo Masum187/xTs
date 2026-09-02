@@ -1,7 +1,13 @@
 export type AuthRole = "user" | "approver" | "planner" | "admin";
 
 export type AuthState =
-  "loading" | "ready" | "not-mapped" | "inactive" | "error";
+  | "loading"
+  | "ready"
+  | "not-mapped"
+  | "inactive"
+  | "signed-out"
+  | "not-configured"
+  | "error";
 
 export interface AuthProfile {
   extNr: string;

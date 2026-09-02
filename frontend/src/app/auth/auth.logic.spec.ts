@@ -1,6 +1,11 @@
 import { describe, expect, it } from "vitest";
 
-import { hasRole, stateFromStatus } from "./auth.logic";
+import {
+  entraConfigured,
+  hasRole,
+  resolveAuthority,
+  stateFromStatus,
+} from "./auth.logic";
 import type { AuthProfile } from "./auth.models";
 
 const profile: AuthProfile = {
@@ -17,6 +22,22 @@ describe("auth logic", () => {
     expect(stateFromStatus(403)).toBe("inactive");
     expect(stateFromStatus(500)).toBe("error");
     expect(stateFromStatus(401)).toBe("error");
+  });
+
+  it("detects a usable Entra configuration and resolves the authority", () => {
+    const config = {
+      tenantId: " 11111111-2222-3333-4444-555555555555 ",
+      clientId: "abc",
+      authority: "https://login.microsoftonline.com/<tenantId>",
+      scopes: ["openid"],
+      tokenKind: "id" as const,
+    };
+    expect(entraConfigured(config)).toBe(true);
+    expect(entraConfigured({ ...config, clientId: "" })).toBe(false);
+    expect(entraConfigured({ ...config, tenantId: "  " })).toBe(false);
+    expect(resolveAuthority(config)).toBe(
+      "https://login.microsoftonline.com/11111111-2222-3333-4444-555555555555",
+    );
   });
 
   it("checks roles against the profile", () => {

@@ -8,7 +8,8 @@
     "lint": "eslint .",
     "typecheck": "tsc -p tsconfig.app.json --noEmit",
     "test": "vitest run",
-    "test:smoke": "playwright test --config e2e/playwright.config.ts"
+    "test:smoke": "playwright test --config e2e/playwright.config.ts",
+    "start:entra": "ng serve --configuration entra"
   },
   "dependencies": {
     "@angular/animations": "^18.2.0",
@@ -19,6 +20,7 @@
     "@angular/platform-browser": "^18.2.0",
     "@angular/platform-browser-dynamic": "^18.2.0",
     "@angular/router": "^18.2.0",
+    "@azure/msal-browser": "^5.20.0",
     "rxjs": "^7.8.1",
     "tslib": "^2.6.3",
     "zone.js": "^0.14.10"

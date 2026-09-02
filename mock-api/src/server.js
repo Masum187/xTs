@@ -10,7 +10,7 @@ const server = http.createServer(async (request, response) => {
       "access-control-allow-origin": "*",
       "access-control-allow-methods": "GET,POST,PATCH,OPTIONS",
       "access-control-allow-headers":
-        "content-type,x-mock-oauth-oid,x-mock-oauth-upn",
+        "content-type,authorization,x-mock-oauth-oid,x-mock-oauth-upn",
     });
     response.end();
     return;

@@ -2166,3 +2166,64 @@ test("admins maintain the Entra mapping and it takes effect immediately", async 
   assert.equal(JSON.parse(login.body).extNr, "TESTER");
   assert.equal(JSON.parse(login.body).mappedBy, "oid");
 });
+
+function unsignedJwt(claims) {
+  const encode = (value) =>
+    Buffer.from(JSON.stringify(value)).toString("base64url");
+  return `${encode({ alg: "none", typ: "JWT" })}.${encode(claims)}.`;
+}
+
+test("bearer tokens are mapped via their oid or preferred_username claims", async () => {
+  const byOid = await routeRequest(
+    request("GET", "/odata/MyProfile", undefined, {
+      authorization: `Bearer ${unsignedJwt({
+        oid: "7a9e4d21-6c1b-4f3a-8e2d-5b7c9d1e3f42",
+        preferred_username: "irgendwer@qualitytimes.de",
+        name: "Christian Roeper",
+      })}`,
+    }),
+  );
+  assert.equal(byOid.status, 200);
+  assert.equal(JSON.parse(byOid.body).extNr, "ROEPER");
+  assert.equal(JSON.parse(byOid.body).mappedBy, "oid");
+
+  const byUpn = await routeRequest(
+    request("GET", "/odata/MyProfile", undefined, {
+      authorization: `bearer ${unsignedJwt({
+        preferred_username: "STEPHAN.SCHILZ@qualitytimes.de",
+      })}`,
+    }),
+  );
+  assert.equal(JSON.parse(byUpn.body).extNr, "SCHILZ");
+  assert.equal(JSON.parse(byUpn.body).mappedBy, "upn");
+
+  const unmapped = await routeRequest(
+    request("GET", "/odata/MyProfile", undefined, {
+      authorization: `Bearer ${unsignedJwt({
+        oid: "00000000-0000-4000-8000-000000000099",
+      })}`,
+    }),
+  );
+  assert.equal(unmapped.status, 404);
+  assert.equal(JSON.parse(unmapped.body).error, "NO_EXTNR_MAPPING");
+
+  const garbage = await routeRequest(
+    request("GET", "/odata/MyProfile", undefined, {
+      authorization: "Bearer kein.jwt",
+    }),
+  );
+  assert.equal(garbage.status, 401);
+  assert.equal(JSON.parse(garbage.body).error, "INVALID_TOKEN");
+  assert.match(JSON.parse(garbage.body).message, /erneut an/);
+
+  // Bearer hat Vorrang vor den Pseudo-Headern.
+  const precedence = await routeRequest(
+    request("GET", "/odata/MyProfile", undefined, {
+      authorization: `Bearer ${unsignedJwt({
+        oid: "7a9e4d21-6c1b-4f3a-8e2d-5b7c9d1e3f42",
+      })}`,
+      "x-mock-oauth-upn": "stephan.schilz@qualitytimes.de",
+    }),
+  );
+  assert.equal(JSON.parse(precedence.body).extNr, "ROEPER");
+});
