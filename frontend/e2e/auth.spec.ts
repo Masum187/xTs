@@ -14,6 +14,9 @@ test("unmapped OAuth user gets a clear error message", async ({ page }) => {
   await expect(page.getByTestId("auth-not-mapped")).toContainText(
     "xTS-Administration",
   );
+  await expect(page.getByTestId("auth-claims")).toContainText(
+    "00000000-0000-4000-8000-000000000099",
+  );
   await expect(page.getByRole("link", { name: "Genehmigung" })).toBeHidden();
 });
 

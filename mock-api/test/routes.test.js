@@ -2052,3 +2052,117 @@ test("error responses carry a user-readable message", async () => {
   assert.equal(unknown.status, 404);
   assert.match(JSON.parse(unknown.body).message, /nicht verarbeitet/);
 });
+
+test("OAuth oid claim maps to EXTNR with upn as fallback", async () => {
+  const byOid = await routeRequest(
+    request("GET", "/odata/MyProfile", undefined, {
+      "x-mock-oauth-oid": "7A9E4D21-6C1B-4F3A-8E2D-5B7C9D1E3F42",
+    }),
+  );
+  const oidBody = JSON.parse(byOid.body);
+  assert.equal(byOid.status, 200);
+  assert.equal(oidBody.extNr, "ROEPER");
+  assert.equal(oidBody.mappedBy, "oid");
+  assert.equal(oidBody.aadUpn, "christian.roeper@qualitytimes.de");
+
+  const oidWins = await routeRequest(
+    request("GET", "/odata/MyProfile", undefined, {
+      "x-mock-oauth-oid": "7a9e4d21-6c1b-4f3a-8e2d-5b7c9d1e3f42",
+      "x-mock-oauth-upn": "stephan.schilz@qualitytimes.de",
+    }),
+  );
+  assert.equal(JSON.parse(oidWins.body).extNr, "ROEPER");
+
+  const byUpn = await routeRequest(
+    request("GET", "/odata/MyProfile", undefined, {
+      "x-mock-oauth-upn": "Stephan.Schilz@QualityTimes.de",
+    }),
+  );
+  assert.equal(JSON.parse(byUpn.body).extNr, "SCHILZ");
+  assert.equal(JSON.parse(byUpn.body).mappedBy, "upn");
+
+  const unmapped = await routeRequest(
+    request("GET", "/odata/MyProfile", undefined, {
+      "x-mock-oauth-oid": "00000000-0000-4000-8000-000000000099",
+      "x-mock-oauth-upn": "neu.extern@qualitytimes.de",
+    }),
+  );
+  const unmappedBody = JSON.parse(unmapped.body);
+  assert.equal(unmapped.status, 404);
+  assert.equal(unmappedBody.error, "NO_EXTNR_MAPPING");
+  assert.equal(unmappedBody.oid, "00000000-0000-4000-8000-000000000099");
+  assert.equal(unmappedBody.upn, "neu.extern@qualitytimes.de");
+  assert.match(unmappedBody.message, /keinem xTS-Mitarbeiter/);
+
+  const oidOnlyUnknown = await routeRequest(
+    request("GET", "/odata/MyProfile", undefined, {
+      "x-mock-oauth-oid": "00000000-0000-4000-8000-000000000099",
+    }),
+  );
+  assert.equal(oidOnlyUnknown.status, 404);
+  assert.equal(JSON.parse(oidOnlyUnknown.body).upn, null);
+});
+
+test("admins maintain the Entra mapping and it takes effect immediately", async () => {
+  const invalid = await routeRequest(
+    approverRequest("POST", "/odata/Employees", {
+      extNr: "TESTER",
+      firstName: "Toni",
+      lastName: "Tester",
+      active: true,
+      aadOid: "keine-guid",
+    }),
+  );
+  assert.equal(invalid.status, 400);
+  assert.equal(JSON.parse(invalid.body).error, "INVALID_AAD_OID");
+
+  const duplicate = await routeRequest(
+    approverRequest("POST", "/odata/Employees", {
+      extNr: "TESTER",
+      firstName: "Toni",
+      lastName: "Tester",
+      active: true,
+      aadOid: "3f1c2a7e-5b3d-4c8e-9a1f-0d2e4b6c8a10",
+    }),
+  );
+  assert.equal(duplicate.status, 409);
+  assert.equal(JSON.parse(duplicate.body).error, "AAD_OID_IN_USE");
+  assert.equal(JSON.parse(duplicate.body).conflictId, "SCHILZ");
+
+  const duplicateUpn = await routeRequest(
+    approverRequest("POST", "/odata/Employees", {
+      extNr: "TESTER",
+      firstName: "Toni",
+      lastName: "Tester",
+      active: true,
+      aadUpn: "christian.roeper@qualitytimes.de",
+    }),
+  );
+  assert.equal(duplicateUpn.status, 409);
+  assert.equal(JSON.parse(duplicateUpn.body).error, "AAD_UPN_IN_USE");
+
+  const created = await routeRequest(
+    approverRequest("POST", "/odata/Employees", {
+      extNr: "TESTER",
+      firstName: "Toni",
+      lastName: "Tester",
+      active: true,
+      aadOid: "00000000-0000-4000-8000-000000000099",
+      aadUpn: "neu.extern@qualitytimes.de",
+    }),
+  );
+  assert.equal(created.status, 200);
+  assert.equal(
+    JSON.parse(created.body).aadOid,
+    "00000000-0000-4000-8000-000000000099",
+  );
+
+  const login = await routeRequest(
+    request("GET", "/odata/MyProfile", undefined, {
+      "x-mock-oauth-oid": "00000000-0000-4000-8000-000000000099",
+    }),
+  );
+  assert.equal(login.status, 200);
+  assert.equal(JSON.parse(login.body).extNr, "TESTER");
+  assert.equal(JSON.parse(login.body).mappedBy, "oid");
+});

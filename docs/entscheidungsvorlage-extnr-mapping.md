@@ -1,7 +1,7 @@
 # Entscheidungsvorlage: AD/OAuth-Attribut fuer das EXTNR-Mapping (XTS-050)
 
-Stand: 2026-09-01  
-Status: offen, Entscheidung durch Fachverantwortliche und IT/AD-Team erforderlich  
+Stand: 2026-09-02  
+Status: fachlich offen, Entscheidung durch Fachverantwortliche und IT/AD-Team erforderlich; **Option B ist technisch vorbereitet** (Mock-API, WebClient, Verwaltung), siehe Abschnitt "Umsetzungsstand"  
 Bezug: Entscheidung 6 in `entscheidungen-v0.1.md`, Story XTS-050 in `backlog-v0.1.md`
 
 ## Fragestellung
@@ -53,18 +53,42 @@ dokumentiertem Restrisiko bei UPN-Aenderungen.
    AD-Gruppen; AD-Gruppen-Mapping kann spaeter ergaenzt werden.
 4. xTS-Administrationsmaske (XTS-010) erhaelt die beiden neuen Felder.
 
-## Abbildung in der Mock-API (bis zur Entscheidung)
+## Umsetzungsstand (Stand 2026-09-02, Option B technisch vorbereitet)
 
-Die Mock-API simuliert das Zielverhalten bereits, damit Frontend und Tests
-nicht auf die Entscheidung warten muessen:
+Damit die Entscheidung mit laufendem Code getroffen werden kann, ist die
+Empfehlung bereits umgesetzt, ohne die fachliche Entscheidung vorwegzunehmen:
 
-- Der Pseudo-Token-Claim wird als Header `x-mock-oauth-upn` uebergeben
-  (Default: `stephan.schilz@qualitytimes.de`).
-- Eine Mapping-Tabelle in den Fixtures bildet UPN auf `EXTNR` ab; ein
-  Eintrag ohne `EXTNR` simuliert den nicht gemappten OAuth-User, ein
-  inaktiver Mitarbeiter den Sperrfall.
-- Fehlercodes `NO_EXTNR_MAPPING` (404) und `EMPLOYEE_INACTIVE` (403)
-  entsprechen bereits dem Zielkontrakt aus dieser Vorlage.
+- **Mitarbeiterstamm** (`ZXTS_WIW_T`-Simulation, Fixture `employees`) traegt
+  `aadOid` (Entra objectId, GUID) und `aadUpn`. Beide Felder sind in der
+  Verwaltung (XTS-010) pflegbar; die Mock-API validiert das GUID-Format
+  (`INVALID_AAD_OID`) und die Eindeutigkeit (`AAD_OID_IN_USE`,
+  `AAD_UPN_IN_USE` mit `conflictId` des anderen Mitarbeiters).
+- **Mapping** in `GET /odata/MyProfile`: Claim `oid` fuehrend (Option B),
+  Claim `upn` als Fallback (Option A, fuer den Uebergang oder falls das
+  DDIC-Feld spaeter kommt). Die Antwort enthaelt `mappedBy: "oid" | "upn"`,
+  damit im Betrieb sichtbar ist, welches Attribut gegriffen hat. Ohne
+  Treffer: HTTP 404 `NO_EXTNR_MAPPING` mit beiden Claims im Body; inaktiv
+  oder geloescht: HTTP 403 `EMPLOYEE_INACTIVE`.
+- **Pseudo-Claims bis zur echten Anmeldung**: Header `x-mock-oauth-oid` und
+  `x-mock-oauth-upn`; ohne Header gilt die Default-Persona SCHILZ per UPN.
+  Die Dev-Personas des WebClients tragen beide Claims; die Persona "Neuer
+  Externer" hat eine OID ohne Treffer und zeigt den Nicht-gemappt-Fall
+  inklusive der Claims an, die die Administration zum Anlegen braucht.
+- **WebClient-Integrationspunkt** (`environment.auth`): Modus `mock` sendet
+  die Pseudo-Claims, Modus `entra` sendet `Authorization: Bearer <token>`
+  aus `AuthService.accessToken`. Fuer die echte Anmeldung fehlt nur noch
+  der MSAL-Login (`@azure/msal-browser`, `loginRedirect` +
+  `acquireTokenSilent` mit den Scopes aus `environment.auth.entra`) und
+  serverseitig die Token-Validierung mit Auslesen von `oid`/`upn`.
+- **Tests**: Contract-Tests "OAuth oid claim maps to EXTNR with upn as
+  fallback" und "admins maintain the Entra mapping and it takes effect
+  immediately"; E2E `auth.spec.ts` prueft Nicht-gemappt-, Inaktiv- und
+  Rollenfaelle.
+
+Bei Zustimmung zu Option B bleibt SAP-seitig: DDIC-Erweiterung
+`AAD_OID`/`AAD_UPN`, Token-Validierung im OData-Service, Pflegeprozess beim
+Onboarding. Bei Entscheidung fuer Option A wird `aadOid` nicht gepflegt und
+der UPN-Fallback traegt das Mapping; der Code aendert sich nicht.
 
 ## Offene Punkte fuer den Entscheidungstermin
 

@@ -147,7 +147,9 @@
   <p class="hint">
     Externe Mitarbeiter mit Status, Firma, Ressourcenmanager und optionalem
     SAP-Account. Pflichtfelder: EXTNR, Nachname, Vorname, Status. Löschen ist
-    logisch; gelöschte oder inaktive Mitarbeiter verlieren den Zugang.
+    logisch; gelöschte oder inaktive Mitarbeiter verlieren den Zugang. Entra OID
+    (Claim <code>oid</code>) ist das führende Login-Mapping, Entra UPN der
+    Fallback (XTS-050).
   </p>
   <div class="table-wrap">
     <table data-testid="employee-table">
@@ -159,6 +161,8 @@
           <th>Firma</th>
           <th>Ressourcenmanager</th>
           <th>SAP-Account</th>
+          <th>Entra OID</th>
+          <th>Entra UPN</th>
           <th>Aktiv</th>
           <th>Geändert</th>
           <th></th>
@@ -215,6 +219,22 @@
               <input
                 [attr.aria-label]="'SAP-Account ' + employee.extNr"
                 [(ngModel)]="employee.sapAccount"
+                [disabled]="employee.deleted"
+              />
+            </td>
+            <td>
+              <input
+                class="wide"
+                [attr.aria-label]="'Entra OID ' + employee.extNr"
+                [(ngModel)]="employee.aadOid"
+                [disabled]="employee.deleted"
+              />
+            </td>
+            <td>
+              <input
+                class="wide"
+                [attr.aria-label]="'Entra UPN ' + employee.extNr"
+                [(ngModel)]="employee.aadUpn"
                 [disabled]="employee.deleted"
               />
             </td>
@@ -290,6 +310,22 @@
             <input
               aria-label="Neu: SAP-Account"
               [(ngModel)]="newEmployee.sapAccount"
+            />
+          </td>
+          <td>
+            <input
+              class="wide"
+              aria-label="Neu: Entra OID"
+              placeholder="GUID"
+              [(ngModel)]="newEmployee.aadOid"
+            />
+          </td>
+          <td>
+            <input
+              class="wide"
+              aria-label="Neu: Entra UPN"
+              placeholder="name@qualitytimes.de"
+              [(ngModel)]="newEmployee.aadUpn"
             />
           </td>
           <td>

@@ -72,6 +72,10 @@ import { AuthService } from "./auth/auth.service";
               (EXTNR) zugeordnet. Bitte wenden Sie sich an die
               xTS-Administration, damit das Mapping angelegt wird.
             </p>
+            <p class="claims" data-testid="auth-claims">
+              Entra OID: <code>{{ auth.claims().oid }}</code> · UPN:
+              <code>{{ auth.claims().upn }}</code>
+            </p>
           </section>
         }
         @case ("inactive") {

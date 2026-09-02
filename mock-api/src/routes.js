@@ -1,15 +1,10 @@
 import { listAuditLog, logEvent, resetAuditLog } from "./auditlog.js";
 import { buildEnablements, validateTimesheetEnablement } from "./enablement.js";
-import {
-  oauthMappings,
-  planningEntries,
-  rules,
-  seedOrders,
-  timesheets,
-} from "./fixtures.js";
+import { planningEntries, rules, seedOrders, timesheets } from "./fixtures.js";
 import {
   checkCostObject,
   displayNameFor,
+  findEmployeeByClaims,
   listAssignments,
   listCostObjects,
   listEmployees,
@@ -42,9 +37,12 @@ import { buildBudgetMonitor, buildCostObjectQuota } from "./reporting.js";
 
 const timesheetKey = (day) => `${day.extNr}|${day.date}`;
 
-// Simulierter OAuth-Claim: bis XTS-050 real angebunden ist, kommt der
-// angemeldete Benutzer als Header-Pseudo-Claim herein (Default: SCHILZ).
-const OAUTH_HEADER = "x-mock-oauth-upn";
+// Simulierte OAuth-Token-Claims (XTS-050): bis Entra ID real angebunden
+// ist, kommen `oid` und `upn` als Header-Pseudo-Claims herein. Das Mapping
+// auf ZXTS_WIW_T folgt der Entscheidungsvorlage: AAD_OID fuehrend, AAD_UPN
+// als Fallback. Ohne Header gilt die Default-Persona SCHILZ (per UPN).
+const OAUTH_OID_HEADER = "x-mock-oauth-oid";
+const OAUTH_UPN_HEADER = "x-mock-oauth-upn";
 const DEFAULT_UPN = "stephan.schilz@qualitytimes.de";
 
 let timesheetStore = new Map();
@@ -79,23 +77,19 @@ const TIMESHEET_STATUS_LABELS = {
 };
 
 function resolvePersona(request) {
-  const upn = request.headers?.[OAUTH_HEADER] ?? DEFAULT_UPN;
-  const mapping = oauthMappings.find((entry) => entry.upn === upn);
-  if (!mapping?.extNr) {
-    return { error: json({ error: "NO_EXTNR_MAPPING", upn }, 404) };
+  const oid = request.headers?.[OAUTH_OID_HEADER] ?? null;
+  const upn = request.headers?.[OAUTH_UPN_HEADER] ?? (oid ? null : DEFAULT_UPN);
+  const mapping = findEmployeeByClaims({ oid, upn });
+  if (!mapping) {
+    return { error: json({ error: "NO_EXTNR_MAPPING", oid, upn }, 404) };
   }
-  const employee = masterData.employees.find(
-    (entry) => entry.extNr === mapping.extNr,
-  );
-  if (!employee) {
-    return { error: json({ error: "NO_EXTNR_MAPPING", upn }, 404) };
-  }
+  const { employee, mappedBy } = mapping;
   if (!employee.active || employee.deleted) {
     return {
       error: json({ error: "EMPLOYEE_INACTIVE", extNr: employee.extNr }, 403),
     };
   }
-  return { employee };
+  return { employee, mappedBy };
 }
 
 function requireRole(persona, role) {
@@ -255,8 +249,15 @@ export async function routeRequest(request) {
   if (request.method === "GET" && path === "/odata/MyProfile") {
     const persona = resolvePersona(request);
     if (persona.error) return persona.error;
-    const { extNr, displayName, company, roles } = persona.employee;
-    return json({ extNr, displayName, company, roles });
+    const { extNr, displayName, company, roles, aadUpn } = persona.employee;
+    return json({
+      extNr,
+      displayName,
+      company,
+      roles,
+      aadUpn,
+      mappedBy: persona.mappedBy,
+    });
   }
 
   if (request.method === "GET" && path === "/odata/MyEnabledCostObjects") {
@@ -707,7 +708,7 @@ export function json(payload, status = 200) {
     headers: {
       "access-control-allow-origin": "*",
       "access-control-allow-methods": "GET,POST,PATCH,OPTIONS",
-      "access-control-allow-headers": `content-type,${OAUTH_HEADER}`,
+      "access-control-allow-headers": `content-type,${OAUTH_OID_HEADER},${OAUTH_UPN_HEADER}`,
       "content-type": "application/json; charset=utf-8",
     },
     body: JSON.stringify(payload),

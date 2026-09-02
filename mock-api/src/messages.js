@@ -35,6 +35,12 @@ const MESSAGES = {
   BANF_ALREADY_EXISTS: "Zu dieser Beauftragung existiert bereits eine BANF.",
   INVALID_EMPLOYEE:
     "Der Mitarbeiter kann nicht gespeichert werden, Pflichtfelder fehlen.",
+  INVALID_AAD_OID:
+    "Die Entra-Objekt-ID muss eine GUID sein (z. B. 3f1c2a7e-5b3d-4c8e-9a1f-0d2e4b6c8a10).",
+  AAD_OID_IN_USE:
+    "Die Entra-Objekt-ID ist bereits einem anderen Mitarbeiter zugeordnet.",
+  AAD_UPN_IN_USE:
+    "Der Entra-UPN ist bereits einem anderen Mitarbeiter zugeordnet.",
   UNKNOWN_RESOURCE_MANAGER:
     "Der angegebene Ressourcenmanager ist kein bekannter Mitarbeiter.",
   INVALID_TEAM: "Das Team kann nicht gespeichert werden, Pflichtfelder fehlen.",

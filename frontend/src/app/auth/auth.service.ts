@@ -2,7 +2,12 @@ import { Injectable, signal } from "@angular/core";
 
 import { environment } from "../../environments/environment";
 import { hasRole, stateFromStatus } from "./auth.logic";
-import type { AuthProfile, AuthRole, AuthState } from "./auth.models";
+import type {
+  AuthClaims,
+  AuthProfile,
+  AuthRole,
+  AuthState,
+} from "./auth.models";
 import { MOCK_PERSONAS } from "./auth.models";
 
 @Injectable({
@@ -16,9 +21,30 @@ export class AuthService {
   readonly state = signal<AuthState>("loading");
   readonly profile = signal<AuthProfile | null>(null);
 
-  /** Simuliert den OAuth-Token-Claim, bis XTS-050 real angebunden ist. */
+  /** Access Token der echten Anmeldung (Modus "entra"); wird vom kuenftigen
+   * MSAL-Login gesetzt. Im Modus "mock" ungenutzt. */
+  readonly accessToken = signal<string | null>(null);
+
+  /**
+   * Auth-Header fuer alle OData-Aufrufe (XTS-050). Modus "mock": die
+   * Token-Claims `oid` und `upn` der gewaehlten Persona gehen als
+   * Pseudo-Header an die Mock-API. Modus "entra": Bearer Token, die Claims
+   * liest dann der Server aus dem Token.
+   */
   authHeaders(): Record<string, string> {
-    return { "x-mock-oauth-upn": this.personaUpn() };
+    if (environment.auth.mode === "entra") {
+      const token = this.accessToken();
+      return token ? { authorization: `Bearer ${token}` } : {};
+    }
+    const claims = this.claims();
+    return { "x-mock-oauth-oid": claims.oid, "x-mock-oauth-upn": claims.upn };
+  }
+
+  claims(): AuthClaims {
+    const persona = MOCK_PERSONAS.find(
+      (item) => item.upn === this.personaUpn(),
+    );
+    return { oid: persona?.oid ?? "", upn: this.personaUpn() };
   }
 
   hasRole(role: AuthRole): boolean {
