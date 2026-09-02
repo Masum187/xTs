@@ -1,6 +1,8 @@
 import { Component, inject, signal } from "@angular/core";
 import { FormsModule } from "@angular/forms";
 
+import { describeApiError } from "../shared/api-error";
+
 import { formatMonthLabel, parseStartMonth } from "../planning/planning.logic";
 import type {
   Order,
@@ -91,40 +93,67 @@ export class OrdersComponent {
   }
 
   protected async createOrder(candidate: OrderCandidate): Promise<void> {
-    const order = await this.ordersService.createOrder(
-      candidate,
-      this.textFor(candidate),
+    await this.guarded(
+      "Beauftragung konnte nicht angelegt werden.",
+      async () => {
+        const order = await this.ordersService.createOrder(
+          candidate,
+          this.textFor(candidate),
+        );
+        this.candidateTexts.delete(this.candidateKey(candidate));
+        this.message.set(
+          `Beauftragung ${order.orderId} für ${order.displayName} angelegt (${order.hours} Std.).`,
+        );
+      },
     );
-    this.candidateTexts.delete(this.candidateKey(candidate));
-    this.message.set(
-      `Beauftragung ${order.orderId} für ${order.displayName} angelegt (${order.hours} Std.).`,
-    );
-    await this.load();
   }
 
   protected async saveOrderText(order: Order): Promise<void> {
-    const updated = await this.ordersService.updateOrderText(
-      order.orderId,
-      this.orderTextFor(order),
+    await this.guarded(
+      "BANF-Positionstext konnte nicht gespeichert werden.",
+      async () => {
+        const updated = await this.ordersService.updateOrderText(
+          order.orderId,
+          this.orderTextFor(order),
+        );
+        this.orderTexts.delete(order.orderId);
+        this.message.set(
+          `BANF-Positionstext für ${updated.orderId} gespeichert.`,
+        );
+      },
     );
-    this.orderTexts.delete(order.orderId);
-    this.message.set(`BANF-Positionstext für ${updated.orderId} gespeichert.`);
-    await this.load();
   }
 
   protected async createBanf(order: Order): Promise<void> {
-    const updated = await this.ordersService.createBanf(order.orderId);
-    this.message.set(
-      `BANF ${updated.banfNumber}/${updated.banfItem} zu ${updated.orderId} angelegt, Planung auf P gesetzt.`,
-    );
-    await this.load();
+    await this.guarded("BANF konnte nicht angelegt werden.", async () => {
+      const updated = await this.ordersService.createBanf(order.orderId);
+      this.message.set(
+        `BANF ${updated.banfNumber}/${updated.banfItem} zu ${updated.orderId} angelegt, Planung auf P gesetzt.`,
+      );
+    });
   }
 
   protected async runSync(): Promise<void> {
-    const result = await this.ordersService.runPurchaseOrderSync();
-    this.message.set(
-      `Bestelldaten-Job: ${result.updated} Beauftragung(en) aktualisiert, ${result.errors.length} Fehler.`,
+    await this.guarded(
+      "Bestelldaten-Job konnte nicht ausgeführt werden.",
+      async () => {
+        const result = await this.ordersService.runPurchaseOrderSync();
+        this.message.set(
+          `Bestelldaten-Job: ${result.updated} Beauftragung(en) aktualisiert, ${result.errors.length} Fehler.`,
+        );
+      },
     );
+  }
+
+  private async guarded(
+    fallback: string,
+    action: () => Promise<void>,
+  ): Promise<void> {
+    try {
+      await action();
+    } catch (error) {
+      this.message.set(describeApiError(error, fallback));
+    }
     await this.load();
   }
 

@@ -218,3 +218,37 @@ tr.deleted td {
 .testdata .hint {
   margin-top: 4px;
 }
+
+.filters {
+  align-items: end;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px;
+  margin-top: 12px;
+}
+
+.filters input,
+.filters select {
+  border: 1px solid #cbd6e6;
+  border-radius: 6px;
+  min-height: 36px;
+  padding: 0 10px;
+}
+
+table.audit td {
+  vertical-align: top;
+}
+
+.tag.error {
+  background: #fdecea;
+  color: #a3392f;
+}
+
+tr.error-row td {
+  background: #fffaf9;
+}
+
+.empty-hint {
+  color: #60718f;
+  font-size: 13px;
+}

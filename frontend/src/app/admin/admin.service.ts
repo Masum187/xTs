@@ -2,7 +2,10 @@ import { Injectable, inject } from "@angular/core";
 
 import { environment } from "../../environments/environment";
 import { AuthService } from "../auth/auth.service";
+import { readApiJson } from "../shared/api-error";
 import type {
+  AuditEntry,
+  AuditFilters,
   CostObject,
   CostObjectAssignment,
   CostObjectCheck,
@@ -15,24 +18,6 @@ import type {
 
 interface ODataResponse<T> {
   value: T[];
-}
-
-interface ErrorBody {
-  error?: string;
-  fields?: string[];
-  allowed?: string[];
-  conflictId?: string;
-}
-
-export class AdminApiError extends Error {
-  constructor(
-    readonly status: number,
-    readonly code: string,
-    readonly fields: string[] = [],
-    readonly conflictId?: string,
-  ) {
-    super(`Request failed with HTTP ${status} (${code})`);
-  }
 }
 
 @Injectable({
@@ -101,6 +86,14 @@ export class AdminService {
     return this.post<CostObjectAssignment>("CostObjectAssignments", assignment);
   }
 
+  getAuditLog(filters: AuditFilters): Promise<AuditEntry[]> {
+    const params = new URLSearchParams();
+    if (filters.category) params.set("category", filters.category);
+    if (filters.severity) params.set("severity", filters.severity);
+    if (filters.q) params.set("q", filters.q);
+    return this.list<AuditEntry>("AuditLog", params.toString());
+  }
+
   resetTestData(): Promise<TestDataReset> {
     return this.post<TestDataReset>("TestDataResets", {});
   }
@@ -126,21 +119,7 @@ export class AdminService {
     return this.readJson<T>(response);
   }
 
-  private async readJson<T>(response: Response): Promise<T> {
-    if (!response.ok) {
-      let body: ErrorBody = {};
-      try {
-        body = (await response.json()) as ErrorBody;
-      } catch {
-        body = {};
-      }
-      throw new AdminApiError(
-        response.status,
-        body.error ?? "UNKNOWN",
-        body.fields ?? body.allowed ?? [],
-        body.conflictId,
-      );
-    }
-    return (await response.json()) as T;
+  private readJson<T>(response: Response): Promise<T> {
+    return readApiJson<T>(response);
   }
 }

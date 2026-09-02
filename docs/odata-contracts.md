@@ -13,6 +13,7 @@ Diese Datei beschreibt die fachlichen Service-Kontrakte fuer SAP-OData und die M
 | Stammdaten   | `/odata/CostObjectChecks`      | Kontierung gegen SAP CO pruefen (Stub, XTS-013)     |
 | Stammdaten   | `/odata/CostObjectAssignments` | Mitarbeiter-Kontierungs-Zuordnung (Planungsbasis)   |
 | Betrieb      | `/odata/TestDataResets`        | Testdatenpaket UAT zuruecksetzen (XTS-082)          |
+| Betrieb      | `/odata/AuditLog`              | Aenderungs- und Fehlerprotokoll lesen (XTS-081)     |
 | Timesheet    | `/odata/MyProfile`             | Angemeldeten Benutzer auf `EXTNR` abbilden          |
 | Timesheet    | `/odata/MyEnabledCostObjects`  | Freigeschaltete Kontierungen mit Reststunden        |
 | Timesheet    | `/odata/MyTimesheets`          | Eigene Stundeneintraege                             |
@@ -40,6 +41,13 @@ Diese Datei beschreibt die fachlichen Service-Kontrakte fuer SAP-OData und die M
 - `POST /odata/CostObjects` (analog `ZXTS_KONT_T`, XTS-013): Pflichtfelder `coIdent`, `description`, `active` (HTTP 400 `INVALID_COST_OBJECT`); `type` muss `KS`, `OR`, `PR`, `FB` oder `KL` sein (HTTP 400 `INVALID_COST_OBJECT_TYPE` mit `allowed`). `GET /odata/CostObjects` liefert nur nicht geloeschte Kontierungen; `?includeDeleted=true` alle. Geloeschte Kontierungen fallen aus Planungszeilen und Freischaltungen heraus; Buchungen darauf werden mit HTTP 409 `COST_OBJECT_NOT_ENABLED` abgelehnt.
 - `POST /odata/CostObjectChecks` mit `{ coIdent, type }` prueft gegen den SAP-CO-Stub (`sapCostObjectStub`, Phase 1): Antwort `{ valid, source: "SAP-CO-Stub", message }`; unbekannte Kontierung oder abweichende Objektart ergeben `valid: false`.
 - `POST /odata/CostObjectAssignments` (Mitarbeiter-Kontierung als Planungsbasis): `extNr`, `coIdent`, `validFrom`, `validTo` sind Pflicht (HTTP 400 `INVALID_ASSIGNMENT`); Mitarbeiter muss existieren (HTTP 404 `UNKNOWN_EMPLOYEE`), Kontierung darf nicht geloescht sein (HTTP 409 `COST_OBJECT_NOT_AVAILABLE`); Ueberschneidungen je Mitarbeiter und Kontierung: HTTP 409 `ASSIGNMENT_OVERLAP`. Die Beschreibung wird aus Kontierung und Mitarbeiter abgeleitet. Neue Zuordnungen erscheinen sofort als Planungszeilen.
+
+## Aenderungs- und Fehlerprotokoll (XTS-081)
+
+- `GET /odata/AuditLog` (Rolle `admin`, analog `ZXTS_LOG_T`) liefert Protokolleintraege, neueste zuerst: `id`, `at`, `actor` (EXTNR), `category` (`status` Statuswechsel, `job` Job-Fehler, `masterdata`, `rule`, `system`), `severity` (`info`/`error`), `object`, `objectKey`, `from`/`to`, `message`, `details`. Filter: `?category=`, `?severity=`, `?object=`, `?actor=`, `?q=` (Teilstring in Objekt oder Meldung), `?from=`/`?to=` (Datum), `?limit=` (Default 200).
+- Protokollierte Statuswechsel: Stundenzettel (Speichern/Freigeben mit Vorher-Status, Genehmigung inkl. `weDocument`, Rueckweisung inkl. Grund), Planung (`V -> F`), Beauftragung (angelegt, `created -> banf`, `banf -> bestellt`), Regelwerk (alt/neu), Stammdaten (gespeichert/geloescht), Testdaten-Reset (`system`).
+- Jobs schreiben technische Fehler als `category: "job"`, `severity: "error"` mit `details.source` (`banf`, `po-sync`) und den fachlichen Schluesseln (BANF-Nummer, Kontierung, Fehlercode); das bestehende `OrderProtocol` bleibt als Sicht der Beauftragung erhalten.
+- Alle Fehlerantworten (HTTP >= 400 mit `error`-Code) tragen zusaetzlich `message`: eine fachlich verstaendliche deutsche Meldung (zentral in `mock-api/src/messages.js`), ggf. mit Pflichtfeldern, Konflikt-ID oder Kontierung in Klammern. Das Frontend zeigt diese Meldung ueber den gemeinsamen `ApiError` direkt an; der Code bleibt der stabile Kontrakt.
 
 ## Testdatenpaket (XTS-082)
 

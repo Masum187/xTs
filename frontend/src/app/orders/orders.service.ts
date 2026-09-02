@@ -2,6 +2,7 @@ import { Injectable, inject } from "@angular/core";
 
 import { environment } from "../../environments/environment";
 import { AuthService } from "../auth/auth.service";
+import { readApiJson } from "../shared/api-error";
 import type {
   CandidateFilters,
   Order,
@@ -80,10 +81,7 @@ export class OrdersService {
     return body.value;
   }
 
-  private async readJson<T>(response: Response): Promise<T> {
-    if (!response.ok) {
-      throw new Error(`Request failed with HTTP ${response.status}`);
-    }
-    return (await response.json()) as T;
+  private readJson<T>(response: Response): Promise<T> {
+    return readApiJson<T>(response);
   }
 }

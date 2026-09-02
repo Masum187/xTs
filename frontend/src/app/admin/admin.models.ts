@@ -70,6 +70,29 @@ export interface CostObjectAssignment extends ChangeStamp {
   deleted: boolean;
 }
 
+export type AuditCategory = "status" | "job" | "masterdata" | "rule" | "system";
+export type AuditSeverity = "info" | "error";
+
+export interface AuditEntry {
+  id: string;
+  at: string;
+  actor: string;
+  category: AuditCategory;
+  severity: AuditSeverity;
+  object: string;
+  objectKey: string;
+  from: string | null;
+  to: string | null;
+  message: string;
+  details: Record<string, unknown>;
+}
+
+export interface AuditFilters {
+  category: string;
+  severity: string;
+  q: string;
+}
+
 export interface TestDataReset {
   package: string;
   resetBy: string;

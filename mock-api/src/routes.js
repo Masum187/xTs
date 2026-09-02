@@ -1,3 +1,4 @@
+import { listAuditLog, logEvent, resetAuditLog } from "./auditlog.js";
 import { buildEnablements, validateTimesheetEnablement } from "./enablement.js";
 import {
   oauthMappings,
@@ -36,6 +37,7 @@ import {
   upsertPlanningEntry,
 } from "./planning.js";
 import { buildResourceLifecycle } from "./lifecycle.js";
+import { messageFor } from "./messages.js";
 import { buildBudgetMonitor, buildCostObjectQuota } from "./reporting.js";
 
 const timesheetKey = (day) => `${day.extNr}|${day.date}`;
@@ -66,7 +68,15 @@ export function resetTimesheetStore() {
   rulesStore = structuredClone(rules);
   weDocumentCounter = 0;
   resetMasterData();
+  resetAuditLog();
 }
+
+const TIMESHEET_STATUS_LABELS = {
+  E: "Entwurf",
+  F: "Zur Genehmigung freigegeben",
+  G: "Genehmigt",
+  A: "Zurückgewiesen",
+};
 
 function resolvePersona(request) {
   const upn = request.headers?.[OAUTH_HEADER] ?? DEFAULT_UPN;
@@ -148,6 +158,13 @@ export async function routeRequest(request) {
     const roleError = requireRole(persona, "admin");
     if (roleError) return roleError;
     resetTimesheetStore();
+    logEvent({
+      actor: persona.employee.extNr,
+      category: "system",
+      object: "testdata",
+      objectKey: "uat-v0.1",
+      message: "Testdatenpaket uat-v0.1 zurückgesetzt.",
+    });
     return json({
       package: "uat-v0.1",
       resetBy: persona.employee.extNr,
@@ -164,6 +181,24 @@ export async function routeRequest(request) {
     });
   }
 
+  if (request.method === "GET" && path === "/odata/AuditLog") {
+    const persona = resolvePersona(request);
+    if (persona.error) return persona.error;
+    const roleError = requireRole(persona, "admin");
+    if (roleError) return roleError;
+    const value = listAuditLog({
+      category: url.searchParams.get("category") ?? "",
+      severity: url.searchParams.get("severity") ?? "",
+      object: url.searchParams.get("object") ?? "",
+      actor: url.searchParams.get("actor") ?? "",
+      q: url.searchParams.get("q") ?? "",
+      from: url.searchParams.get("from") ?? "",
+      to: url.searchParams.get("to") ?? "",
+      limit: url.searchParams.get("limit") ?? "",
+    });
+    return json({ value });
+  }
+
   if (request.method === "POST" && path === "/odata/CostObjectChecks") {
     const persona = resolvePersona(request);
     if (persona.error) return persona.error;
@@ -173,24 +208,48 @@ export async function routeRequest(request) {
   }
 
   const masterDataWrites = {
-    "/odata/Employees": [upsertEmployee, "employee"],
-    "/odata/Teams": [upsertTeam, "team"],
-    "/odata/TeamAssignments": [upsertTeamAssignment, "assignment"],
-    "/odata/CostObjects": [upsertCostObject, "costObject"],
-    "/odata/CostObjectAssignments": [upsertAssignment, "assignment"],
+    "/odata/Employees": [upsertEmployee, "employee", "Mitarbeiter", "extNr"],
+    "/odata/Teams": [upsertTeam, "team", "Team", "id"],
+    "/odata/TeamAssignments": [
+      upsertTeamAssignment,
+      "assignment",
+      "Teamzuordnung",
+      "id",
+    ],
+    "/odata/CostObjects": [
+      upsertCostObject,
+      "costObject",
+      "Kontierung",
+      "coIdent",
+    ],
+    "/odata/CostObjectAssignments": [
+      upsertAssignment,
+      "assignment",
+      "Mitarbeiter-Kontierung",
+      "id",
+    ],
   };
   if (request.method === "POST" && masterDataWrites[path]) {
     const persona = resolvePersona(request);
     if (persona.error) return persona.error;
     const roleError = requireRole(persona, "admin");
     if (roleError) return roleError;
-    const [upsert, key] = masterDataWrites[path];
+    const [upsert, key, object, keyField] = masterDataWrites[path];
     const result = upsert(await readJsonBody(request), persona.employee.extNr);
     if (result.error) {
       const { status, ...details } = result.error;
       return json({ error: details.code, ...details }, status);
     }
-    return json(result[key]);
+    const record = result[key];
+    logEvent({
+      actor: persona.employee.extNr,
+      category: "masterdata",
+      object,
+      objectKey: record[keyField],
+      to: record.deleted ? "gelöscht" : "gespeichert",
+      message: `${object} ${record[keyField]} ${record.deleted ? "logisch gelöscht" : "gespeichert"}.`,
+    });
+    return json(record);
   }
 
   if (request.method === "GET" && path === "/odata/MyProfile") {
@@ -237,8 +296,18 @@ export async function routeRequest(request) {
     const rule = rulesStore.find(
       (candidate) => candidate.infotype === body.infotype,
     );
+    const before = { value: rule.value, active: rule.active };
     rule.value = body.value;
     rule.active = body.active;
+    logEvent({
+      actor: persona.employee.extNr,
+      category: "rule",
+      object: "rule",
+      objectKey: `Infotyp ${rule.infotype}`,
+      from: `${before.value}/${before.active ? "aktiv" : "inaktiv"}`,
+      to: `${rule.value}/${rule.active ? "aktiv" : "inaktiv"}`,
+      message: `Regel Infotyp ${rule.infotype} geändert.`,
+    });
     return json({ ...rule });
   }
 
@@ -314,6 +383,15 @@ export async function routeRequest(request) {
     if (result.error) {
       return json({ error: result.error.code }, result.error.status);
     }
+    logEvent({
+      actor: persona.employee.extNr,
+      category: "status",
+      object: "planning",
+      objectKey: `${result.entry.extNr}/${result.entry.coIdent}/${result.entry.month}`,
+      from: "V",
+      to: "F",
+      message: `Planzeile für BANF freigegeben (${result.entry.hours} Std.).`,
+    });
     return json(result);
   }
 
@@ -356,6 +434,17 @@ export async function routeRequest(request) {
     if (result.error) {
       return json({ error: result.error.code }, result.error.status);
     }
+    if (!body.orderId) {
+      logEvent({
+        actor: persona.employee.extNr,
+        category: "status",
+        object: "order",
+        objectKey: result.order.orderId,
+        from: null,
+        to: "created",
+        message: `Beauftragung ${result.order.orderId} für ${result.order.displayName} angelegt (${result.order.hours} Std., Planung ${result.order.planningRefs.join(", ")}).`,
+      });
+    }
     return json(result.order, body.orderId ? 200 : 201);
   }
 
@@ -367,8 +456,29 @@ export async function routeRequest(request) {
     const body = await readJsonBody(request);
     const result = createBanf(ordersState, planningStore, body);
     if (result.error) {
+      if (result.error.code === "BANF_ALREADY_EXISTS") {
+        logEvent({
+          actor: persona.employee.extNr,
+          category: "job",
+          severity: "error",
+          object: "order",
+          objectKey: body.orderId,
+          message: `BANF-Anlage abgelehnt: Beauftragung ${body.orderId} hat bereits eine BANF.`,
+          details: { source: "banf", code: result.error.code },
+        });
+      }
       return json({ error: result.error.code }, result.error.status);
     }
+    logEvent({
+      actor: persona.employee.extNr,
+      category: "status",
+      object: "order",
+      objectKey: result.order.orderId,
+      from: "created",
+      to: "banf",
+      message: `BANF ${result.order.banfNumber}/${result.order.banfItem} zu ${result.order.orderId} angelegt, Planung auf P gesetzt.`,
+      details: { banfNumber: result.order.banfNumber },
+    });
     return json(result.order, 201);
   }
 
@@ -377,7 +487,39 @@ export async function routeRequest(request) {
     if (persona.error) return persona.error;
     const roleError = requireRole(persona, "planner");
     if (roleError) return roleError;
-    return json(runPurchaseOrderSync(ordersState, planningStore));
+    const result = runPurchaseOrderSync(ordersState, planningStore);
+    for (const order of result.updatedOrders) {
+      logEvent({
+        actor: persona.employee.extNr,
+        category: "status",
+        object: "order",
+        objectKey: order.orderId,
+        from: "banf",
+        to: "bestellt",
+        message: `Bestelldaten-Job: Bestellung ${order.ebeln}/${order.ebelp} zu ${order.orderId} übernommen, Planung auf B gesetzt.`,
+        details: { source: "po-sync", ebeln: order.ebeln, ebelp: order.ebelp },
+      });
+    }
+    for (const entry of result.errors) {
+      const order = ordersState.orders.find(
+        (candidate) => candidate.orderId === entry.orderId,
+      );
+      logEvent({
+        actor: persona.employee.extNr,
+        category: "job",
+        severity: "error",
+        object: "order",
+        objectKey: entry.orderId,
+        message: `Bestelldaten-Job: ${entry.message}`,
+        details: {
+          source: "po-sync",
+          banfNumber: order?.banfNumber ?? null,
+          coIdent: order?.coIdent ?? null,
+        },
+      });
+    }
+    const { updatedOrders, ...response } = result;
+    return json(response);
   }
 
   if (request.method === "GET" && path === "/odata/OrderProtocol") {
@@ -476,6 +618,16 @@ export async function routeRequest(request) {
       day.approvedAt = new Date().toISOString();
       weDocumentCounter += 1;
       day.weDocument = `WE-${String(weDocumentCounter).padStart(6, "0")}`;
+      logEvent({
+        actor: persona.employee.extNr,
+        category: "status",
+        object: "timesheet",
+        objectKey: `${day.extNr}/${day.date}`,
+        from: "F",
+        to: "G",
+        message: `Tag ${day.date} von ${displayNameFor(day.extNr)} genehmigt, Wareneingang ${day.weDocument} gebucht.`,
+        details: { weDocument: day.weDocument },
+      });
       return json(structuredClone(day));
     }
     if (body.action === "reject") {
@@ -486,6 +638,16 @@ export async function routeRequest(request) {
       day.rejectionReason = body.reason;
       day.approvedBy = undefined;
       day.approvedAt = undefined;
+      logEvent({
+        actor: persona.employee.extNr,
+        category: "status",
+        object: "timesheet",
+        objectKey: `${day.extNr}/${day.date}`,
+        from: "F",
+        to: "A",
+        message: `Tag ${day.date} von ${displayNameFor(day.extNr)} zurückgewiesen: ${body.reason}`,
+        details: { reason: body.reason },
+      });
       return json(structuredClone(day));
     }
     return json({ error: "action must be approve or reject" }, 400);
@@ -517,7 +679,19 @@ export async function routeRequest(request) {
         enablementError.status,
       );
     }
+    const previous = timesheetStore.get(timesheetKey(saved));
     timesheetStore.set(timesheetKey(saved), saved);
+    if (previous?.status !== saved.status) {
+      logEvent({
+        actor: persona.employee.extNr,
+        category: "status",
+        object: "timesheet",
+        objectKey: `${saved.extNr}/${saved.date}`,
+        from: previous?.status ?? null,
+        to: saved.status,
+        message: `Tag ${saved.date}: ${TIMESHEET_STATUS_LABELS[saved.status] ?? saved.status}${previous ? ` (vorher ${TIMESHEET_STATUS_LABELS[previous.status] ?? previous.status})` : ""}.`,
+      });
+    }
     return json(saved, 201);
   }
 
@@ -525,6 +699,9 @@ export async function routeRequest(request) {
 }
 
 export function json(payload, status = 200) {
+  if (status >= 400 && typeof payload?.error === "string" && !payload.message) {
+    payload = { ...payload, message: messageFor(payload.error, payload) };
+  }
   return {
     status,
     headers: {
