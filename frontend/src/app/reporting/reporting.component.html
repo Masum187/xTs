@@ -146,7 +146,7 @@
           <th>Mitarbeiter</th>
           <th>Kontierung</th>
           <th>Gültigkeit</th>
-          <th class="num">Budget</th>
+          <th class="num">Beauftragt</th>
           <th class="num">Gebucht</th>
           <th class="num">Rest</th>
         </tr>
@@ -157,7 +157,7 @@
             <td>{{ row.displayName }}</td>
             <td>{{ row.coIdent }}</td>
             <td>{{ row.validFrom }} – {{ row.validTo }}</td>
-            <td class="num">{{ row.budgetHours }}</td>
+            <td class="num">{{ row.orderedHours }}</td>
             <td class="num">{{ row.bookedHours }}</td>
             <td class="num">{{ row.remainingHours }}</td>
           </tr>

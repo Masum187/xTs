@@ -34,6 +34,10 @@ export interface QuotaFilters {
   detail: "none" | "day";
 }
 
+export interface QuotaDayDetail extends BudgetDayDetail {
+  status: string;
+}
+
 export interface QuotaRow {
   extNr: string;
   displayName: string;
@@ -43,10 +47,10 @@ export interface QuotaRow {
   description: string;
   validFrom: string;
   validTo: string;
-  budgetHours: number;
+  orderedHours: number;
   bookedHours: number;
   remainingHours: number;
-  days?: BudgetDayDetail[];
+  days?: QuotaDayDetail[];
 }
 
 export interface Team {

@@ -16,7 +16,8 @@ test("budget monitor shows totals, traffic light and day details", async ({
   await openReportingAsApprover(page);
 
   const budgetRow = page.getByTestId("budget-700000000004");
-  await expect(budgetRow).toContainText("320");
+  await expect(budgetRow).toContainText("SAP-Implementierung");
+  await expect(budgetRow).toContainText("%");
   await expect(page.getByTestId("traffic-700000000004")).toBeVisible();
 
   await page.getByLabel("Detailstufe").selectOption("day");

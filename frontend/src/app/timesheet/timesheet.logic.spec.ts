@@ -28,12 +28,13 @@ const baseDay: TimesheetDay = {
 };
 
 const baseCostObject: EnabledCostObject = {
-  id: "000001",
+  extNr: "SCHILZ",
   coIdent: "700000000004",
   description: "SAP-Implementierung",
   validFrom: "2026-02-01",
   validTo: "2026-04-30",
-  budgetHours: 320,
+  orderedHours: 320,
+  bookedHours: 80,
   remainingHours: 240,
 };
 

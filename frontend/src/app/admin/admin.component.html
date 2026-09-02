@@ -1,0 +1,64 @@
+<section class="page-header">
+  <div>
+    <p class="eyebrow">WebClient</p>
+    <h1>Verwaltung</h1>
+  </div>
+</section>
+
+@if (message()) {
+  <section class="panel notice ok" data-testid="admin-message">
+    {{ message() }}
+  </section>
+}
+
+<section class="panel">
+  <div class="section-title">
+    <h2>Regelwerk (ZXTS_REGELN_T)</h2>
+  </div>
+  <p class="hint">
+    Infotyp 1 steuert die Zusammenfassung von Beauftragungskandidaten, Infotyp 2
+    steuert, ab welchem Belegstatus Kontierungen für die Stundenschreibung
+    freigeschaltet werden.
+  </p>
+
+  <div class="rules" data-testid="rules-list">
+    @for (rule of rules(); track rule.infotype) {
+      <article class="rule" [attr.data-testid]="'rule-' + rule.infotype">
+        <header>
+          <strong>Infotyp {{ rule.infotype }}</strong>
+          <span>{{ infotypeLabel(rule) }}</span>
+        </header>
+        <div class="rule-controls">
+          <label>
+            Regelwert
+            <select
+              [attr.aria-label]="'Regelwert Infotyp ' + rule.infotype"
+              [ngModel]="rule.value"
+              (ngModelChange)="updateRule(rule, { value: $event })"
+            >
+              @for (option of valueOptions(rule); track option.value) {
+                <option [value]="option.value">{{ option.label }}</option>
+              }
+            </select>
+          </label>
+          <label class="checkbox">
+            <input
+              type="checkbox"
+              [attr.aria-label]="'Aktiv Infotyp ' + rule.infotype"
+              [ngModel]="rule.active"
+              (ngModelChange)="updateRule(rule, { active: $event })"
+            />
+            aktiv
+          </label>
+          <button
+            type="button"
+            (click)="saveRule(rule)"
+            [attr.data-testid]="'save-rule-' + rule.infotype"
+          >
+            Speichern
+          </button>
+        </div>
+      </article>
+    }
+  </div>
+</section>
