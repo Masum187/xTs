@@ -11,6 +11,8 @@ const MESSAGES = {
   INVALID_TOKEN:
     "Das Anmelde-Token konnte nicht gelesen werden. Bitte melden Sie sich erneut an.",
   TIMESHEET_KEY_REQUIRED: "Mitarbeiter und Tagesdatum sind Pflicht.",
+  INVALID_TIMESHEET: "Der Stundenzettel enthält ungültige Werte.",
+  INVALID_JSON: "Die Anfrage enthält kein gültiges JSON.",
   PROTECTED_FIELDS:
     "Genehmigungsfelder werden vom System gesetzt und dürfen nicht mitgesendet werden.",
   INVALID_STATUS:

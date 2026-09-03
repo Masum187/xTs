@@ -10,6 +10,7 @@ import {
   isCostObjectBookable,
   shiftDate,
   sumLineHours,
+  validateTimesheetDay,
 } from "./timesheet.logic";
 import { AuthService } from "../auth/auth.service";
 import type {
@@ -49,6 +50,13 @@ export class TimesheetComponent {
   );
   protected readonly canEdit = computed(() => canEditTimesheet(this.day()));
   protected readonly canSubmit = computed(() => canSubmitTimesheet(this.day()));
+  /** Fachliche Probleme des Tages: Entwurfsregeln immer, Freigaberegeln sobald Positionen da sind. */
+  protected readonly problems = computed(() =>
+    validateTimesheetDay(
+      this.day(),
+      this.day().lines.length > 0 ? "submit" : "draft",
+    ),
+  );
   protected readonly statusLabel = computed(
     () => STATUS_LABELS[this.day().status],
   );
@@ -126,6 +134,11 @@ export class TimesheetComponent {
   }
 
   protected async save(): Promise<void> {
+    const problems = validateTimesheetDay(this.day(), "draft");
+    if (problems.length > 0) {
+      this.message.set(problems[0].message);
+      return;
+    }
     try {
       const draft: TimesheetDay = {
         ...this.day(),
