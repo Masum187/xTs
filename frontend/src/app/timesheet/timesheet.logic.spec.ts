@@ -6,6 +6,7 @@ import {
   createEmptyDay,
   isCostObjectBookable,
   shiftDate,
+  quotaProblems,
   sumLineHours,
   validateTimesheetDay,
 } from "./timesheet.logic";
@@ -129,6 +130,47 @@ describe("timesheet logic", () => {
     expect(canSubmitTimesheet({ ...baseDay, lines: [line(1.3333)] })).toBe(
       false,
     );
+  });
+
+  it("flags bookings beyond the open quota, counting the day's saved version", () => {
+    const costObjects = [{ ...baseCostObject, remainingHours: 10 }];
+    const line = (hours: number) => ({
+      coIdent: "700000000004",
+      description: "x",
+      hours,
+    });
+    expect(
+      quotaProblems(
+        { ...baseDay, lines: [line(6), line(4)] },
+        undefined,
+        costObjects,
+      ),
+    ).toEqual([]);
+    expect(
+      quotaProblems(
+        { ...baseDay, lines: [line(6), line(4.25)] },
+        undefined,
+        costObjects,
+      ).map((problem) => problem.code),
+    ).toEqual(["QUOTA_EXCEEDED"]);
+    const savedFive = { ...baseDay, lines: [line(5)] };
+    expect(
+      quotaProblems({ ...baseDay, lines: [line(15)] }, savedFive, costObjects),
+    ).toEqual([]);
+    expect(
+      quotaProblems(
+        { ...baseDay, lines: [line(15)] },
+        { ...savedFive, status: "A" },
+        costObjects,
+      ).length,
+    ).toBe(1);
+    expect(
+      quotaProblems(
+        { ...baseDay, lines: [line(-5), line(0)] },
+        undefined,
+        costObjects,
+      ),
+    ).toEqual([]);
   });
 
   it("creates an empty draft day", () => {

@@ -33,7 +33,9 @@ const MESSAGES = {
     "Der Tag enthält keine Stunden und kann nicht genehmigt werden.",
   REJECTION_REASON_REQUIRED: "Für die Rückweisung ist ein Grund erforderlich.",
   COST_OBJECT_NOT_ENABLED:
-    "Kontierung ist für diesen Tag nicht freigeschaltet oder das Kontingent ist ausgeschöpft.",
+    "Kontierung ist für diesen Tag nicht freigeschaltet.",
+  COST_OBJECT_QUOTA_EXCEEDED:
+    "Die Buchung überschreitet das offene Kontingent der Kontierung.",
   INVALID_RULE: "Der Regelwert ist für diesen Infotyp nicht zulässig.",
   INVALID_START_MONTH:
     "Der Startmonat muss im Format JJJJ-MM angegeben werden.",
@@ -101,6 +103,9 @@ export function messageFor(code, payload = {}) {
   }
   if (payload.coIdent && code === "COST_OBJECT_NOT_ENABLED") {
     return `${base} (${payload.coIdent})`;
+  }
+  if (code === "COST_OBJECT_QUOTA_EXCEEDED") {
+    return `${base} (${payload.coIdent}: ${payload.requested} Std. angefragt, ${payload.remaining} Std. offen)`;
   }
   return base;
 }

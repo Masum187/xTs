@@ -131,8 +131,18 @@ export function buildEnablements(orders, days, rules) {
     );
 }
 
+/**
+ * Kontingentpruefung beim Speichern (XTS-042, Audit Nr. 4): je Kontierung
+ * wird die Tagessumme der Positionen gegen die offenen Stunden geprueft, die
+ * sich ohne die bisherige Fassung dieses Tages ergeben (Upsert). Fehlende
+ * oder abgelaufene Freischaltung: COST_OBJECT_NOT_ENABLED; Ueberschreitung:
+ * COST_OBJECT_QUOTA_EXCEEDED mit angefragten und offenen Stunden.
+ * Wettlaeufe zwischen zwei Speichervorgaengen verhindert der Mock nur durch
+ * seine Single-Thread-Verarbeitung; SAP-seitig ist eine Sperre je
+ * Mitarbeiter und Kontierung noetig (Kontrakt).
+ */
 export function validateTimesheetEnablement(day, days, orders, rules) {
-  const lines = day.lines ?? [];
+  const lines = Array.isArray(day.lines) ? day.lines : [];
   if (day.status === "A" || lines.length === 0) return null;
 
   const otherDays = days.filter(
@@ -140,20 +150,32 @@ export function validateTimesheetEnablement(day, days, orders, rules) {
   );
   const enablements = buildEnablements(orders, otherDays, rules);
 
+  const requestedByCoIdent = new Map();
   for (const line of lines) {
+    requestedByCoIdent.set(
+      line.coIdent,
+      (requestedByCoIdent.get(line.coIdent) ?? 0) + (Number(line.hours) || 0),
+    );
+  }
+
+  for (const [coIdent, requested] of requestedByCoIdent) {
     const enabled = enablements.find(
       (item) =>
         item.extNr === day.extNr &&
-        item.coIdent === line.coIdent &&
-        item.remainingHours > 0 &&
+        item.coIdent === coIdent &&
         item.validFrom <= day.date &&
         day.date <= item.validTo,
     );
     if (!enabled) {
+      return { status: 409, code: "COST_OBJECT_NOT_ENABLED", coIdent };
+    }
+    if (requested > enabled.remainingHours) {
       return {
         status: 409,
-        code: "COST_OBJECT_NOT_ENABLED",
-        coIdent: line.coIdent,
+        code: "COST_OBJECT_QUOTA_EXCEEDED",
+        coIdent,
+        requested,
+        remaining: enabled.remainingHours,
       };
     }
   }

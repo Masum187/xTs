@@ -84,3 +84,73 @@ test("locks approved days and blocks exhausted cost objects", async ({
     "nicht buchbar",
   );
 });
+
+test("blocks bookings beyond the open quota before sending", async ({
+  page,
+  request,
+}) => {
+  const api = "http://127.0.0.1:4010/odata";
+  const remainingOf = async () => {
+    const response = await request.get(`${api}/MyEnabledCostObjects`);
+    const body = (await response.json()) as {
+      value: { coIdent: string; remainingHours: number }[];
+    };
+    return body.value.find((item) => item.coIdent === "600000000001")!
+      .remainingHours;
+  };
+  // Kontingent 600000000001 per API auf unter 24 Std. bringen.
+  let day = 14;
+  while ((await remainingOf()) >= 24) {
+    await request.post(`${api}/TimesheetDays`, {
+      data: {
+        extNr: "SCHILZ",
+        date: `2026-04-${day}`,
+        startTime: "00:00",
+        endTime: "23:45",
+        breakMinutes: 0,
+        location: "remote",
+        status: "E",
+        lines: [
+          {
+            coIdent: "600000000001",
+            description: "Kontingentprobe",
+            hours: 23,
+          },
+        ],
+      },
+    });
+    day += 1;
+  }
+  const remaining = await remainingOf();
+
+  await page.goto("/");
+  await expect(page.getByTestId("profile")).toContainText("Stephan Schilz");
+  await page.getByLabel("Tagesdatum").fill("2026-04-29");
+  await page.getByLabel("Kontierung").selectOption("600000000001");
+  await page.getByTestId("add-line").click();
+  await page.getByLabel("Leistungsbeschreibung").last().fill("Kontingent");
+  const hours = page.getByLabel("Stunden").last();
+  await hours.fill(String(remaining + 0.25));
+  await expect(page.getByTestId("timesheet-problems")).toContainText(
+    "Std. offen",
+  );
+  await expect(page.getByTestId("submit-timesheet")).toBeDisabled();
+  await page.getByTestId("save-draft").click();
+  await expect(page.locator(".actions .message")).toContainText("Std. offen");
+
+  if (remaining >= 0.25) {
+    await hours.fill(String(remaining));
+    await expect(page.getByTestId("timesheet-problems")).toBeHidden();
+    await page.getByTestId("save-draft").click();
+    await expect(page.locator(".actions .message")).toContainText(
+      "Entwurf gespeichert.",
+    );
+    // Beauftragte Stunden koennen durch vorherige Specs abweichen; entscheidend
+    // ist, dass die Anzeige nach dem Speichern sofort 0 offene Stunden zeigt.
+    await expect(
+      page
+        .getByTestId("cost-object-list")
+        .locator(".line-row", { hasText: "600000000001" }),
+    ).toContainText(/ 0 von \d+ Std\. offen/);
+  }
+});

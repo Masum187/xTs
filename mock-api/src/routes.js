@@ -823,13 +823,8 @@ export async function routeRequest(request) {
       rulesStore,
     );
     if (enablementError) {
-      return json(
-        {
-          error: enablementError.code,
-          coIdent: enablementError.coIdent,
-        },
-        enablementError.status,
-      );
+      const { status: errorStatus, code, ...details } = enablementError;
+      return json({ error: code, ...details }, errorStatus);
     }
     timesheetStore.set(timesheetKey(saved), saved);
     if (previous?.status !== saved.status) {

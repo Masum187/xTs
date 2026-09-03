@@ -8,6 +8,7 @@ import {
   canSubmitTimesheet,
   createEmptyDay,
   isCostObjectBookable,
+  quotaProblems,
   shiftDate,
   sumLineHours,
   validateTimesheetDay,
@@ -49,14 +50,25 @@ export class TimesheetComponent {
     sumLineHours(this.day().lines),
   );
   protected readonly canEdit = computed(() => canEditTimesheet(this.day()));
-  protected readonly canSubmit = computed(() => canSubmitTimesheet(this.day()));
+  /** Kontingentprobleme gegen die zuletzt geladenen Freischaltungen. */
+  protected readonly quotaIssues = computed(() =>
+    quotaProblems(
+      this.day(),
+      this.savedDays.get(this.day().date),
+      this.costObjects(),
+    ),
+  );
+  protected readonly canSubmit = computed(
+    () => canSubmitTimesheet(this.day()) && this.quotaIssues().length === 0,
+  );
   /** Fachliche Probleme des Tages: Entwurfsregeln immer, Freigaberegeln sobald Positionen da sind. */
-  protected readonly problems = computed(() =>
-    validateTimesheetDay(
+  protected readonly problems = computed(() => [
+    ...validateTimesheetDay(
       this.day(),
       this.day().lines.length > 0 ? "submit" : "draft",
     ),
-  );
+    ...this.quotaIssues(),
+  ]);
   protected readonly statusLabel = computed(
     () => STATUS_LABELS[this.day().status],
   );
@@ -134,7 +146,10 @@ export class TimesheetComponent {
   }
 
   protected async save(): Promise<void> {
-    const problems = validateTimesheetDay(this.day(), "draft");
+    const problems = [
+      ...validateTimesheetDay(this.day(), "draft"),
+      ...this.quotaIssues(),
+    ];
     if (problems.length > 0) {
       this.message.set(problems[0].message);
       return;
@@ -175,6 +190,9 @@ export class TimesheetComponent {
   private async persist(day: TimesheetDay): Promise<TimesheetDay> {
     const saved = await this.timesheetService.saveTimesheet(day);
     this.savedDays.set(saved.date, saved);
+    // Reststunden neu laden, sonst zeigt das Kontingent-Panel alte Werte
+    // (Audit Nr. 21) und die Kontingentpruefung rechnet mit ihnen.
+    this.costObjects.set(await this.timesheetService.getEnabledCostObjects());
     return saved;
   }
 

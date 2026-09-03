@@ -165,6 +165,51 @@ export function isCostObjectBookable(
   );
 }
 
+/**
+ * Kontingentpruefung wie im Server (Audit Nr. 4): je Kontierung darf die
+ * Tagessumme die offenen Stunden nicht ueberschreiten. `remainingHours`
+ * aus MyEnabledCostObjects enthaelt bereits die gespeicherte Fassung dieses
+ * Tages (Status E/F/G), daher wird sie wieder hinzugerechnet.
+ */
+export function quotaProblems(
+  day: TimesheetDay,
+  savedDay: TimesheetDay | undefined,
+  costObjects: EnabledCostObject[],
+): TimesheetProblem[] {
+  const requested = new Map<string, number>();
+  for (const line of day.lines) {
+    if (!Number.isFinite(line.hours) || line.hours <= 0) continue;
+    requested.set(
+      line.coIdent,
+      (requested.get(line.coIdent) ?? 0) + line.hours,
+    );
+  }
+  const previouslyBooked = new Map<string, number>();
+  if (savedDay && savedDay.status !== "A") {
+    for (const line of savedDay.lines) {
+      previouslyBooked.set(
+        line.coIdent,
+        (previouslyBooked.get(line.coIdent) ?? 0) + line.hours,
+      );
+    }
+  }
+  const problems: TimesheetProblem[] = [];
+  for (const [coIdent, hours] of requested) {
+    const costObject = costObjects.find((item) => item.coIdent === coIdent);
+    if (!costObject) continue;
+    const available =
+      costObject.remainingHours + (previouslyBooked.get(coIdent) ?? 0);
+    if (hours > available) {
+      problems.push({
+        field: "lines",
+        code: "QUOTA_EXCEEDED",
+        message: `Kontierung ${coIdent}: ${hours} Std. angefragt, aber nur ${available} Std. offen.`,
+      });
+    }
+  }
+  return problems;
+}
+
 export function shiftDate(date: string, days: number): string {
   const parsed = new Date(`${date}T00:00:00Z`);
   parsed.setUTCDate(parsed.getUTCDate() + days);
