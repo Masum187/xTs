@@ -2030,7 +2030,7 @@ test("error responses carry a user-readable message", async () => {
   assert.equal(notEnabledBody.error, "COST_OBJECT_NOT_ENABLED");
   assert.equal(
     notEnabledBody.message,
-    "Kontierung ist für diesen Tag nicht freigeschaltet oder das Kontingent ist ausgeschöpft. (600000000009)",
+    "Kontierung ist für diesen Tag nicht freigeschaltet. (600000000009)",
   );
 
   const locked = await routeRequest(
@@ -2449,7 +2449,7 @@ test("rejection reasons made of whitespace are refused", async () => {
 
 const validDay = (overrides = {}) => ({
   extNr: "SCHILZ",
-  date: "2026-05-18",
+  date: "2026-04-15",
   startTime: "08:00",
   endTime: "16:30",
   breakMinutes: 30,
@@ -2549,7 +2549,7 @@ test("timesheet payloads are validated: date, times, break, location", async () 
   const draftWithoutHeader = await routeRequest(
     request("POST", "/odata/TimesheetDays", {
       extNr: "SCHILZ",
-      date: "2026-05-18",
+      date: "2026-04-15",
       status: "E",
       lines: [{ coIdent: "700000000004", description: "", hours: 1 }],
     }),
@@ -2558,7 +2558,7 @@ test("timesheet payloads are validated: date, times, break, location", async () 
   const submitWithoutHeader = await routeRequest(
     request("POST", "/odata/TimesheetDays", {
       extNr: "SCHILZ",
-      date: "2026-05-18",
+      date: "2026-04-15",
       status: "F",
       lines: [{ coIdent: "700000000004", description: "", hours: 1 }],
     }),
@@ -2589,4 +2589,115 @@ test("invalid JSON bodies are reported as 400, not 500", async () => {
   });
   void stream;
   await assert.rejects(routeRequest(broken), InvalidJsonError);
+});
+
+test("bookings cannot exceed the open quota of a cost object", async () => {
+  // 700000000004: 320 beauftragt, 18 gebucht -> 302 offen.
+  const tooMuch = await saveDay({
+    date: "2026-08-03",
+    startTime: "00:00",
+    endTime: "23:59",
+    breakMinutes: 0,
+    lines: [{ coIdent: "700000000004", description: "a", hours: 24 }],
+  });
+  assert.equal(tooMuch.status, 201);
+  let remaining = 302 - 24;
+  const days = [];
+  for (let day = 4; day <= 31; day += 1) {
+    days.push(`2026-08-${String(day).padStart(2, "0")}`);
+  }
+  let rejected = null;
+  for (const date of days) {
+    const result = await saveDay({
+      date,
+      startTime: "00:00",
+      endTime: "23:59",
+      breakMinutes: 0,
+      lines: [{ coIdent: "700000000004", description: "x", hours: 24 }],
+    });
+    if (result.status === 409) {
+      rejected = result;
+      break;
+    }
+    assert.equal(result.status, 201, date);
+    remaining -= 24;
+  }
+  assert.ok(rejected, "Ueberbuchung wurde nicht abgelehnt");
+  assert.equal(rejected.body.error, "COST_OBJECT_QUOTA_EXCEEDED");
+  assert.equal(rejected.body.coIdent, "700000000004");
+  assert.equal(rejected.body.requested, 24);
+  assert.equal(rejected.body.remaining, remaining);
+  assert.ok(remaining < 24 && remaining >= 0);
+  assert.match(rejected.body.message, /angefragt/);
+
+  const exact = await saveDay({
+    date: "2026-09-01",
+    startTime: "00:00",
+    endTime: "23:59",
+    breakMinutes: 0,
+    lines: [{ coIdent: "700000000004", description: "rest", hours: remaining }],
+  });
+  assert.equal(exact.status, 201);
+  const after = await routeRequest(
+    request("GET", "/odata/MyEnabledCostObjects"),
+  );
+  const row = JSON.parse(after.body).value.find(
+    (item) => item.coIdent === "700000000004",
+  );
+  assert.equal(row.remainingHours, 0);
+  const draftZero = await saveDay({
+    date: "2026-09-02",
+    lines: [{ coIdent: "700000000004", description: "", hours: 0 }],
+  });
+  assert.equal(draftZero.status, 201);
+  const quarter = await saveDay({
+    date: "2026-09-03",
+    lines: [{ coIdent: "700000000004", description: "x", hours: 0.25 }],
+  });
+  assert.equal(quarter.status, 409);
+  assert.equal(quarter.body.error, "COST_OBJECT_QUOTA_EXCEEDED");
+});
+
+test("quota check sums the lines of a day and ignores the day's previous version", async () => {
+  const split = await saveDay({
+    date: "2026-04-15",
+    startTime: "00:00",
+    endTime: "23:59",
+    breakMinutes: 0,
+    lines: [
+      { coIdent: "600000000001", description: "a", hours: 12 },
+      { coIdent: "600000000001", description: "b", hours: 12 },
+    ],
+  });
+  // 600000000001: 160 offen -> 24 passen.
+  assert.equal(split.status, 201);
+  const beyond = await saveDay({
+    date: "2026-04-14",
+    startTime: "00:00",
+    endTime: "23:59",
+    breakMinutes: 0,
+    lines: [
+      { coIdent: "600000000001", description: "a", hours: 12 },
+      { coIdent: "600000000001", description: "b", hours: 11.75 },
+      { coIdent: "700000000004", description: "c", hours: 0.25 },
+    ],
+  });
+  assert.equal(beyond.status, 201);
+  // Bisherige Fassung des Tages zaehlt nicht doppelt: 2026-04-15 von 24 auf 20.
+  const updated = await saveDay({
+    date: "2026-04-15",
+    startTime: "00:00",
+    endTime: "23:59",
+    breakMinutes: 0,
+    lines: [{ coIdent: "600000000001", description: "a", hours: 20 }],
+  });
+  assert.equal(updated.status, 201);
+  const state = await routeRequest(
+    request("GET", "/odata/MyEnabledCostObjects"),
+  );
+  const row = JSON.parse(state.body).value.find(
+    (item) => item.coIdent === "600000000001",
+  );
+  assert.equal(row.bookedHours, 43.75);
+  assert.equal(row.remainingHours, 116.25);
 });
