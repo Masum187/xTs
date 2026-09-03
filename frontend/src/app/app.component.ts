@@ -40,19 +40,37 @@ import { AuthService } from "./auth/auth.service";
           <a routerLink="/admin" routerLinkActive="active">Verwaltung</a>
         }
       </nav>
-      <label class="persona">
-        Dev-Persona
-        <select
-          aria-label="Dev-Persona"
-          data-testid="persona-select"
-          [ngModel]="auth.personaUpn()"
-          (ngModelChange)="switchPersona($event)"
-        >
-          @for (persona of personas; track persona.upn) {
-            <option [value]="persona.upn">{{ persona.label }}</option>
+      @if (auth.usesEntra) {
+        <div class="persona" data-testid="entra-account">
+          @if (auth.accountName(); as name) {
+            <span>{{ name }}</span>
+            <button
+              type="button"
+              class="topbar-button"
+              (click)="auth.logout()"
+              data-testid="auth-logout"
+            >
+              Abmelden
+            </button>
+          } @else {
+            <span>Microsoft Entra ID</span>
           }
-        </select>
-      </label>
+        </div>
+      } @else {
+        <label class="persona">
+          Dev-Persona
+          <select
+            aria-label="Dev-Persona"
+            data-testid="persona-select"
+            [ngModel]="auth.personaUpn()"
+            (ngModelChange)="switchPersona($event)"
+          >
+            @for (persona of personas; track persona.upn) {
+              <option [value]="persona.upn">{{ persona.label }}</option>
+            }
+          </select>
+        </label>
+      }
     </header>
     <main>
       @switch (auth.state()) {
@@ -66,7 +84,7 @@ import { AuthService } from "./auth/auth.service";
         }
         @case ("not-mapped") {
           <section class="auth-panel auth-error" data-testid="auth-not-mapped">
-            <h2>Kein xTS-Zugang für {{ auth.personaUpn() }}</h2>
+            <h2>Kein xTS-Zugang für {{ auth.loginIdentifier() }}</h2>
             <p>
               Ihr Benutzerkonto ist angemeldet, aber noch keinem xTS-Mitarbeiter
               (EXTNR) zugeordnet. Bitte wenden Sie sich an die
@@ -75,6 +93,36 @@ import { AuthService } from "./auth/auth.service";
             <p class="claims" data-testid="auth-claims">
               Entra OID: <code>{{ auth.claims().oid }}</code> · UPN:
               <code>{{ auth.claims().upn }}</code>
+            </p>
+          </section>
+        }
+        @case ("signed-out") {
+          <section class="auth-panel" data-testid="auth-signed-out">
+            <h2>Anmeldung erforderlich</h2>
+            <p>
+              Bitte melden Sie sich mit Ihrem Microsoft-Konto an. xTS ordnet Ihr
+              Konto anschließend Ihrem Mitarbeiterstamm zu.
+            </p>
+            <button
+              type="button"
+              class="primary"
+              (click)="auth.login()"
+              data-testid="auth-login"
+            >
+              Mit Microsoft anmelden
+            </button>
+          </section>
+        }
+        @case ("not-configured") {
+          <section
+            class="auth-panel auth-error"
+            data-testid="auth-not-configured"
+          >
+            <h2>Entra ID ist nicht konfiguriert</h2>
+            <p>
+              Der WebClient läuft im Modus „entra", aber Tenant-ID und Client-ID
+              fehlen in der Umgebungskonfiguration (environment.entra.ts). Siehe
+              docs/entra-anbindung.md.
             </p>
           </section>
         }

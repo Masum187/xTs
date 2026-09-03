@@ -76,9 +76,67 @@ const TIMESHEET_STATUS_LABELS = {
   A: "Zurückgewiesen",
 };
 
+/**
+ * Liest die Claims eines Bearer-Tokens (JWT) aus dem Payload. Der Mock
+ * prueft bewusst KEINE Signatur, Ausstellerin oder Ablaufzeit; das bleibt
+ * dem SAP-OData-Service mit Entra-Metadaten vorbehalten.
+ */
+function decodeJwtClaims(token) {
+  const parts = token.split(".");
+  if (parts.length < 2) return null;
+  try {
+    const payload = Buffer.from(
+      parts[1].replace(/-/g, "+").replace(/_/g, "/"),
+      "base64",
+    ).toString("utf8");
+    const claims = JSON.parse(payload);
+    return claims && typeof claims === "object" ? claims : null;
+  } catch {
+    return null;
+  }
+}
+
+function firstHeaderValue(value) {
+  return Array.isArray(value) ? value[0] : value;
+}
+
+function stringClaim(value) {
+  return typeof value === "string" && value.trim() ? value.trim() : null;
+}
+
+function claimsFromRequest(request) {
+  const authorization =
+    stringClaim(firstHeaderValue(request.headers?.authorization)) ?? "";
+  if (/^Bearer\s+/i.test(authorization)) {
+    const claims = decodeJwtClaims(authorization.replace(/^Bearer\s+/i, ""));
+    if (!claims) return { error: "INVALID_TOKEN" };
+    const oid = stringClaim(claims.oid);
+    const upn =
+      stringClaim(claims.preferred_username) ??
+      stringClaim(claims.upn) ??
+      stringClaim(claims.email);
+    if (!oid && !upn) return { error: "INVALID_TOKEN" };
+    return {
+      oid,
+      upn,
+      source: "bearer",
+    };
+  }
+  const oid = stringClaim(
+    firstHeaderValue(request.headers?.[OAUTH_OID_HEADER]),
+  );
+  const upn =
+    stringClaim(firstHeaderValue(request.headers?.[OAUTH_UPN_HEADER])) ??
+    (oid ? null : DEFAULT_UPN);
+  return { oid, upn, source: "header" };
+}
+
 function resolvePersona(request) {
-  const oid = request.headers?.[OAUTH_OID_HEADER] ?? null;
-  const upn = request.headers?.[OAUTH_UPN_HEADER] ?? (oid ? null : DEFAULT_UPN);
+  const claims = claimsFromRequest(request);
+  if (claims.error) {
+    return { error: json({ error: claims.error }, 401) };
+  }
+  const { oid, upn } = claims;
   const mapping = findEmployeeByClaims({ oid, upn });
   if (!mapping) {
     return { error: json({ error: "NO_EXTNR_MAPPING", oid, upn }, 404) };
@@ -708,7 +766,7 @@ export function json(payload, status = 200) {
     headers: {
       "access-control-allow-origin": "*",
       "access-control-allow-methods": "GET,POST,PATCH,OPTIONS",
-      "access-control-allow-headers": `content-type,${OAUTH_OID_HEADER},${OAUTH_UPN_HEADER}`,
+      "access-control-allow-headers": `content-type,authorization,${OAUTH_OID_HEADER},${OAUTH_UPN_HEADER}`,
       "content-type": "application/json; charset=utf-8",
     },
     body: JSON.stringify(payload),

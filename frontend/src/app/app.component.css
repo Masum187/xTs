@@ -85,3 +85,29 @@ main {
 .auth-error p {
   color: #7c2d24;
 }
+
+.topbar-button {
+  background: #1c3a66;
+  border: 1px solid #2c4a76;
+  border-radius: 6px;
+  color: #ffffff;
+  cursor: pointer;
+  min-height: 32px;
+  padding: 0 10px;
+}
+
+.auth-panel .primary {
+  background: #174b86;
+  border: 0;
+  border-radius: 6px;
+  color: #ffffff;
+  cursor: pointer;
+  margin-top: 16px;
+  min-height: 38px;
+  padding: 0 16px;
+}
+
+.auth-panel .claims {
+  font-size: 13px;
+  margin-top: 8px;
+}

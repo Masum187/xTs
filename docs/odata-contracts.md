@@ -96,9 +96,10 @@ Diese Datei beschreibt die fachlichen Service-Kontrakte fuer SAP-OData und die M
 - `GET /odata/BudgetMonitor` liefert je Kontierung: Budget-, Verbrauchs-, Rest-Stunden, Verbrauch in % und Ampel (`green`/`yellow`/`red`, Grenzen aus simuliertem Customizing `budgetTrafficLight`, spaeter `ZXTS_REGELN_T`). Detailstufen via `?detail=employee` (Summe je Mitarbeiter) bzw. `?detail=day` (alle Tagesdetails).
 - `GET /odata/CostObjectQuota` liefert die abgeleiteten Freischaltungen je Mitarbeiter und Kontierung: Gueltigkeitszeitraum, beauftragte (`orderedHours`), gebuchte (`bookedHours`, Status `E`/`F`/`G`) und offene Stunden. Filter: `?lastName=` (Teilstring), `?team=`, `?from=`/`?to=` (Buchungsdatum); `?detail=day` blendet Tagesdetails inkl. Status ein.
 
-## Auth-Simulation (XTS-050, Option B technisch vorbereitet)
+## Authentifizierung (XTS-050, Option B entschieden)
 
-- Die OAuth-Token-Claims werden als Pseudo-Header uebergeben: `x-mock-oauth-oid` (Entra objectId) und `x-mock-oauth-upn`; ohne Header gilt die Default-Persona `stephan.schilz@qualitytimes.de` per UPN. Das Mapping liegt im Mitarbeiterstamm (`aadOid`, `aadUpn` in `ZXTS_WIW_T`-Simulation): `oid` fuehrend, `upn` als Fallback; beide Vergleiche sind case-insensitiv.
+- Echte Anmeldung: `Authorization: Bearer <JWT>` (ID- oder Access-Token aus Entra ID). Die Mock-API liest `oid` (fuehrend) und `preferred_username`/`upn`/`email` (Fallback) aus dem Token-Payload, **ohne Signaturpruefung** (Mock); nicht lesbare Tokens oder Tokens ohne verwertbare Text-Claims: HTTP 401 `INVALID_TOKEN`. Bearer hat Vorrang vor den Pseudo-Headern. Details: [entra-anbindung.md](entra-anbindung.md).
+- Simulation ohne Token: die Claims werden als Pseudo-Header uebergeben: `x-mock-oauth-oid` (Entra objectId) und `x-mock-oauth-upn`; ohne Header gilt die Default-Persona `stephan.schilz@qualitytimes.de` per UPN. Das Mapping liegt im Mitarbeiterstamm (`aadOid`, `aadUpn` in `ZXTS_WIW_T`-Simulation): `oid` fuehrend, `upn` als Fallback; beide Vergleiche sind case-insensitiv.
 - `GET /odata/MyProfile` liefert Profil inkl. `roles` (`user`, `approver`, `planner`, `admin`), `aadUpn` und `mappedBy` (`"oid"` oder `"upn"`). Ohne EXTNR-Mapping: HTTP 404 `NO_EXTNR_MAPPING` (inkl. `oid` und `upn`); inaktiver oder geloeschter Mitarbeiter: HTTP 403 `EMPLOYEE_INACTIVE`.
 - Pflege des Mappings ueber `POST /odata/Employees` (`aadOid` GUID-Format, sonst HTTP 400 `INVALID_AAD_OID`; Eindeutigkeit: HTTP 409 `AAD_OID_IN_USE` bzw. `AAD_UPN_IN_USE` mit `conflictId`). Fehlen die Felder im Body, bleiben bestehende Werte erhalten.
 - Alle `My*`-Endpunkte und `POST /odata/TimesheetDays` sind auf den gemappten Mitarbeiter beschraenkt (fremde `extNr`: HTTP 403 `NOT_AUTHORIZED`).
@@ -125,4 +126,4 @@ Einzelobjekte werden direkt als JSON-Objekt geliefert.
 
 ## Offener technischer Punkt
 
-Das AD/OAuth-Attribut fuer das Mapping auf `ZXTS_WIW_T-EXTNR` ist fachlich noch festzulegen; Option B (`oid`) ist in `GET /odata/MyProfile` mit UPN-Fallback bereits umgesetzt, siehe [entscheidungsvorlage-extnr-mapping.md](entscheidungsvorlage-extnr-mapping.md).
+Das AD/OAuth-Attribut ist entschieden (Option B, `oid` mit UPN-Fallback) und in `GET /odata/MyProfile` umgesetzt. SAP-seitig offen: DDIC-Felder `AAD_OID`/`AAD_UPN` und die Token-Validierung im OData-Service, siehe [entra-anbindung.md](entra-anbindung.md).

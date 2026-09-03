@@ -40,6 +40,12 @@ Frontend starten:
 npm run start --workspace frontend
 ```
 
+Frontend mit echter Entra-ID-Anmeldung starten (Tenant/Client-ID in `frontend/src/environments/environment.entra.ts`, siehe `docs/entra-anbindung.md`):
+
+```bash
+npm run start:entra --workspace frontend
+```
+
 ## Quality Gates
 
 - Vor lokalem Commit: `npm run precommit`

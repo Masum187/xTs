@@ -8,6 +8,8 @@ const MESSAGES = {
   EMPLOYEE_INACTIVE:
     "Ihr Mitarbeiterstamm ist inaktiv oder gelöscht. Eine Anmeldung ist nicht möglich.",
   NOT_AUTHORIZED: "Für diese Aktion fehlt die erforderliche Berechtigung.",
+  INVALID_TOKEN:
+    "Das Anmelde-Token konnte nicht gelesen werden. Bitte melden Sie sich erneut an.",
   COST_OBJECT_NOT_ENABLED:
     "Kontierung ist für diesen Tag nicht freigeschaltet oder das Kontingent ist ausgeschöpft.",
   INVALID_RULE: "Der Regelwert ist für diesen Infotyp nicht zulässig.",

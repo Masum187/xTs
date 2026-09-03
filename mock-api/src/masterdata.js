@@ -74,16 +74,18 @@ export function findEmployee(extNr) {
  * `upn` als Fallback (Option A). Geloeschte und inaktive Mitarbeiter werden
  * gefunden und vom Aufrufer als gesperrt abgewiesen (403). */
 export function findEmployeeByClaims({ oid, upn }) {
+  const normalizedOid = typeof oid === "string" ? oid.toLowerCase() : "";
+  const normalizedUpn = typeof upn === "string" ? upn.toLowerCase() : "";
   const byOid =
-    oid &&
+    normalizedOid &&
     store.employees.find(
-      (employee) => employee.aadOid?.toLowerCase() === oid.toLowerCase(),
+      (employee) => employee.aadOid?.toLowerCase() === normalizedOid,
     );
   if (byOid) return { employee: byOid, mappedBy: "oid" };
   const byUpn =
-    upn &&
+    normalizedUpn &&
     store.employees.find(
-      (employee) => employee.aadUpn?.toLowerCase() === upn.toLowerCase(),
+      (employee) => employee.aadUpn?.toLowerCase() === normalizedUpn,
     );
   if (byUpn) return { employee: byUpn, mappedBy: "upn" };
   return null;
