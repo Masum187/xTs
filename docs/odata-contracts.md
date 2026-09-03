@@ -56,9 +56,10 @@ Diese Datei beschreibt die fachlichen Service-Kontrakte fuer SAP-OData und die M
 ## Genehmigungs-Verhalten
 
 - `GET /odata/ApprovalTimesheets` liefert alle Tage mit Status `F` ueber alle Mitarbeiter, inkl. `displayName`; optionale Filter `?month=YYYY-MM` und `?extNr=`.
-- `POST /odata/TimesheetApprovals` mit `{ extNr, date, action }` verarbeitet genau einen Tag; nur Status `F` ist zulaessig (sonst HTTP 409).
-  - `action: "approve"` setzt Status `G`, protokolliert `approvedBy`/`approvedAt` und simuliert die synchrone Wareneingangsbuchung (XTS-061A) ueber ein `weDocument` (`WE-000001`, fortlaufend). Genehmigte Tage koennen im MVP nicht zurueckgesetzt werden.
-  - `action: "reject"` erfordert `reason` (sonst HTTP 400), setzt Status `A` und schreibt den Grund nach `rejectionReason`.
+- `POST /odata/TimesheetApprovals` mit `{ extNr, date, action }` verarbeitet genau einen Tag; nur Status `F` ist zulaessig (sonst HTTP 409 `TIMESHEET_NOT_SUBMITTED`); unbekannter Tag: HTTP 404 `TIMESHEET_NOT_FOUND`; fehlende Felder: HTTP 400 `APPROVAL_FIELDS_REQUIRED`; andere Aktion: HTTP 400 `INVALID_APPROVAL_ACTION`.
+  - Vier-Augen-Prinzip: eigene Tage duerfen nicht genehmigt oder zurueckgewiesen werden (HTTP 403 `SELF_APPROVAL`); die Liste zeigt sie weiterhin, der WebClient blendet die Aktionen aus.
+  - `action: "approve"` setzt Status `G`, protokolliert `approvedBy`/`approvedAt` und simuliert die synchrone Wareneingangsbuchung (XTS-061A) ueber ein `weDocument` (`WE-000001`, fortlaufend). Tage ohne Stunden werden nicht genehmigt (HTTP 409 `TIMESHEET_EMPTY`). Genehmigte Tage koennen im MVP nicht zurueckgesetzt werden.
+  - `action: "reject"` erfordert einen nicht leeren `reason` (getrimmt, sonst HTTP 400 `REJECTION_REASON_REQUIRED`), setzt Status `A` und schreibt den Grund nach `rejectionReason`.
 
 ## Planungs-Verhalten (Epic 3)
 
@@ -109,8 +110,14 @@ Diese Datei beschreibt die fachlichen Service-Kontrakte fuer SAP-OData und die M
 ## Timesheet-Verhalten
 
 - `GET /odata/MyTimesheets` liefert alle eigenen Tage absteigend nach Datum, optional gefiltert mit `?date=YYYY-MM-DD`.
-- `POST /odata/TimesheetDays` ist ein Upsert je `EXTNR` + Datum; `extNr` und `date` sind Pflicht (sonst HTTP 400). Die Mock-API haelt die Tage im Speicher, damit Navigation und Korrektur-Flows entwickelbar sind.
-- Zurueckgewiesene Tage (Status `A`) tragen den Grund im Feld `rejectionReason`. Beim erneuten Speichern/Freigeben durch den Mitarbeiter wird das Feld entfernt (Flow `A -> E -> F`).
+- `POST /odata/TimesheetDays` ist ein Upsert je `EXTNR` + Datum; `extNr` und `date` sind Pflicht (sonst HTTP 400 `TIMESHEET_KEY_REQUIRED`). Die Mock-API haelt die Tage im Speicher, damit Navigation und Korrektur-Flows entwickelbar sind.
+- Statusmaschine (Konzept §6.2, serverseitig erzwungen):
+  - Der Body darf nur `extNr`, `date`, `startTime`, `endTime`, `breakMinutes`, `location`, `status` und `lines[{ coIdent, description, hours }]` enthalten; unbekannte Felder werden verworfen. Servergefuehrte Felder (`approvedBy`, `approvedAt`, `weDocument`, `rejectionReason`) im Body: HTTP 400 `PROTECTED_FIELDS` mit `fields`.
+  - Mitarbeiter setzen nur `E` (Entwurf) oder `F` (freigeben); andere Werte: HTTP 400 `INVALID_STATUS`. Ohne `status` gilt `E`.
+  - Tage im Status `F` oder `G` sind fuer Mitarbeiter gesperrt: HTTP 409 `TIMESHEET_LOCKED` (mit `status`). Tage im Status `E` oder `A` duerfen ueberschrieben werden.
+  - Freigeben (`F`) erfordert mindestens eine Position mit Stunden > 0, sonst HTTP 409 `SUBMIT_REQUIRES_HOURS`.
+  - `lines` ohne Array wird als leere Liste gespeichert (Uebergang bis zur Payload-Validierung, Audit Nr. 3/9).
+- Zurueckgewiesene Tage (Status `A`) tragen den Grund im Feld `rejectionReason`. Beim erneuten Speichern/Freigeben durch den Mitarbeiter entfernt der Server das Feld (Flow `A -> E -> F`).
 
 ## Response Shape
 

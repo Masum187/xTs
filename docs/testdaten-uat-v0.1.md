@@ -112,15 +112,16 @@ Automatisiert in `frontend/e2e/uat.spec.ts` ("UAT-Fall B").
 
 ### Fall C – Fehlerfaelle (manuell)
 
-| Fall | Persona        | Aktion                                                                                     | Erwartetes Ergebnis                                                                |
-| ---- | -------------- | ------------------------------------------------------------------------------------------ | ---------------------------------------------------------------------------------- |
-| C1   | Petra Altmann  | Persona waehlen                                                                            | "Zugang gesperrt" (inaktiver Mitarbeiter)                                          |
-| C2   | Neuer Externer | Persona waehlen                                                                            | "Kein xTS-Zugang", Hinweis auf fehlendes EXTNR-Mapping                             |
-| C3   | Schilz         | Stundenschreibung: Tagesdatum 2026-04-14, Kontierung `600000000009`                        | Kontierung wird als "nicht buchbar" gefuehrt (Gueltigkeit bis 2026-03-31)          |
-| C4   | Roeper         | Planung: Zelle Schilz / `700000000004` / 05.2026 auf 200 setzen                            | Ueberplanungswarnung "200 Std. geplant bei 160 Std. verfuegbar", Speichern erlaubt |
-| C5   | Roeper         | Beauftragung: Kandidat Roeper / `600000000001` beauftragen, BANF anlegen, Bestelldaten-Job | Job meldet 1 Fehler, Fehlerprotokoll "Keine Bestellung zur BANF …"                 |
-| C6   | Roeper         | Verwaltung: Infotyp 2 deaktivieren, dann als Schilz freigeben                              | "Kontierung ist fuer diesen Tag nicht freigeschaltet"                              |
-| C7   | Roeper         | Verwaltung: Kontierung `600000000042` als OR anlegen, "SAP CO pruefen"                     | Pruefung nicht bestanden (Stub kennt sie als KS)                                   |
+| Fall | Persona        | Aktion                                                                                     | Erwartetes Ergebnis                                                                          |
+| ---- | -------------- | ------------------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------- |
+| C1   | Petra Altmann  | Persona waehlen                                                                            | "Zugang gesperrt" (inaktiver Mitarbeiter)                                                    |
+| C2   | Neuer Externer | Persona waehlen                                                                            | "Kein xTS-Zugang", Hinweis auf fehlendes EXTNR-Mapping                                       |
+| C3   | Schilz         | Stundenschreibung: Tagesdatum 2026-04-14, Kontierung `600000000009`                        | Kontierung wird als "nicht buchbar" gefuehrt (Gueltigkeit bis 2026-03-31)                    |
+| C4   | Roeper         | Planung: Zelle Schilz / `700000000004` / 05.2026 auf 200 setzen                            | Ueberplanungswarnung "200 Std. geplant bei 160 Std. verfuegbar", Speichern erlaubt           |
+| C5   | Roeper         | Beauftragung: Kandidat Roeper / `600000000001` beauftragen, BANF anlegen, Bestelldaten-Job | Job meldet 1 Fehler, Fehlerprotokoll "Keine Bestellung zur BANF …"                           |
+| C6   | Roeper         | Verwaltung: Infotyp 2 deaktivieren, dann als Schilz freigeben                              | "Kontierung ist fuer diesen Tag nicht freigeschaltet"                                        |
+| C7   | Roeper         | Verwaltung: Kontierung `600000000042` als OR anlegen, "SAP CO pruefen"                     | Pruefung nicht bestanden (Stub kennt sie als KS)                                             |
+| C8   | Roeper         | Genehmigung: eigene Tage 2026-04-08 und 2026-03-31                                         | Keine Aktionen, Hinweis "Eigener Tag" (Vier-Augen-Prinzip); per API HTTP 403 `SELF_APPROVAL` |
 
 ## 5. Abgleich mit den Akzeptanzkriterien XTS-082
 

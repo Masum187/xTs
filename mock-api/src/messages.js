@@ -10,6 +10,26 @@ const MESSAGES = {
   NOT_AUTHORIZED: "Für diese Aktion fehlt die erforderliche Berechtigung.",
   INVALID_TOKEN:
     "Das Anmelde-Token konnte nicht gelesen werden. Bitte melden Sie sich erneut an.",
+  TIMESHEET_KEY_REQUIRED: "Mitarbeiter und Tagesdatum sind Pflicht.",
+  PROTECTED_FIELDS:
+    "Genehmigungsfelder werden vom System gesetzt und dürfen nicht mitgesendet werden.",
+  INVALID_STATUS:
+    "Mitarbeiter können einen Tag nur als Entwurf speichern (E) oder zur Genehmigung freigeben (F).",
+  TIMESHEET_LOCKED:
+    "Der Tag ist freigegeben oder genehmigt und kann nicht mehr geändert werden.",
+  SUBMIT_REQUIRES_HOURS:
+    "Zur Genehmigung freigeben ist nur mit mindestens einer Position und Stunden größer 0 möglich.",
+  APPROVAL_FIELDS_REQUIRED:
+    "Mitarbeiter, Tagesdatum und Aktion sind für die Genehmigung Pflicht.",
+  INVALID_APPROVAL_ACTION: "Die Aktion muss genehmigen oder zurückweisen sein.",
+  TIMESHEET_NOT_FOUND: "Der Tag wurde nicht gefunden.",
+  TIMESHEET_NOT_SUBMITTED:
+    "Nur zur Genehmigung freigegebene Tage (Status F) können bearbeitet werden.",
+  SELF_APPROVAL:
+    "Eigene Tage dürfen nicht selbst genehmigt oder zurückgewiesen werden (Vier-Augen-Prinzip).",
+  TIMESHEET_EMPTY:
+    "Der Tag enthält keine Stunden und kann nicht genehmigt werden.",
+  REJECTION_REASON_REQUIRED: "Für die Rückweisung ist ein Grund erforderlich.",
   COST_OBJECT_NOT_ENABLED:
     "Kontierung ist für diesen Tag nicht freigeschaltet oder das Kontingent ist ausgeschöpft.",
   INVALID_RULE: "Der Regelwert ist für diesen Infotyp nicht zulässig.",
@@ -68,6 +88,9 @@ const MESSAGES = {
 export function messageFor(code, payload = {}) {
   const base = MESSAGES[code];
   if (!base) return `Die Anfrage konnte nicht verarbeitet werden (${code}).`;
+  if (payload.status && code === "TIMESHEET_LOCKED") {
+    return `${base} (Status ${payload.status})`;
+  }
   if (Array.isArray(payload.fields) && payload.fields.length > 0) {
     return `${base} (${payload.fields.join(", ")})`;
   }

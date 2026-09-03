@@ -1,6 +1,7 @@
 import { Component, computed, inject, signal } from "@angular/core";
 import { FormsModule } from "@angular/forms";
 
+import { AuthService } from "../auth/auth.service";
 import { describeApiError } from "../shared/api-error";
 
 import { sumLineHours } from "../timesheet/timesheet.logic";
@@ -21,6 +22,7 @@ import { ApprovalService } from "./approval.service";
 })
 export class ApprovalComponent {
   private readonly approvalService = inject(ApprovalService);
+  private readonly auth = inject(AuthService);
 
   protected readonly days = signal<ApprovalDay[]>([]);
   protected readonly monthFilter = signal<string>("");
@@ -45,6 +47,11 @@ export class ApprovalComponent {
 
   protected totalHours(day: ApprovalDay): number {
     return sumLineHours(day.lines);
+  }
+
+  /** Vier-Augen-Prinzip: eigene Tage genehmigt eine andere Person. */
+  protected isOwnDay(day: ApprovalDay): boolean {
+    return day.extNr === this.auth.profile()?.extNr;
   }
 
   protected async approve(day: ApprovalDay): Promise<void> {

@@ -1,6 +1,25 @@
 import { expect, test } from "@playwright/test";
 
-test("filters, approves and rejects submitted days", async ({ page }) => {
+test("filters, approves and rejects submitted days", async ({
+  page,
+  request,
+}) => {
+  // Eigener Tag zum Zurueckweisen: Roeper darf seine Tage nicht selbst
+  // bearbeiten (Vier-Augen-Prinzip), daher ein aelterer Schilz-Tag.
+  await request.post("http://127.0.0.1:4010/odata/TimesheetDays", {
+    data: {
+      extNr: "SCHILZ",
+      date: "2026-04-01",
+      startTime: "08:30",
+      endTime: "16:30",
+      breakMinutes: 30,
+      location: "remote",
+      status: "F",
+      lines: [
+        { coIdent: "700000000004", description: "Rückweisungsprobe", hours: 7 },
+      ],
+    },
+  });
   await page.goto("/");
   await page
     .getByTestId("persona-select")
@@ -11,7 +30,9 @@ test("filters, approves and rejects submitted days", async ({ page }) => {
   ).toBeVisible();
 
   const list = page.getByTestId("approval-list");
-  await expect(list.locator("article")).toHaveCount(3);
+  await expect(list.locator("article")).toHaveCount(4);
+  await expect(page.getByTestId("own-day-ROEPER-2026-04-08")).toBeVisible();
+  await expect(page.getByTestId("approve-ROEPER-2026-04-08")).toHaveCount(0);
 
   await page.getByLabel("Mitarbeiter").selectOption("ROEPER");
   await expect(list.locator("article")).toHaveCount(2);
@@ -24,9 +45,9 @@ test("filters, approves and rejects submitted days", async ({ page }) => {
   await expect(page.getByTestId("approval-message")).toContainText(
     "Wareneingang WE-",
   );
-  await expect(list.locator("article")).toHaveCount(2);
+  await expect(list.locator("article")).toHaveCount(3);
 
-  await page.getByTestId("reject-ROEPER-2026-04-08").click();
+  await page.getByTestId("reject-SCHILZ-2026-04-01").click();
   await expect(page.getByTestId("confirm-reject")).toBeDisabled();
   await page
     .getByLabel("Rückweisungsgrund")
@@ -35,7 +56,7 @@ test("filters, approves and rejects submitted days", async ({ page }) => {
   await expect(page.getByTestId("approval-message")).toContainText(
     "zurückgewiesen",
   );
-  await expect(list.locator("article")).toHaveCount(1);
+  await expect(list.locator("article")).toHaveCount(2);
 });
 
 test("approved day is locked in the timesheet view", async ({

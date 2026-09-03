@@ -320,7 +320,7 @@ test("approves a submitted day and posts a goods receipt", async () => {
 test("rejects a submitted day with a reason", async () => {
   const response = await routeRequest(
     approverRequest("POST", "/odata/TimesheetApprovals", {
-      extNr: "ROEPER",
+      extNr: "SCHILZ",
       date: "2026-04-08",
       action: "reject",
       reason: "Bitte Positionsbeschreibung präzisieren.",
@@ -335,7 +335,7 @@ test("rejects a submitted day with a reason", async () => {
 test("requires a reason for rejection", async () => {
   const response = await routeRequest(
     approverRequest("POST", "/odata/TimesheetApprovals", {
-      extNr: "ROEPER",
+      extNr: "SCHILZ",
       date: "2026-04-08",
       action: "reject",
     }),
@@ -1823,7 +1823,7 @@ test("critical status changes are written to the audit log", async () => {
   );
   await routeRequest(
     approverRequest("POST", "/odata/TimesheetApprovals", {
-      extNr: "ROEPER",
+      extNr: "SCHILZ",
       date: "2026-04-08",
       action: "reject",
       reason: "Bitte präzisieren.",
@@ -2237,4 +2237,193 @@ test("bearer tokens are mapped via their oid or preferred_username claims", asyn
     }),
   );
   assert.equal(JSON.parse(precedence.body).extNr, "ROEPER");
+});
+
+test("employees may only save drafts or submit and cannot touch server fields", async () => {
+  for (const status of ["G", "A", "X"]) {
+    const response = await routeRequest(
+      request("POST", "/odata/TimesheetDays", {
+        extNr: "SCHILZ",
+        date: "2026-05-11",
+        status,
+        lines: [{ coIdent: "700000000004", description: "x", hours: 1 }],
+      }),
+    );
+    assert.equal(response.status, 400, status);
+    assert.equal(JSON.parse(response.body).error, "INVALID_STATUS");
+  }
+  const protectedFields = await routeRequest(
+    request("POST", "/odata/TimesheetDays", {
+      extNr: "SCHILZ",
+      date: "2026-05-11",
+      status: "E",
+      weDocument: "WE-999999",
+      approvedBy: "SCHILZ",
+      lines: [{ coIdent: "700000000004", description: "x", hours: 1 }],
+    }),
+  );
+  assert.equal(protectedFields.status, 400);
+  assert.equal(JSON.parse(protectedFields.body).error, "PROTECTED_FIELDS");
+  assert.deepEqual(JSON.parse(protectedFields.body).fields, [
+    "approvedBy",
+    "weDocument",
+  ]);
+  const listed = await routeRequest(request("GET", "/odata/MyTimesheets"));
+  assert.ok(
+    !JSON.parse(listed.body).value.some((day) => day.date === "2026-05-11"),
+  );
+});
+
+test("submitted and approved days are locked for employees, rejected days reopen", async () => {
+  const approved = await routeRequest(
+    request("POST", "/odata/TimesheetDays", {
+      extNr: "SCHILZ",
+      date: "2026-04-09",
+      status: "E",
+      lines: [{ coIdent: "700000000004", description: "x", hours: 1 }],
+    }),
+  );
+  assert.equal(approved.status, 409);
+  assert.equal(JSON.parse(approved.body).error, "TIMESHEET_LOCKED");
+  assert.match(JSON.parse(approved.body).message, /Status G/);
+  const submitted = await routeRequest(
+    request("POST", "/odata/TimesheetDays", {
+      extNr: "SCHILZ",
+      date: "2026-04-08",
+      status: "E",
+      lines: [{ coIdent: "700000000004", description: "x", hours: 1 }],
+    }),
+  );
+  assert.equal(submitted.status, 409);
+  const untouched = await routeRequest(
+    request("GET", "/odata/MyTimesheets?date=2026-04-09"),
+  );
+  assert.equal(JSON.parse(untouched.body).value[0].status, "G");
+  assert.equal(
+    JSON.parse(untouched.body).value[0].lines[0].description,
+    "Datenmodell Review",
+  );
+
+  const corrected = await routeRequest(
+    request("POST", "/odata/TimesheetDays", {
+      extNr: "SCHILZ",
+      date: "2026-04-10",
+      startTime: "09:00",
+      endTime: "17:00",
+      breakMinutes: 30,
+      location: "on-site",
+      status: "F",
+      lines: [
+        {
+          coIdent: "600000000001",
+          description: "Support PRJ-4711",
+          hours: 7.5,
+        },
+      ],
+    }),
+  );
+  assert.equal(corrected.status, 201);
+  assert.equal(JSON.parse(corrected.body).status, "F");
+  assert.equal(JSON.parse(corrected.body).rejectionReason, undefined);
+});
+
+test("submitting requires booked hours and unknown fields are dropped", async () => {
+  const empty = await routeRequest(
+    request("POST", "/odata/TimesheetDays", {
+      extNr: "SCHILZ",
+      date: "2026-05-12",
+      status: "F",
+      lines: [],
+    }),
+  );
+  assert.equal(empty.status, 409);
+  assert.equal(JSON.parse(empty.body).error, "SUBMIT_REQUIRES_HOURS");
+  const zero = await routeRequest(
+    request("POST", "/odata/TimesheetDays", {
+      extNr: "SCHILZ",
+      date: "2026-05-12",
+      status: "F",
+      lines: [{ coIdent: "700000000004", description: "x", hours: 0 }],
+    }),
+  );
+  assert.equal(zero.status, 409);
+  const missingLines = await routeRequest(
+    request("POST", "/odata/TimesheetDays", {
+      extNr: "SCHILZ",
+      date: "2026-05-12",
+      status: "F",
+    }),
+  );
+  assert.equal(missingLines.status, 409);
+
+  const extra = await routeRequest(
+    request("POST", "/odata/TimesheetDays", {
+      extNr: "SCHILZ",
+      date: "2026-05-12",
+      status: "E",
+      fremd: "feld",
+      lines: [
+        { coIdent: "700000000004", description: "x", hours: 1, extra: true },
+      ],
+    }),
+  );
+  const saved = JSON.parse(extra.body);
+  assert.equal(extra.status, 201);
+  assert.equal(saved.fremd, undefined);
+  assert.equal(saved.lines[0].extra, undefined);
+  const nullLines = await routeRequest(
+    request("POST", "/odata/TimesheetDays", {
+      extNr: "SCHILZ",
+      date: "2026-05-13",
+      status: "E",
+      lines: null,
+    }),
+  );
+  assert.equal(nullLines.status, 201);
+  assert.deepEqual(JSON.parse(nullLines.body).lines, []);
+  const quota = await routeRequest(
+    approverRequest("GET", "/odata/CostObjectQuota"),
+  );
+  assert.equal(quota.status, 200);
+});
+
+test("approvers cannot approve or reject their own days", async () => {
+  for (const action of ["approve", "reject"]) {
+    const response = await routeRequest(
+      approverRequest("POST", "/odata/TimesheetApprovals", {
+        extNr: "ROEPER",
+        date: "2026-04-08",
+        action,
+        reason: "Grund",
+      }),
+    );
+    assert.equal(response.status, 403, action);
+    assert.equal(JSON.parse(response.body).error, "SELF_APPROVAL");
+  }
+  const still = await routeRequest(
+    approverRequest("GET", "/odata/ApprovalTimesheets?extNr=ROEPER"),
+  );
+  assert.equal(JSON.parse(still.body).value.length, 2);
+});
+
+test("rejection reasons made of whitespace are refused", async () => {
+  const response = await routeRequest(
+    approverRequest("POST", "/odata/TimesheetApprovals", {
+      extNr: "SCHILZ",
+      date: "2026-04-08",
+      action: "reject",
+      reason: "   ",
+    }),
+  );
+  assert.equal(response.status, 400);
+  assert.equal(JSON.parse(response.body).error, "REJECTION_REASON_REQUIRED");
+  const unknownAction = await routeRequest(
+    approverRequest("POST", "/odata/TimesheetApprovals", {
+      extNr: "SCHILZ",
+      date: "2026-04-08",
+      action: "maybe",
+    }),
+  );
+  assert.equal(unknownAction.status, 400);
+  assert.equal(JSON.parse(unknownAction.body).error, "INVALID_APPROVAL_ACTION");
 });

@@ -76,6 +76,47 @@ const TIMESHEET_STATUS_LABELS = {
   A: "Zurückgewiesen",
 };
 
+// Kontrakt fuer POST /odata/TimesheetDays (Statusmodell Konzept §6.2):
+// Mitarbeiter schreiben nur diese Felder, alles andere fuehrt der Server.
+const TIMESHEET_FIELDS = [
+  "extNr",
+  "date",
+  "startTime",
+  "endTime",
+  "breakMinutes",
+  "location",
+];
+const TIMESHEET_LINE_FIELDS = ["coIdent", "description", "hours"];
+const PROTECTED_TIMESHEET_FIELDS = [
+  "approvedBy",
+  "approvedAt",
+  "weDocument",
+  "rejectionReason",
+];
+const EMPLOYEE_TARGET_STATUSES = ["E", "F"];
+const EMPLOYEE_EDITABLE_STATUSES = ["E", "A"];
+
+function pickFields(source, fields) {
+  const target = {};
+  for (const field of fields) {
+    if (source?.[field] !== undefined) target[field] = source[field];
+  }
+  return target;
+}
+
+function pickTimesheetFields(body, status) {
+  const lines = Array.isArray(body.lines)
+    ? body.lines.map((line) => pickFields(line, TIMESHEET_LINE_FIELDS))
+    : [];
+  return { ...pickFields(body, TIMESHEET_FIELDS), status, lines };
+}
+
+function hasBookedHours(day) {
+  const lines = Array.isArray(day.lines) ? day.lines : [];
+  const total = lines.reduce((sum, line) => sum + (Number(line.hours) || 0), 0);
+  return lines.length > 0 && total > 0;
+}
+
 /**
  * Liest die Claims eines Bearer-Tokens (JWT) aus dem Payload. Der Mock
  * prueft bewusst KEINE Signatur, Ausstellerin oder Ablaufzeit; das bleibt
@@ -658,19 +699,29 @@ export async function routeRequest(request) {
     if (roleError) return roleError;
     const body = await readJsonBody(request);
     if (!body.extNr || !body.date || !body.action) {
-      return json({ error: "extNr, date and action are required" }, 400);
+      return json({ error: "APPROVAL_FIELDS_REQUIRED" }, 400);
+    }
+    if (!["approve", "reject"].includes(body.action)) {
+      return json({ error: "INVALID_APPROVAL_ACTION" }, 400);
     }
     const day = timesheetStore.get(timesheetKey(body));
     if (!day) {
-      return json({ error: "Timesheet day not found" }, 404);
+      return json({ error: "TIMESHEET_NOT_FOUND" }, 404);
     }
     if (day.status !== "F") {
       return json(
-        { error: "Only submitted days (status F) can be processed" },
+        { error: "TIMESHEET_NOT_SUBMITTED", status: day.status },
         409,
       );
     }
+    // Vier-Augen-Prinzip (Audit Nr. 7): niemand genehmigt eigene Tage.
+    if (day.extNr === persona.employee.extNr) {
+      return json({ error: "SELF_APPROVAL" }, 403);
+    }
     if (body.action === "approve") {
+      if (!hasBookedHours(day)) {
+        return json({ error: "TIMESHEET_EMPTY" }, 409);
+      }
       day.status = "G";
       day.rejectionReason = undefined;
       day.approvedBy = persona.employee.extNr;
@@ -690,11 +741,12 @@ export async function routeRequest(request) {
       return json(structuredClone(day));
     }
     if (body.action === "reject") {
-      if (!body.reason) {
-        return json({ error: "reason is required for rejection" }, 400);
+      const reason = typeof body.reason === "string" ? body.reason.trim() : "";
+      if (!reason) {
+        return json({ error: "REJECTION_REASON_REQUIRED" }, 400);
       }
       day.status = "A";
-      day.rejectionReason = body.reason;
+      day.rejectionReason = reason;
       day.approvedBy = undefined;
       day.approvedAt = undefined;
       logEvent({
@@ -704,12 +756,12 @@ export async function routeRequest(request) {
         objectKey: `${day.extNr}/${day.date}`,
         from: "F",
         to: "A",
-        message: `Tag ${day.date} von ${displayNameFor(day.extNr)} zurückgewiesen: ${body.reason}`,
-        details: { reason: body.reason },
+        message: `Tag ${day.date} von ${displayNameFor(day.extNr)} zurückgewiesen: ${reason}`,
+        details: { reason },
       });
       return json(structuredClone(day));
     }
-    return json({ error: "action must be approve or reject" }, 400);
+    return json({ error: "INVALID_APPROVAL_ACTION" }, 400);
   }
 
   if (request.method === "POST" && path === "/odata/TimesheetDays") {
@@ -717,12 +769,35 @@ export async function routeRequest(request) {
     if (persona.error) return persona.error;
     const body = await readJsonBody(request);
     if (!body.extNr || !body.date) {
-      return json({ error: "extNr and date are required" }, 400);
+      return json({ error: "TIMESHEET_KEY_REQUIRED" }, 400);
     }
     if (body.extNr !== persona.employee.extNr) {
       return json({ error: "NOT_AUTHORIZED", reason: "foreign extNr" }, 403);
     }
-    const saved = structuredClone(body);
+    // Statusmaschine (Audit Nr. 1, 8): Mitarbeiter setzen nur E oder F,
+    // servergefuehrte Felder sind tabu, F und G sind fuer Mitarbeiter
+    // gesperrt, A darf korrigiert werden (A -> E/F loescht den Grund).
+    const protectedFields = PROTECTED_TIMESHEET_FIELDS.filter(
+      (field) => body[field] !== undefined,
+    );
+    if (protectedFields.length > 0) {
+      return json({ error: "PROTECTED_FIELDS", fields: protectedFields }, 400);
+    }
+    const status = body.status ?? "E";
+    if (!EMPLOYEE_TARGET_STATUSES.includes(status)) {
+      return json(
+        { error: "INVALID_STATUS", status, allowed: EMPLOYEE_TARGET_STATUSES },
+        400,
+      );
+    }
+    const previous = timesheetStore.get(timesheetKey(body));
+    if (previous && !EMPLOYEE_EDITABLE_STATUSES.includes(previous.status)) {
+      return json({ error: "TIMESHEET_LOCKED", status: previous.status }, 409);
+    }
+    const saved = pickTimesheetFields(body, status);
+    if (status === "F" && !hasBookedHours(saved)) {
+      return json({ error: "SUBMIT_REQUIRES_HOURS" }, 409);
+    }
     const enablementError = validateTimesheetEnablement(
       saved,
       [...timesheetStore.values()],
@@ -738,7 +813,6 @@ export async function routeRequest(request) {
         enablementError.status,
       );
     }
-    const previous = timesheetStore.get(timesheetKey(saved));
     timesheetStore.set(timesheetKey(saved), saved);
     if (previous?.status !== saved.status) {
       logEvent({

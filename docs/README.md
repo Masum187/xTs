@@ -14,6 +14,7 @@ Dieser Ordner enthaelt die konsolidierte Arbeitsbasis fuer den Entwicklungsstart
 | `entscheidungsvorlage-extnr-mapping.md` | Entscheidungsvorlage fuer das AD/OAuth-Attribut des EXTNR-Mappings (XTS-050).                       |
 | `testdaten-uat-v0.1.md`                 | Testdatenpaket und UAT-Drehbuch: Ausgangsstand, durchgehender Fall, Rueckweisung, Fehlerfaelle.     |
 | `entra-anbindung.md`                    | Anmeldung ueber Microsoft Entra ID (MSAL): App-Registrierung, Konfiguration, Ablauf, SAP-Punkte.    |
+| `audit-2026-09-03.md`                   | Audit des Stunden-Tools: Befunde mit Fundstellen, Luecken, priorisierte Stabilisierungsschritte.    |
 
 ## Empfohlene Reihenfolge
 
