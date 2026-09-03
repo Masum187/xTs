@@ -35,14 +35,33 @@ export class TimesheetService {
     return body.value;
   }
 
+  /**
+   * Sendet nur die vom Mitarbeiter gefuehrten Felder (Kontrakt
+   * POST /odata/TimesheetDays); Genehmigungsfelder wie `approvedBy` oder
+   * `weDocument` fuehrt der Server und lehnt sie im Body ab.
+   */
   async saveTimesheet(day: TimesheetDay): Promise<TimesheetDay> {
+    const payload = {
+      extNr: day.extNr,
+      date: day.date,
+      startTime: day.startTime,
+      endTime: day.endTime,
+      breakMinutes: day.breakMinutes,
+      location: day.location,
+      status: day.status,
+      lines: day.lines.map(({ coIdent, description, hours }) => ({
+        coIdent,
+        description,
+        hours,
+      })),
+    };
     const response = await fetch(`${this.baseUrl}/TimesheetDays`, {
       method: "POST",
       headers: {
         "content-type": "application/json",
         ...this.auth.authHeaders(),
       },
-      body: JSON.stringify(day),
+      body: JSON.stringify(payload),
     });
     return this.readJson<TimesheetDay>(response);
   }

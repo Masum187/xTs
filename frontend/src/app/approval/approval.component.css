@@ -145,3 +145,8 @@ button.ghost {
   font-size: 13px;
   margin: 0;
 }
+
+.own-hint {
+  color: #60718f;
+  font-size: 13px;
+}
