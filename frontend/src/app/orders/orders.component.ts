@@ -1,3 +1,4 @@
+import { DecimalPipe } from "@angular/common";
 import { Component, inject, signal } from "@angular/core";
 import { FormsModule } from "@angular/forms";
 
@@ -21,7 +22,7 @@ const STATUS_LABELS: Record<OrderStatus, string> = {
 @Component({
   selector: "xts-orders",
   standalone: true,
-  imports: [FormsModule],
+  imports: [DecimalPipe, FormsModule],
   templateUrl: "./orders.component.html",
   styleUrl: "./orders.component.css",
 })

@@ -1,4 +1,5 @@
 import { workCalendar } from "./fixtures.js";
+import { roundHours, sumHours } from "./hours.js";
 import {
   availableAssignments,
   findEmployee,
@@ -116,8 +117,9 @@ export function buildPlanningOverview(entries, filters) {
             candidate.coIdent === combo.coIdent &&
             candidate.month === month,
         );
-        const plannedTotal =
-          plannedPerEmployeeMonth.get(`${combo.extNr}|${month}`) ?? 0;
+        const plannedTotal = roundHours(
+          plannedPerEmployeeMonth.get(`${combo.extNr}|${month}`) ?? 0,
+        );
         const valid = isMonthInRange(month, combo.validFrom, combo.validTo);
         return {
           month,
@@ -161,11 +163,13 @@ export function upsertPlanningEntry(entries, payload) {
   saved.status = "V";
   if (!existing) entries.push(saved);
 
-  const plannedTotal = entries
-    .filter(
-      (candidate) => candidate.extNr === extNr && candidate.month === month,
-    )
-    .reduce((sum, candidate) => sum + candidate.hours, 0);
+  const plannedTotal = sumHours(
+    entries
+      .filter(
+        (candidate) => candidate.extNr === extNr && candidate.month === month,
+      )
+      .map((candidate) => candidate.hours),
+  );
   return {
     entry: { ...saved },
     overbooked: plannedTotal > availableHoursFor(month),

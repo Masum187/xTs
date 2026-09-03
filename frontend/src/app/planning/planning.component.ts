@@ -1,3 +1,4 @@
+import { DecimalPipe } from "@angular/common";
 import { Component, computed, inject, signal } from "@angular/core";
 import { FormsModule } from "@angular/forms";
 
@@ -21,7 +22,7 @@ interface FilterOption {
 @Component({
   selector: "xts-planning",
   standalone: true,
-  imports: [FormsModule],
+  imports: [DecimalPipe, FormsModule],
   templateUrl: "./planning.component.html",
   styleUrl: "./planning.component.css",
 })

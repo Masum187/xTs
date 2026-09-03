@@ -81,7 +81,9 @@
           @for (month of monthLabels(); track month.month) {
             <th class="num">
               {{ month.label }}
-              <span class="available">{{ month.availableHours }} Std.</span>
+              <span class="available"
+                >{{ month.availableHours | number: "1.0-2" }} Std.</span
+              >
             </th>
           }
         </tr>
@@ -107,7 +109,7 @@
                   </span>
                 } @else if (cell.locked) {
                   <span class="locked-badge" [attr.data-status]="cell.status">
-                    {{ cell.hours }} · {{ cell.status }}
+                    {{ cell.hours | number: "1.0-2" }} · {{ cell.status }}
                   </span>
                 } @else {
                   <input

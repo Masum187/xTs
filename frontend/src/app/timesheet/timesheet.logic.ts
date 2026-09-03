@@ -1,7 +1,8 @@
+import { addHours, sumHours } from "../shared/hours";
 import type { EnabledCostObject, TimesheetDay } from "./timesheet.models";
 
 export function sumLineHours(lines: TimesheetDay["lines"]): number {
-  return lines.reduce((total, line) => total + line.hours, 0);
+  return sumHours(lines.map((line) => line.hours));
 }
 
 export function canEditTimesheet(day: TimesheetDay): boolean {
@@ -181,7 +182,7 @@ export function quotaProblems(
     if (!Number.isFinite(line.hours) || line.hours <= 0) continue;
     requested.set(
       line.coIdent,
-      (requested.get(line.coIdent) ?? 0) + line.hours,
+      addHours(requested.get(line.coIdent) ?? 0, line.hours),
     );
   }
   const previouslyBooked = new Map<string, number>();
@@ -189,7 +190,7 @@ export function quotaProblems(
     for (const line of savedDay.lines) {
       previouslyBooked.set(
         line.coIdent,
-        (previouslyBooked.get(line.coIdent) ?? 0) + line.hours,
+        addHours(previouslyBooked.get(line.coIdent) ?? 0, line.hours),
       );
     }
   }
@@ -197,8 +198,10 @@ export function quotaProblems(
   for (const [coIdent, hours] of requested) {
     const costObject = costObjects.find((item) => item.coIdent === coIdent);
     if (!costObject) continue;
-    const available =
-      costObject.remainingHours + (previouslyBooked.get(coIdent) ?? 0);
+    const available = addHours(
+      costObject.remainingHours,
+      previouslyBooked.get(coIdent) ?? 0,
+    );
     if (hours > available) {
       problems.push({
         field: "lines",

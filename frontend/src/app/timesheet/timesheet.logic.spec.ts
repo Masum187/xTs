@@ -50,6 +50,23 @@ describe("timesheet logic", () => {
     ).toBe(3.5);
   });
 
+  it("sums hours in whole minutes without floating point drift", () => {
+    const line = (hours: number) => ({
+      coIdent: "700000000004",
+      description: "x",
+      hours,
+    });
+    expect(sumLineHours([line(0.1), line(0.2)])).toBe(0.3);
+    expect(sumLineHours(Array.from({ length: 9 }, () => line(0.1)))).toBe(0.9);
+    expect(sumLineHours([line(1.1), line(1.1), line(1.1)])).toBe(3.3);
+    expect(sumLineHours([line(7.5), line(0.25), line(0.25)])).toBe(8);
+    expect(
+      quotaProblems({ ...baseDay, lines: [line(0.1), line(0.2)] }, undefined, [
+        { ...baseCostObject, remainingHours: 0.3 },
+      ]),
+    ).toEqual([]);
+  });
+
   it("allows editing only for draft and rejected entries", () => {
     expect(canEditTimesheet(baseDay)).toBe(true);
     expect(canEditTimesheet({ ...baseDay, status: "A" })).toBe(true);

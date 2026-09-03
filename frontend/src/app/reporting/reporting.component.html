@@ -79,13 +79,14 @@
               {{ row.coIdent }}
               <span class="sub">{{ row.description }}</span>
             </td>
-            <td class="num">{{ row.plannedHours }}</td>
+            <td class="num">{{ row.plannedHours | number: "1.0-2" }}</td>
             <td>
               @if (row.orders.length > 0) {
-                <strong>{{ row.orderedHours }} Std.</strong>
+                <strong>{{ row.orderedHours | number: "1.0-2" }} Std.</strong>
                 @for (order of row.orders; track order.orderId) {
                   <span class="sub">
-                    {{ order.orderId }} · {{ order.hours }} Std. ·
+                    {{ order.orderId }} ·
+                    {{ order.hours | number: "1.0-2" }} Std. ·
                     {{ orderStatusLabel(order.status) }}
                   </span>
                 }
@@ -117,7 +118,7 @@
             </td>
             <td class="num">
               @if (row.purchaseOrderHours > 0) {
-                {{ row.purchaseOrderHours }}
+                {{ row.purchaseOrderHours | number: "1.0-2" }}
               } @else {
                 <span class="empty">–</span>
               }
@@ -129,15 +130,18 @@
                 <span class="empty">–</span>
               }
             </td>
-            <td class="num">{{ row.recordedHours }}</td>
-            <td class="num">{{ row.approvedHours }}</td>
+            <td class="num">{{ row.recordedHours | number: "1.0-2" }}</td>
+            <td class="num">{{ row.approvedHours | number: "1.0-2" }}</td>
             <td [attr.data-testid]="'we-' + row.extNr + '-' + row.coIdent">
               @if (row.goodsReceipts.length > 0) {
-                <strong>{{ row.goodsReceiptHours }} Std.</strong>
+                <strong
+                  >{{ row.goodsReceiptHours | number: "1.0-2" }} Std.</strong
+                >
                 @for (receipt of row.goodsReceipts; track receipt.weDocument) {
                   <span class="sub">
-                    {{ receipt.weDocument }} · {{ receipt.date }} ·
-                    {{ receipt.hours }} Std.
+                    {{ receipt.weDocument }} ·
+                    {{ receipt.date | date: "dd.MM.yyyy" }} ·
+                    {{ receipt.hours | number: "1.0-2" }} Std.
                   </span>
                 }
               } @else if (row.pendingGoodsReceiptHours === 0) {
@@ -145,7 +149,8 @@
               }
               @if (row.pendingGoodsReceiptHours > 0) {
                 <span class="sub pending">
-                  {{ row.pendingGoodsReceiptHours }} Std. WE ausstehend
+                  {{ row.pendingGoodsReceiptHours | number: "1.0-2" }} Std. WE
+                  ausstehend
                 </span>
               }
             </td>
@@ -208,10 +213,10 @@
           <tr [attr.data-testid]="'budget-' + row.coIdent">
             <td>{{ row.coIdent }}</td>
             <td>{{ row.description }}</td>
-            <td class="num">{{ row.budgetHours }}</td>
-            <td class="num">{{ row.consumedHours }}</td>
-            <td class="num">{{ row.consumedPercent }} %</td>
-            <td class="num">{{ row.remainingHours }}</td>
+            <td class="num">{{ row.budgetHours | number: "1.0-2" }}</td>
+            <td class="num">{{ row.consumedHours | number: "1.0-2" }}</td>
+            <td class="num">{{ row.consumedPercent | number: "1.0-1" }} %</td>
+            <td class="num">{{ row.remainingHours | number: "1.0-2" }}</td>
             <td>
               <span
                 class="traffic"
@@ -227,7 +232,7 @@
               <td></td>
               <td>{{ employee.displayName }}</td>
               <td class="num"></td>
-              <td class="num">{{ employee.hours }}</td>
+              <td class="num">{{ employee.hours | number: "1.0-2" }}</td>
               <td class="num"></td>
               <td class="num"></td>
               <td></td>
@@ -235,9 +240,11 @@
             @for (day of employee.days ?? []; track day.date) {
               <tr class="detail-row day-row">
                 <td></td>
-                <td>{{ day.date }} – {{ day.description }}</td>
+                <td>
+                  {{ day.date | date: "dd.MM.yyyy" }} – {{ day.description }}
+                </td>
                 <td class="num"></td>
-                <td class="num">{{ day.hours }}</td>
+                <td class="num">{{ day.hours | number: "1.0-2" }}</td>
                 <td class="num"></td>
                 <td class="num"></td>
                 <td></td>
@@ -324,17 +331,22 @@
           <tr [attr.data-testid]="'quota-' + row.extNr + '-' + row.coIdent">
             <td>{{ row.displayName }}</td>
             <td>{{ row.coIdent }}</td>
-            <td>{{ row.validFrom }} – {{ row.validTo }}</td>
-            <td class="num">{{ row.orderedHours }}</td>
-            <td class="num">{{ row.bookedHours }}</td>
-            <td class="num">{{ row.remainingHours }}</td>
+            <td>
+              {{ row.validFrom | date: "dd.MM.yyyy" }} –
+              {{ row.validTo | date: "dd.MM.yyyy" }}
+            </td>
+            <td class="num">{{ row.orderedHours | number: "1.0-2" }}</td>
+            <td class="num">{{ row.bookedHours | number: "1.0-2" }}</td>
+            <td class="num">{{ row.remainingHours | number: "1.0-2" }}</td>
           </tr>
           @for (day of row.days ?? []; track day.date) {
             <tr class="detail-row day-row">
               <td></td>
-              <td colspan="2">{{ day.date }} – {{ day.description }}</td>
+              <td colspan="2">
+                {{ day.date | date: "dd.MM.yyyy" }} – {{ day.description }}
+              </td>
               <td class="num"></td>
-              <td class="num">{{ day.hours }}</td>
+              <td class="num">{{ day.hours | number: "1.0-2" }}</td>
               <td class="num"></td>
             </tr>
           }

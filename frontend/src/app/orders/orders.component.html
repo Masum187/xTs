@@ -76,7 +76,7 @@
             <strong>{{ candidate.displayName }}</strong>
             <span>{{ candidate.coIdent }}</span>
           </div>
-          <strong>{{ candidate.totalHours }} Std.</strong>
+          <strong>{{ candidate.totalHours | number: "1.0-2" }} Std.</strong>
         </header>
         <p class="period">
           {{ periodLabel(candidate.periodFrom, candidate.periodTo) }} ·
@@ -134,7 +134,7 @@
             <td>{{ order.displayName }}</td>
             <td>{{ order.coIdent }}</td>
             <td>{{ periodLabel(order.periodFrom, order.periodTo) }}</td>
-            <td class="num">{{ order.hours }}</td>
+            <td class="num">{{ order.hours | number: "1.0-2" }}</td>
             <td>
               @if (order.status === "created") {
                 <div class="text-edit">

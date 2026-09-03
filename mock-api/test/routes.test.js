@@ -2701,3 +2701,65 @@ test("quota check sums the lines of a day and ignores the day's previous version
   assert.equal(row.bookedHours, 43.75);
   assert.equal(row.remainingHours, 116.25);
 });
+
+test("hour arithmetic works in whole minutes without floating point drift", async () => {
+  // Planung darf beliebige Dezimalwerte tragen: 0.1 + 0.2 muss exakt 0.3 sein.
+  for (const [month, hours] of [
+    ["2026-04", 0.1],
+    ["2026-05", 0.2],
+  ]) {
+    await routeRequest(
+      approverRequest("POST", "/odata/PlanningEntries", {
+        extNr: "SCHILZ",
+        coIdent: "700000000004",
+        month,
+        hours,
+      }),
+    );
+  }
+  const lifecycle = await routeRequest(
+    approverRequest("GET", "/odata/ResourceLifecycle?ebeln=4500001234"),
+  );
+  assert.equal(JSON.parse(lifecycle.body).value[0].plannedHours, 0.3);
+
+  // Viertelstunden-Buchungen: 7.75 + 0.25 + 3 x 0.25 + 9.5 = 18.25, plus 18 Bestand.
+  const bookings = [
+    ["2026-05-04", [7.75, 0.25]],
+    ["2026-05-05", [0.25, 0.25, 0.25]],
+    ["2026-05-06", [9.5]],
+  ];
+  for (const [date, hours] of bookings) {
+    const result = await saveDay({
+      date,
+      lines: hours.map((value) => ({
+        coIdent: "700000000004",
+        description: "x",
+        hours: value,
+      })),
+    });
+    assert.equal(result.status, 201, date);
+  }
+  const enabled = await routeRequest(
+    request("GET", "/odata/MyEnabledCostObjects"),
+  );
+  const row = JSON.parse(enabled.body).value.find(
+    (item) => item.coIdent === "700000000004",
+  );
+  assert.equal(row.bookedHours, 36.25);
+  assert.equal(row.remainingHours, 283.75);
+  const quota = await routeRequest(
+    approverRequest("GET", "/odata/CostObjectQuota?lastName=Schilz"),
+  );
+  const quotaRow = JSON.parse(quota.body).value.find(
+    (item) => item.coIdent === "700000000004",
+  );
+  assert.equal(quotaRow.remainingHours, 283.75);
+  const budget = await routeRequest(
+    approverRequest("GET", "/odata/BudgetMonitor"),
+  );
+  const budgetRow = JSON.parse(budget.body).value.find(
+    (item) => item.coIdent === "700000000004",
+  );
+  assert.equal(budgetRow.consumedPercent, 2.5);
+  assert.equal(budgetRow.remainingHours, 312);
+});
