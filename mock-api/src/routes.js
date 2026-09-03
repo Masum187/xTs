@@ -33,6 +33,7 @@ import {
 } from "./planning.js";
 import { buildResourceLifecycle } from "./lifecycle.js";
 import { messageFor } from "./messages.js";
+import { validateTimesheetPayload } from "./timesheet-validation.js";
 import { buildBudgetMonitor, buildCostObjectQuota } from "./reporting.js";
 
 const timesheetKey = (day) => `${day.extNr}|${day.date}`;
@@ -105,9 +106,14 @@ function pickFields(source, fields) {
 }
 
 function pickTimesheetFields(body, status) {
-  const lines = Array.isArray(body.lines)
-    ? body.lines.map((line) => pickFields(line, TIMESHEET_LINE_FIELDS))
-    : [];
+  // Fehlende Positionen sind ein leerer Entwurf; alles andere, was keine
+  // Liste ist, geht unveraendert in die Validierung (LINES_INVALID).
+  const lines =
+    body.lines === undefined
+      ? []
+      : Array.isArray(body.lines)
+        ? body.lines.map((line) => pickFields(line, TIMESHEET_LINE_FIELDS))
+        : body.lines;
   return { ...pickFields(body, TIMESHEET_FIELDS), status, lines };
 }
 
@@ -795,6 +801,18 @@ export async function routeRequest(request) {
       return json({ error: "TIMESHEET_LOCKED", status: previous.status }, 409);
     }
     const saved = pickTimesheetFields(body, status);
+    const problems = validateTimesheetPayload(saved, status);
+    if (problems.length > 0) {
+      return json(
+        {
+          error: "INVALID_TIMESHEET",
+          message: problems[0].message,
+          fields: problems.map((item) => item.field),
+          problems,
+        },
+        400,
+      );
+    }
     if (status === "F" && !hasBookedHours(saved)) {
       return json({ error: "SUBMIT_REQUIRES_HOURS" }, 409);
     }
@@ -857,5 +875,20 @@ async function readJsonBody(request) {
       Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk),
     ),
   ).toString("utf8");
-  return body ? JSON.parse(body) : {};
+  if (!body) return {};
+  try {
+    const parsed = JSON.parse(body);
+    return parsed && typeof parsed === "object" && !Array.isArray(parsed)
+      ? parsed
+      : {};
+  } catch {
+    throw new InvalidJsonError();
+  }
+}
+
+export class InvalidJsonError extends Error {
+  constructor() {
+    super("INVALID_JSON");
+    this.name = "InvalidJsonError";
+  }
 }

@@ -1,6 +1,6 @@
 import http from "node:http";
 
-import { routeRequest } from "./routes.js";
+import { InvalidJsonError, json, routeRequest } from "./routes.js";
 
 const port = Number(process.env.PORT ?? 4010);
 
@@ -21,6 +21,12 @@ const server = http.createServer(async (request, response) => {
     response.writeHead(result.status, result.headers);
     response.end(result.body);
   } catch (error) {
+    if (error instanceof InvalidJsonError) {
+      const result = json({ error: "INVALID_JSON" }, 400);
+      response.writeHead(result.status, result.headers);
+      response.end(result.body);
+      return;
+    }
     response.writeHead(500, {
       "content-type": "application/json; charset=utf-8",
     });

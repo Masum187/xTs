@@ -2,7 +2,11 @@ import assert from "node:assert/strict";
 import { Readable } from "node:stream";
 import test from "node:test";
 
-import { resetTimesheetStore, routeRequest } from "../src/routes.js";
+import {
+  InvalidJsonError,
+  resetTimesheetStore,
+  routeRequest,
+} from "../src/routes.js";
 
 const APPROVER_UPN = "christian.roeper@qualitytimes.de";
 
@@ -413,27 +417,31 @@ test("budget monitor supports employee and day detail levels", async () => {
 });
 
 test("budget monitor traffic light turns red from customizing thresholds", async () => {
-  await routeRequest(
-    request("POST", "/odata/TimesheetDays", {
-      extNr: "SCHILZ",
-      date: "2026-03-20",
-      startTime: "08:00",
-      endTime: "18:00",
-      breakMinutes: 0,
-      location: "remote",
-      status: "F",
-      lines: [
-        { coIdent: "600000000009", description: "Altprojekt", hours: 150 },
-      ],
-    }),
-  );
-  await routeRequest(
-    approverRequest("POST", "/odata/TimesheetApprovals", {
-      extNr: "SCHILZ",
-      date: "2026-03-20",
-      action: "approve",
-    }),
-  );
+  // Budget 600000000009 = 80 Std.; acht Tage à 20 Std. ergeben 160 Std. (200 %).
+  for (let day = 16; day <= 23; day += 1) {
+    const date = `2026-03-${day}`;
+    await routeRequest(
+      request("POST", "/odata/TimesheetDays", {
+        extNr: "SCHILZ",
+        date,
+        startTime: "00:00",
+        endTime: "23:00",
+        breakMinutes: 0,
+        location: "remote",
+        status: "F",
+        lines: [
+          { coIdent: "600000000009", description: "Altprojekt", hours: 20 },
+        ],
+      }),
+    );
+    await routeRequest(
+      approverRequest("POST", "/odata/TimesheetApprovals", {
+        extNr: "SCHILZ",
+        date,
+        action: "approve",
+      }),
+    );
+  }
 
   const response = await routeRequest(
     approverRequest("GET", "/odata/BudgetMonitor"),
@@ -441,14 +449,15 @@ test("budget monitor traffic light turns red from customizing thresholds", async
   const row = JSON.parse(response.body).value.find(
     (item) => item.coIdent === "600000000009",
   );
-  assert.equal(row.consumedPercent, 187.5);
+  // Die Freischaltung sperrt ab Rest 0, daher genau 100 % statt 200 %.
+  assert.equal(row.consumedPercent, 100);
   assert.equal(row.trafficLight, "red");
-  assert.equal(row.remainingHours, -70);
+  assert.equal(row.remainingHours, 0);
 
   const followUp = await routeRequest(
     request("POST", "/odata/TimesheetDays", {
       extNr: "SCHILZ",
-      date: "2026-03-21",
+      date: "2026-03-24",
       startTime: "08:00",
       endTime: "09:00",
       breakMinutes: 0,
@@ -2328,10 +2337,17 @@ test("submitted and approved days are locked for employees, rejected days reopen
 });
 
 test("submitting requires booked hours and unknown fields are dropped", async () => {
+  const header = {
+    startTime: "08:00",
+    endTime: "16:30",
+    breakMinutes: 30,
+    location: "remote",
+  };
   const empty = await routeRequest(
     request("POST", "/odata/TimesheetDays", {
       extNr: "SCHILZ",
       date: "2026-05-12",
+      ...header,
       status: "F",
       lines: [],
     }),
@@ -2346,15 +2362,18 @@ test("submitting requires booked hours and unknown fields are dropped", async ()
       lines: [{ coIdent: "700000000004", description: "x", hours: 0 }],
     }),
   );
-  assert.equal(zero.status, 409);
+  assert.equal(zero.status, 400);
+  assert.equal(JSON.parse(zero.body).error, "INVALID_TIMESHEET");
   const missingLines = await routeRequest(
     request("POST", "/odata/TimesheetDays", {
       extNr: "SCHILZ",
       date: "2026-05-12",
+      ...header,
       status: "F",
     }),
   );
   assert.equal(missingLines.status, 409);
+  assert.equal(JSON.parse(missingLines.body).error, "SUBMIT_REQUIRES_HOURS");
 
   const extra = await routeRequest(
     request("POST", "/odata/TimesheetDays", {
@@ -2379,8 +2398,8 @@ test("submitting requires booked hours and unknown fields are dropped", async ()
       lines: null,
     }),
   );
-  assert.equal(nullLines.status, 201);
-  assert.deepEqual(JSON.parse(nullLines.body).lines, []);
+  assert.equal(nullLines.status, 400);
+  assert.equal(JSON.parse(nullLines.body).problems[0].code, "LINES_INVALID");
   const quota = await routeRequest(
     approverRequest("GET", "/odata/CostObjectQuota"),
   );
@@ -2426,4 +2445,148 @@ test("rejection reasons made of whitespace are refused", async () => {
   );
   assert.equal(unknownAction.status, 400);
   assert.equal(JSON.parse(unknownAction.body).error, "INVALID_APPROVAL_ACTION");
+});
+
+const validDay = (overrides = {}) => ({
+  extNr: "SCHILZ",
+  date: "2026-05-18",
+  startTime: "08:00",
+  endTime: "16:30",
+  breakMinutes: 30,
+  location: "remote",
+  status: "E",
+  lines: [{ coIdent: "700000000004", description: "Konzept", hours: 8 }],
+  ...overrides,
+});
+
+async function saveDay(overrides) {
+  const response = await routeRequest(
+    request("POST", "/odata/TimesheetDays", validDay(overrides)),
+  );
+  return { status: response.status, body: JSON.parse(response.body) };
+}
+
+test("timesheet payloads are validated: hours", async () => {
+  for (const [hours, code] of [
+    [-5, "HOURS_RANGE"],
+    [25, "HOURS_RANGE"],
+    [99999, "HOURS_RANGE"],
+    [1.3333, "HOURS_STEP"],
+    ["abc", "HOURS_INVALID"],
+    [null, "HOURS_INVALID"],
+    [Infinity, "HOURS_INVALID"],
+  ]) {
+    const result = await saveDay({
+      lines: [{ coIdent: "700000000004", description: "x", hours }],
+    });
+    assert.equal(result.status, 400, String(hours));
+    assert.equal(result.body.error, "INVALID_TIMESHEET");
+    assert.equal(result.body.problems[0].code, code, String(hours));
+    assert.deepEqual(result.body.fields, ["lines[0].hours"]);
+    assert.match(result.body.message, /Position 1/);
+  }
+  const zeroDraft = await saveDay({
+    lines: [{ coIdent: "700000000004", description: "", hours: 0 }],
+  });
+  assert.equal(zeroDraft.status, 201);
+  const zeroSubmit = await saveDay({
+    status: "F",
+    lines: [{ coIdent: "700000000004", description: "x", hours: 0 }],
+  });
+  assert.equal(zeroSubmit.status, 400);
+  assert.equal(zeroSubmit.body.problems[0].code, "HOURS_RANGE");
+  const tooMuch = await saveDay({
+    lines: [
+      { coIdent: "700000000004", description: "a", hours: 12 },
+      { coIdent: "700000000004", description: "b", hours: 12.25 },
+    ],
+  });
+  assert.equal(tooMuch.status, 400);
+  assert.equal(tooMuch.body.problems[0].code, "DAY_HOURS_EXCEEDED");
+  const quarter = await saveDay({
+    lines: [
+      { coIdent: "700000000004", description: "a", hours: 7.5 },
+      { coIdent: "700000000004", description: "b", hours: 0.25 },
+    ],
+  });
+  assert.equal(quarter.status, 201);
+  const nothingStored = await routeRequest(
+    request("GET", "/odata/MyEnabledCostObjects"),
+  );
+  const remaining = JSON.parse(nothingStored.body).value.find(
+    (item) => item.coIdent === "700000000004",
+  );
+  assert.equal(typeof remaining.bookedHours, "number");
+});
+
+test("timesheet payloads are validated: date, times, break, location", async () => {
+  for (const [overrides, code] of [
+    [{ date: "2026-02-30" }, "DATE_INVALID"],
+    [{ date: "gestern" }, "DATE_INVALID"],
+    [{ startTime: "abc" }, "TIME_FORMAT"],
+    [{ endTime: "7:00" }, "TIME_FORMAT"],
+    [{ startTime: "17:00", endTime: "08:00" }, "TIME_RANGE"],
+    [{ startTime: "08:00", endTime: "08:00" }, "TIME_RANGE"],
+    [{ breakMinutes: -30 }, "BREAK_INVALID"],
+    [{ breakMinutes: 30.5 }, "BREAK_INVALID"],
+    [{ breakMinutes: 600 }, "BREAK_TOO_LONG"],
+    [{ location: "moon" }, "LOCATION_INVALID"],
+    [{ lines: null }, "LINES_INVALID"],
+    [{ lines: [{ description: "x", hours: 1 }] }, "COIDENT_REQUIRED"],
+    [
+      {
+        lines: [
+          { coIdent: "700000000004", description: "A".repeat(256), hours: 1 },
+        ],
+      },
+      "DESCRIPTION_TOO_LONG",
+    ],
+  ]) {
+    const result = await saveDay(overrides);
+    assert.equal(result.status, 400, JSON.stringify(overrides));
+    assert.equal(result.body.problems[0].code, code, JSON.stringify(overrides));
+  }
+  const draftWithoutHeader = await routeRequest(
+    request("POST", "/odata/TimesheetDays", {
+      extNr: "SCHILZ",
+      date: "2026-05-18",
+      status: "E",
+      lines: [{ coIdent: "700000000004", description: "", hours: 1 }],
+    }),
+  );
+  assert.equal(draftWithoutHeader.status, 201);
+  const submitWithoutHeader = await routeRequest(
+    request("POST", "/odata/TimesheetDays", {
+      extNr: "SCHILZ",
+      date: "2026-05-18",
+      status: "F",
+      lines: [{ coIdent: "700000000004", description: "", hours: 1 }],
+    }),
+  );
+  assert.equal(submitWithoutHeader.status, 400);
+  assert.deepEqual(
+    JSON.parse(submitWithoutHeader.body).problems.map((item) => item.code),
+    [
+      "TIME_REQUIRED",
+      "TIME_REQUIRED",
+      "BREAK_REQUIRED",
+      "LOCATION_REQUIRED",
+      "DESCRIPTION_REQUIRED",
+    ],
+  );
+  const quotaStillWorks = await routeRequest(
+    approverRequest("GET", "/odata/CostObjectQuota"),
+  );
+  assert.equal(quotaStillWorks.status, 200);
+});
+
+test("invalid JSON bodies are reported as 400, not 500", async () => {
+  const stream = request("POST", "/odata/TimesheetDays");
+  const broken = Object.assign(Readable.from(["kein json"]), {
+    method: "POST",
+    url: "/odata/TimesheetDays",
+    headers: {},
+  });
+  void stream;
+  await assert.rejects(routeRequest(broken), InvalidJsonError);
 });

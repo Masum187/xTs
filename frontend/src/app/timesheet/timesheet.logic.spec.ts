@@ -7,6 +7,7 @@ import {
   isCostObjectBookable,
   shiftDate,
   sumLineHours,
+  validateTimesheetDay,
 } from "./timesheet.logic";
 import type { EnabledCostObject, TimesheetDay } from "./timesheet.models";
 
@@ -79,6 +80,55 @@ describe("timesheet logic", () => {
     expect(shiftDate("2026-04-13", 1)).toBe("2026-04-14");
     expect(shiftDate("2026-04-01", -1)).toBe("2026-03-31");
     expect(shiftDate("2026-12-31", 1)).toBe("2027-01-01");
+  });
+
+  it("validates hours, times, break and descriptions like the server", () => {
+    const codes = (day: TimesheetDay, mode: "draft" | "submit") =>
+      validateTimesheetDay(day, mode).map((problem) => problem.code);
+    const line = (hours: number, description = "x") => ({
+      coIdent: "700000000004",
+      description,
+      hours,
+    });
+    expect(codes(baseDay, "submit")).toEqual([]);
+    expect(codes({ ...baseDay, lines: [line(-5)] }, "draft")).toEqual([
+      "HOURS_RANGE",
+    ]);
+    expect(codes({ ...baseDay, lines: [line(25)] }, "draft")).toEqual([
+      "HOURS_RANGE",
+    ]);
+    expect(codes({ ...baseDay, lines: [line(1.3333)] }, "draft")).toEqual([
+      "HOURS_STEP",
+    ]);
+    expect(codes({ ...baseDay, lines: [line(Number.NaN)] }, "draft")).toEqual([
+      "HOURS_INVALID",
+    ]);
+    expect(codes({ ...baseDay, lines: [line(0)] }, "draft")).toEqual([]);
+    expect(codes({ ...baseDay, lines: [line(0)] }, "submit")).toEqual([
+      "HOURS_RANGE",
+    ]);
+    expect(codes({ ...baseDay, lines: [line(1, "")] }, "draft")).toEqual([]);
+    expect(codes({ ...baseDay, lines: [line(1, "  ")] }, "submit")).toEqual([
+      "DESCRIPTION_REQUIRED",
+    ]);
+    expect(
+      codes({ ...baseDay, lines: [line(12), line(12.25)] }, "draft"),
+    ).toEqual(["DAY_HOURS_EXCEEDED"]);
+    expect(codes({ ...baseDay, startTime: "abc" }, "draft")).toEqual([
+      "TIME_FORMAT",
+    ]);
+    expect(
+      codes({ ...baseDay, startTime: "17:00", endTime: "08:00" }, "draft"),
+    ).toEqual(["TIME_RANGE"]);
+    expect(codes({ ...baseDay, breakMinutes: -30 }, "draft")).toEqual([
+      "BREAK_INVALID",
+    ]);
+    expect(codes({ ...baseDay, breakMinutes: 600 }, "draft")).toEqual([
+      "BREAK_TOO_LONG",
+    ]);
+    expect(canSubmitTimesheet({ ...baseDay, lines: [line(1.3333)] })).toBe(
+      false,
+    );
   });
 
   it("creates an empty draft day", () => {

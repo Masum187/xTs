@@ -116,7 +116,8 @@ Diese Datei beschreibt die fachlichen Service-Kontrakte fuer SAP-OData und die M
   - Mitarbeiter setzen nur `E` (Entwurf) oder `F` (freigeben); andere Werte: HTTP 400 `INVALID_STATUS`. Ohne `status` gilt `E`.
   - Tage im Status `F` oder `G` sind fuer Mitarbeiter gesperrt: HTTP 409 `TIMESHEET_LOCKED` (mit `status`). Tage im Status `E` oder `A` duerfen ueberschrieben werden.
   - Freigeben (`F`) erfordert mindestens eine Position mit Stunden > 0, sonst HTTP 409 `SUBMIT_REQUIRES_HOURS`.
-  - `lines` ohne Array wird als leere Liste gespeichert (Uebergang bis zur Payload-Validierung, Audit Nr. 3/9).
+  - Payload-Validierung (HTTP 400 `INVALID_TIMESHEET` mit `message` des ersten Problems, `fields` und `problems[{ field, code, message }]`): `date` gueltiges Kalenderdatum `JJJJ-MM-TT` (`DATE_INVALID`); `startTime`/`endTime` im Format `HH:MM` (`TIME_FORMAT`), Geht nach Kommt (`TIME_RANGE`); `breakMinutes` ganze Zahl ab 0 (`BREAK_INVALID`) und kuerzer als die Anwesenheit (`BREAK_TOO_LONG`); `location` `remote` oder `on-site` (`LOCATION_INVALID`); `lines` muss eine Liste sein (`LINES_INVALID`), je Position `coIdent` Pflicht (`COIDENT_REQUIRED`), Beschreibung Text bis 255 Zeichen (`DESCRIPTION_TOO_LONG`), `hours` Zahl (`HOURS_INVALID`) zwischen 0 und 24 (`HOURS_RANGE`) im Viertelstundenraster (`HOURS_STEP`), Tagessumme hoechstens 24 (`DAY_HOURS_EXCEEDED`). Fuer `F` zusaetzlich Pflicht: Kommt, Geht, Pause, Leistungsort (`*_REQUIRED`), Beschreibung je Position (`DESCRIPTION_REQUIRED`) und Stunden > 0. Der WebClient prueft dieselben Regeln vor dem Senden (`validateTimesheetDay`).
+  - Kein gueltiges JSON im Body: HTTP 400 `INVALID_JSON`.
 - Zurueckgewiesene Tage (Status `A`) tragen den Grund im Feld `rejectionReason`. Beim erneuten Speichern/Freigeben durch den Mitarbeiter entfernt der Server das Feld (Flow `A -> E -> F`).
 
 ## Response Shape
