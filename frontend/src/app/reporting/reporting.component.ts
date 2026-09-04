@@ -2,6 +2,9 @@ import { DatePipe, DecimalPipe } from "@angular/common";
 import { Component, inject, signal } from "@angular/core";
 import { FormsModule } from "@angular/forms";
 
+import { LoadState } from "../shared/async-state";
+import { LoadStatusComponent } from "../shared/load-status.component";
+
 import type {
   BudgetDetailLevel,
   BudgetRow,
@@ -28,13 +31,16 @@ const ORDER_STATUS_LABELS: Record<OrderStatus, string> = {
 @Component({
   selector: "xts-reporting",
   standalone: true,
-  imports: [DatePipe, DecimalPipe, FormsModule],
+  imports: [DatePipe, DecimalPipe, FormsModule, LoadStatusComponent],
   templateUrl: "./reporting.component.html",
   styleUrl: "./reporting.component.css",
 })
 export class ReportingComponent {
   private readonly reportingService = inject(ReportingService);
 
+  protected readonly lifecycleLoader = new LoadState();
+  protected readonly budgetLoader = new LoadState();
+  protected readonly quotaLoader = new LoadState();
   protected readonly lifecycleRows = signal<LifecycleRow[]>([]);
   protected readonly lifecycleFrom = signal<string>("");
   protected readonly lifecycleTo = signal<string>("");
@@ -111,32 +117,50 @@ export class ReportingComponent {
     await this.loadQuota();
   }
 
+  protected reloadLifecycle(): void {
+    void this.loadLifecycle();
+  }
+
+  protected reloadBudget(): void {
+    void this.loadBudget();
+  }
+
+  protected reloadQuota(): void {
+    void this.loadQuota();
+  }
+
   private async loadLifecycle(): Promise<void> {
-    this.lifecycleRows.set(
-      await this.reportingService.getResourceLifecycle({
-        from: this.lifecycleFrom(),
-        to: this.lifecycleTo(),
-        ebeln: this.lifecycleEbeln().trim(),
-        ebelp: this.lifecycleEbelp().trim(),
-      }),
-    );
+    await this.lifecycleLoader.track(async () => {
+      this.lifecycleRows.set(
+        await this.reportingService.getResourceLifecycle({
+          from: this.lifecycleFrom(),
+          to: this.lifecycleTo(),
+          ebeln: this.lifecycleEbeln().trim(),
+          ebelp: this.lifecycleEbelp().trim(),
+        }),
+      );
+    }, "Ressourcen-Live-Circle konnte nicht geladen werden.");
   }
 
   private async loadBudget(): Promise<void> {
-    this.budgetRows.set(
-      await this.reportingService.getBudgetMonitor(this.budgetDetail()),
-    );
+    await this.budgetLoader.track(async () => {
+      this.budgetRows.set(
+        await this.reportingService.getBudgetMonitor(this.budgetDetail()),
+      );
+    }, "Budget-Monitor konnte nicht geladen werden.");
   }
 
   private async loadQuota(): Promise<void> {
-    this.quotaRows.set(
-      await this.reportingService.getCostObjectQuota({
-        lastName: this.quotaLastName(),
-        team: this.quotaTeam(),
-        from: this.quotaFrom(),
-        to: this.quotaTo(),
-        detail: this.quotaDayDetail() ? "day" : "none",
-      }),
-    );
+    await this.quotaLoader.track(async () => {
+      this.quotaRows.set(
+        await this.reportingService.getCostObjectQuota({
+          lastName: this.quotaLastName(),
+          team: this.quotaTeam(),
+          from: this.quotaFrom(),
+          to: this.quotaTo(),
+          detail: this.quotaDayDetail() ? "day" : "none",
+        }),
+      );
+    }, "Stundenkontingent-Monitor konnte nicht geladen werden.");
   }
 }

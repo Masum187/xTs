@@ -3,6 +3,8 @@ import { Component, computed, inject, signal } from "@angular/core";
 import { FormsModule } from "@angular/forms";
 
 import { describeApiError } from "../shared/api-error";
+import { BusyState, LoadState } from "../shared/async-state";
+import { LoadStatusComponent } from "../shared/load-status.component";
 import { formatSignedHours } from "../shared/hours";
 
 import {
@@ -35,7 +37,7 @@ const STATUS_LABELS: Record<TimesheetStatus, string> = {
 @Component({
   selector: "xts-timesheet",
   standalone: true,
-  imports: [DatePipe, DecimalPipe, FormsModule],
+  imports: [DatePipe, DecimalPipe, FormsModule, LoadStatusComponent],
   templateUrl: "./timesheet.component.html",
   styleUrl: "./timesheet.component.css",
 })
@@ -45,6 +47,8 @@ export class TimesheetComponent {
   private readonly savedDays = new Map<string, TimesheetDay>();
 
   protected readonly profile = this.auth.profile;
+  protected readonly loader = new LoadState();
+  protected readonly busy = new BusyState();
   protected readonly costObjects = signal<EnabledCostObject[]>([]);
   protected readonly selectedCostObject = signal<string>("");
   protected readonly message = signal<string>("");
@@ -157,6 +161,10 @@ export class TimesheetComponent {
     }));
   }
 
+  protected reload(): void {
+    void this.loadInitialData();
+  }
+
   protected async save(): Promise<void> {
     const problems = [
       ...validateTimesheetDay(this.day(), "draft"),
@@ -166,37 +174,42 @@ export class TimesheetComponent {
       this.message.set(problems[0].message);
       return;
     }
-    try {
-      const draft: TimesheetDay = {
-        ...this.day(),
-        status: "E",
-        rejectionReason: undefined,
-      };
-      const saved = await this.persist(draft);
-      this.message.set(
-        this.day().status === "A"
-          ? "Korrektur als Entwurf gespeichert."
-          : "Entwurf gespeichert.",
-      );
-      this.day.set(saved);
-    } catch (error) {
-      this.message.set(this.saveErrorMessage(error));
-    }
+    await this.busy.guard(async () => {
+      try {
+        const wasRejected = this.day().status === "A";
+        const draft: TimesheetDay = {
+          ...this.day(),
+          status: "E",
+          rejectionReason: undefined,
+        };
+        const saved = await this.persist(draft);
+        this.message.set(
+          wasRejected
+            ? "Korrektur als Entwurf gespeichert."
+            : "Entwurf gespeichert.",
+        );
+        this.day.set(saved);
+      } catch (error) {
+        this.message.set(this.saveErrorMessage(error));
+      }
+    });
   }
 
   protected async submit(): Promise<void> {
     if (!this.canSubmit()) return;
-    try {
-      const saved = await this.persist({
-        ...this.day(),
-        status: "F",
-        rejectionReason: undefined,
-      });
-      this.day.set(saved);
-      this.message.set("Zur Genehmigung freigegeben.");
-    } catch (error) {
-      this.message.set(this.saveErrorMessage(error));
-    }
+    await this.busy.guard(async () => {
+      try {
+        const saved = await this.persist({
+          ...this.day(),
+          status: "F",
+          rejectionReason: undefined,
+        });
+        this.day.set(saved);
+        this.message.set("Zur Genehmigung freigegeben.");
+      } catch (error) {
+        this.message.set(this.saveErrorMessage(error));
+      }
+    });
   }
 
   private async persist(day: TimesheetDay): Promise<TimesheetDay> {
@@ -230,18 +243,21 @@ export class TimesheetComponent {
   }
 
   private async loadInitialData(): Promise<void> {
-    const [costObjects, timesheets] = await Promise.all([
-      this.timesheetService.getEnabledCostObjects(),
-      this.timesheetService.getMyTimesheets(),
-    ]);
-    this.costObjects.set(costObjects);
-    for (const day of timesheets) {
-      this.savedDays.set(day.date, day);
-    }
-    const latestDate =
-      timesheets[0]?.date ?? new Date().toISOString().slice(0, 10);
-    this.openDate(latestDate);
-    const extNr = this.currentExtNr();
-    this.day.update((day) => ({ ...day, extNr }));
+    await this.loader.track(async () => {
+      const [costObjects, timesheets] = await Promise.all([
+        this.timesheetService.getEnabledCostObjects(),
+        this.timesheetService.getMyTimesheets(),
+      ]);
+      this.costObjects.set(costObjects);
+      this.savedDays.clear();
+      for (const day of timesheets) {
+        this.savedDays.set(day.date, day);
+      }
+      const latestDate =
+        timesheets[0]?.date ?? new Date().toISOString().slice(0, 10);
+      this.openDate(latestDate);
+      const extNr = this.currentExtNr();
+      this.day.update((day) => ({ ...day, extNr }));
+    }, "Stundenzettel konnten nicht geladen werden.");
   }
 }

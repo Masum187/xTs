@@ -2,6 +2,8 @@ import { Component, inject, signal } from "@angular/core";
 import { FormsModule } from "@angular/forms";
 
 import { ApiError, describeApiError } from "../shared/api-error";
+import { BusyState, LoadState } from "../shared/async-state";
+import { LoadStatusComponent } from "../shared/load-status.component";
 import type {
   AuditEntry,
   CostObject,
@@ -73,7 +75,7 @@ function emptyCostObjectAssignment(): CostObjectAssignmentDraft {
 @Component({
   selector: "xts-admin",
   standalone: true,
-  imports: [FormsModule],
+  imports: [FormsModule, LoadStatusComponent],
   templateUrl: "./admin.component.html",
   styleUrl: "./admin.component.css",
 })
@@ -81,6 +83,8 @@ export class AdminComponent {
   private readonly adminService = inject(AdminService);
 
   protected readonly costObjectTypes = COST_OBJECT_TYPES;
+  protected readonly loader = new LoadState();
+  protected readonly busy = new BusyState();
 
   protected readonly employees = signal<Employee[]>([]);
   protected readonly teams = signal<Team[]>([]);
@@ -293,15 +297,21 @@ export class AdminComponent {
     });
   }
 
+  protected reload(): void {
+    void this.loadAll();
+  }
+
   private async run(action: () => Promise<string>): Promise<void> {
-    try {
-      this.message.set(await action());
-      this.messageKind.set("ok");
-    } catch (error) {
-      this.messageKind.set("error");
-      this.message.set(this.describeError(error));
-    }
-    await this.loadAuditLog();
+    await this.busy.guard(async () => {
+      try {
+        this.message.set(await action());
+        this.messageKind.set("ok");
+      } catch (error) {
+        this.messageKind.set("error");
+        this.message.set(this.describeError(error));
+      }
+      await this.loadAuditLog();
+    });
   }
 
   private describeError(error: unknown): string {
@@ -312,6 +322,12 @@ export class AdminComponent {
   }
 
   private async loadAll(): Promise<void> {
+    await this.loader.track(async () => {
+      await this.loadEverything();
+    }, "Verwaltungsdaten konnten nicht geladen werden.");
+  }
+
+  private async loadEverything(): Promise<void> {
     await Promise.all([
       this.loadEmployees(),
       this.loadTeams(),

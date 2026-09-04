@@ -256,3 +256,10 @@ tr.error-row td {
 td input.wide {
   min-width: 200px;
 }
+
+fieldset.plain {
+  border: 0;
+  margin: 0;
+  min-width: 0;
+  padding: 0;
+}

@@ -53,125 +53,139 @@
     </label>
   </div>
 
-  <div class="table-wrap">
-    <table data-testid="lifecycle-table" class="lifecycle">
-      <thead>
-        <tr>
-          <th>Mitarbeiter</th>
-          <th>Kontierung</th>
-          <th class="num">Plan</th>
-          <th>Beauftragung</th>
-          <th>BANF</th>
-          <th>Bestellung</th>
-          <th class="num">Bestellmenge</th>
-          <th class="num">Bestellpreis</th>
-          <th class="num">Ist erfasst</th>
-          <th class="num">Genehmigt</th>
-          <th>Wareneingang</th>
-          <th>Rechnung</th>
-        </tr>
-      </thead>
-      <tbody>
-        @for (row of lifecycleRows(); track row.extNr + row.coIdent) {
-          <tr [attr.data-testid]="'lifecycle-' + row.extNr + '-' + row.coIdent">
-            <td>{{ row.displayName }}</td>
-            <td>
-              {{ row.coIdent }}
-              <span class="sub">{{ row.description }}</span>
-            </td>
-            <td class="num">{{ row.plannedHours | number: "1.0-2" }}</td>
-            <td>
-              @if (row.orders.length > 0) {
-                <strong>{{ row.orderedHours | number: "1.0-2" }} Std.</strong>
-                @for (order of row.orders; track order.orderId) {
-                  <span class="sub">
-                    {{ order.orderId }} ·
-                    {{ order.hours | number: "1.0-2" }} Std. ·
-                    {{ orderStatusLabel(order.status) }}
-                  </span>
-                }
-              } @else {
-                <span class="empty">–</span>
-              }
-            </td>
-            <td>
-              @for (order of row.orders; track order.orderId) {
-                @if (order.banfNumber) {
-                  <span class="sub"
-                    >{{ order.banfNumber }}/{{ order.banfItem }}</span
-                  >
-                }
-              }
-              @if (!hasAny(row, "banfNumber")) {
-                <span class="empty">–</span>
-              }
-            </td>
-            <td>
-              @for (order of row.orders; track order.orderId) {
-                @if (order.ebeln) {
-                  <span class="sub">{{ order.ebeln }}/{{ order.ebelp }}</span>
-                }
-              }
-              @if (!hasAny(row, "ebeln")) {
-                <span class="empty">–</span>
-              }
-            </td>
-            <td class="num">
-              @if (row.purchaseOrderHours > 0) {
-                {{ row.purchaseOrderHours | number: "1.0-2" }}
-              } @else {
-                <span class="empty">–</span>
-              }
-            </td>
-            <td class="num">
-              @if (row.purchaseOrderPrice !== null) {
-                {{ row.purchaseOrderPrice }}
-              } @else {
-                <span class="empty">–</span>
-              }
-            </td>
-            <td class="num">{{ row.recordedHours | number: "1.0-2" }}</td>
-            <td class="num">{{ row.approvedHours | number: "1.0-2" }}</td>
-            <td [attr.data-testid]="'we-' + row.extNr + '-' + row.coIdent">
-              @if (row.goodsReceipts.length > 0) {
-                <strong
-                  >{{ row.goodsReceiptHours | number: "1.0-2" }} Std.</strong
-                >
-                @for (receipt of row.goodsReceipts; track receipt.weDocument) {
-                  <span class="sub">
-                    {{ receipt.weDocument }} ·
-                    {{ receipt.date | date: "dd.MM.yyyy" }} ·
-                    {{ receipt.hours | number: "1.0-2" }} Std.
-                  </span>
-                }
-              } @else if (row.pendingGoodsReceiptHours === 0) {
-                <span class="empty">–</span>
-              }
-              @if (row.pendingGoodsReceiptHours > 0) {
-                <span class="sub pending">
-                  {{ row.pendingGoodsReceiptHours | number: "1.0-2" }} Std. WE
-                  ausstehend
-                </span>
-              }
-            </td>
-            <td [attr.data-testid]="'invoice-' + row.extNr + '-' + row.coIdent">
-              @if (row.invoiceNumber !== null) {
-                {{ row.invoiceNumber }}
-              } @else {
-                <span class="empty">–</span>
-              }
-            </td>
-          </tr>
-        } @empty {
+  <xts-load-status
+    [state]="lifecycleLoader.value()"
+    loadingText="Ressourcen-Live-Circle wird geladen …"
+    (retry)="reloadLifecycle()"
+  />
+  @if (lifecycleLoader.ready()) {
+    <div class="table-wrap">
+      <table data-testid="lifecycle-table" class="lifecycle">
+        <thead>
           <tr>
-            <td colspan="12" class="empty-hint" data-testid="lifecycle-empty">
-              Keine Daten für die aktuelle Selektion.
-            </td>
+            <th>Mitarbeiter</th>
+            <th>Kontierung</th>
+            <th class="num">Plan</th>
+            <th>Beauftragung</th>
+            <th>BANF</th>
+            <th>Bestellung</th>
+            <th class="num">Bestellmenge</th>
+            <th class="num">Bestellpreis</th>
+            <th class="num">Ist erfasst</th>
+            <th class="num">Genehmigt</th>
+            <th>Wareneingang</th>
+            <th>Rechnung</th>
           </tr>
-        }
-      </tbody>
-    </table>
-  </div>
+        </thead>
+        <tbody>
+          @for (row of lifecycleRows(); track row.extNr + row.coIdent) {
+            <tr
+              [attr.data-testid]="'lifecycle-' + row.extNr + '-' + row.coIdent"
+            >
+              <td>{{ row.displayName }}</td>
+              <td>
+                {{ row.coIdent }}
+                <span class="sub">{{ row.description }}</span>
+              </td>
+              <td class="num">{{ row.plannedHours | number: "1.0-2" }}</td>
+              <td>
+                @if (row.orders.length > 0) {
+                  <strong>{{ row.orderedHours | number: "1.0-2" }} Std.</strong>
+                  @for (order of row.orders; track order.orderId) {
+                    <span class="sub">
+                      {{ order.orderId }} ·
+                      {{ order.hours | number: "1.0-2" }} Std. ·
+                      {{ orderStatusLabel(order.status) }}
+                    </span>
+                  }
+                } @else {
+                  <span class="empty">–</span>
+                }
+              </td>
+              <td>
+                @for (order of row.orders; track order.orderId) {
+                  @if (order.banfNumber) {
+                    <span class="sub"
+                      >{{ order.banfNumber }}/{{ order.banfItem }}</span
+                    >
+                  }
+                }
+                @if (!hasAny(row, "banfNumber")) {
+                  <span class="empty">–</span>
+                }
+              </td>
+              <td>
+                @for (order of row.orders; track order.orderId) {
+                  @if (order.ebeln) {
+                    <span class="sub">{{ order.ebeln }}/{{ order.ebelp }}</span>
+                  }
+                }
+                @if (!hasAny(row, "ebeln")) {
+                  <span class="empty">–</span>
+                }
+              </td>
+              <td class="num">
+                @if (row.purchaseOrderHours > 0) {
+                  {{ row.purchaseOrderHours | number: "1.0-2" }}
+                } @else {
+                  <span class="empty">–</span>
+                }
+              </td>
+              <td class="num">
+                @if (row.purchaseOrderPrice !== null) {
+                  {{ row.purchaseOrderPrice }}
+                } @else {
+                  <span class="empty">–</span>
+                }
+              </td>
+              <td class="num">{{ row.recordedHours | number: "1.0-2" }}</td>
+              <td class="num">{{ row.approvedHours | number: "1.0-2" }}</td>
+              <td [attr.data-testid]="'we-' + row.extNr + '-' + row.coIdent">
+                @if (row.goodsReceipts.length > 0) {
+                  <strong
+                    >{{ row.goodsReceiptHours | number: "1.0-2" }} Std.</strong
+                  >
+                  @for (
+                    receipt of row.goodsReceipts;
+                    track receipt.weDocument
+                  ) {
+                    <span class="sub">
+                      {{ receipt.weDocument }} ·
+                      {{ receipt.date | date: "dd.MM.yyyy" }} ·
+                      {{ receipt.hours | number: "1.0-2" }} Std.
+                    </span>
+                  }
+                } @else if (row.pendingGoodsReceiptHours === 0) {
+                  <span class="empty">–</span>
+                }
+                @if (row.pendingGoodsReceiptHours > 0) {
+                  <span class="sub pending">
+                    {{ row.pendingGoodsReceiptHours | number: "1.0-2" }} Std. WE
+                    ausstehend
+                  </span>
+                }
+              </td>
+              <td
+                [attr.data-testid]="'invoice-' + row.extNr + '-' + row.coIdent"
+              >
+                @if (row.invoiceNumber !== null) {
+                  {{ row.invoiceNumber }}
+                } @else {
+                  <span class="empty">–</span>
+                }
+              </td>
+            </tr>
+          } @empty {
+            <tr>
+              <td colspan="12" class="empty-hint" data-testid="lifecycle-empty">
+                Keine Daten für die aktuelle Selektion.
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  }
   <p class="footnote">
     „–" = keine Daten vorhanden. Bestellpreis und Rechnung sind nicht Teil des
     MVP; genehmigte Stunden ohne WE-Beleg gelten als „WE ausstehend".
@@ -195,66 +209,73 @@
     </label>
   </div>
 
-  <div class="table-wrap">
-    <table data-testid="budget-table">
-      <thead>
-        <tr>
-          <th>Kontierung</th>
-          <th>Beschreibung</th>
-          <th class="num">Budget</th>
-          <th class="num">Verbraucht</th>
-          <th class="num">Verbrauch %</th>
-          <th class="num">Rest</th>
-          <th>Ampel</th>
-        </tr>
-      </thead>
-      <tbody>
-        @for (row of budgetRows(); track row.coIdent) {
-          <tr [attr.data-testid]="'budget-' + row.coIdent">
-            <td>{{ row.coIdent }}</td>
-            <td>{{ row.description }}</td>
-            <td class="num">{{ row.budgetHours | number: "1.0-2" }}</td>
-            <td class="num">{{ row.consumedHours | number: "1.0-2" }}</td>
-            <td class="num">{{ row.consumedPercent | number: "1.0-1" }} %</td>
-            <td class="num">{{ row.remainingHours | number: "1.0-2" }}</td>
-            <td>
-              <span
-                class="traffic"
-                [class]="'traffic ' + row.trafficLight"
-                [attr.data-testid]="'traffic-' + row.coIdent"
-              >
-                {{ trafficLabel(row.trafficLight) }}
-              </span>
-            </td>
+  <xts-load-status
+    [state]="budgetLoader.value()"
+    loadingText="Budget-Monitor wird geladen …"
+    (retry)="reloadBudget()"
+  />
+  @if (budgetLoader.ready()) {
+    <div class="table-wrap">
+      <table data-testid="budget-table">
+        <thead>
+          <tr>
+            <th>Kontierung</th>
+            <th>Beschreibung</th>
+            <th class="num">Budget</th>
+            <th class="num">Verbraucht</th>
+            <th class="num">Verbrauch %</th>
+            <th class="num">Rest</th>
+            <th>Ampel</th>
           </tr>
-          @for (employee of row.byEmployee ?? []; track employee.extNr) {
-            <tr class="detail-row">
-              <td></td>
-              <td>{{ employee.displayName }}</td>
-              <td class="num"></td>
-              <td class="num">{{ employee.hours | number: "1.0-2" }}</td>
-              <td class="num"></td>
-              <td class="num"></td>
-              <td></td>
+        </thead>
+        <tbody>
+          @for (row of budgetRows(); track row.coIdent) {
+            <tr [attr.data-testid]="'budget-' + row.coIdent">
+              <td>{{ row.coIdent }}</td>
+              <td>{{ row.description }}</td>
+              <td class="num">{{ row.budgetHours | number: "1.0-2" }}</td>
+              <td class="num">{{ row.consumedHours | number: "1.0-2" }}</td>
+              <td class="num">{{ row.consumedPercent | number: "1.0-1" }} %</td>
+              <td class="num">{{ row.remainingHours | number: "1.0-2" }}</td>
+              <td>
+                <span
+                  class="traffic"
+                  [class]="'traffic ' + row.trafficLight"
+                  [attr.data-testid]="'traffic-' + row.coIdent"
+                >
+                  {{ trafficLabel(row.trafficLight) }}
+                </span>
+              </td>
             </tr>
-            @for (day of employee.days ?? []; track day.date) {
-              <tr class="detail-row day-row">
+            @for (employee of row.byEmployee ?? []; track employee.extNr) {
+              <tr class="detail-row">
                 <td></td>
-                <td>
-                  {{ day.date | date: "dd.MM.yyyy" }} – {{ day.description }}
-                </td>
+                <td>{{ employee.displayName }}</td>
                 <td class="num"></td>
-                <td class="num">{{ day.hours | number: "1.0-2" }}</td>
+                <td class="num">{{ employee.hours | number: "1.0-2" }}</td>
                 <td class="num"></td>
                 <td class="num"></td>
                 <td></td>
               </tr>
+              @for (day of employee.days ?? []; track day.date) {
+                <tr class="detail-row day-row">
+                  <td></td>
+                  <td>
+                    {{ day.date | date: "dd.MM.yyyy" }} – {{ day.description }}
+                  </td>
+                  <td class="num"></td>
+                  <td class="num">{{ day.hours | number: "1.0-2" }}</td>
+                  <td class="num"></td>
+                  <td class="num"></td>
+                  <td></td>
+                </tr>
+              }
             }
           }
-        }
-      </tbody>
-    </table>
-  </div>
+        </tbody>
+      </table>
+    </div>
+  }
 </section>
 
 <section class="panel">
@@ -314,50 +335,57 @@
     </label>
   </div>
 
-  <div class="table-wrap">
-    <table data-testid="quota-table">
-      <thead>
-        <tr>
-          <th>Mitarbeiter</th>
-          <th>Kontierung</th>
-          <th>Gültigkeit</th>
-          <th class="num">Beauftragt</th>
-          <th class="num">Gebucht</th>
-          <th class="num">Rest</th>
-        </tr>
-      </thead>
-      <tbody>
-        @for (row of quotaRows(); track row.extNr + row.coIdent) {
-          <tr [attr.data-testid]="'quota-' + row.extNr + '-' + row.coIdent">
-            <td>{{ row.displayName }}</td>
-            <td>{{ row.coIdent }}</td>
-            <td>
-              {{ row.validFrom | date: "dd.MM.yyyy" }} –
-              {{ row.validTo | date: "dd.MM.yyyy" }}
-            </td>
-            <td class="num">{{ row.orderedHours | number: "1.0-2" }}</td>
-            <td class="num">{{ row.bookedHours | number: "1.0-2" }}</td>
-            <td class="num">{{ row.remainingHours | number: "1.0-2" }}</td>
+  <xts-load-status
+    [state]="quotaLoader.value()"
+    loadingText="Stundenkontingent-Monitor wird geladen …"
+    (retry)="reloadQuota()"
+  />
+  @if (quotaLoader.ready()) {
+    <div class="table-wrap">
+      <table data-testid="quota-table">
+        <thead>
+          <tr>
+            <th>Mitarbeiter</th>
+            <th>Kontierung</th>
+            <th>Gültigkeit</th>
+            <th class="num">Beauftragt</th>
+            <th class="num">Gebucht</th>
+            <th class="num">Rest</th>
           </tr>
-          @for (day of row.days ?? []; track day.date) {
-            <tr class="detail-row day-row">
-              <td></td>
-              <td colspan="2">
-                {{ day.date | date: "dd.MM.yyyy" }} – {{ day.description }}
+        </thead>
+        <tbody>
+          @for (row of quotaRows(); track row.extNr + row.coIdent) {
+            <tr [attr.data-testid]="'quota-' + row.extNr + '-' + row.coIdent">
+              <td>{{ row.displayName }}</td>
+              <td>{{ row.coIdent }}</td>
+              <td>
+                {{ row.validFrom | date: "dd.MM.yyyy" }} –
+                {{ row.validTo | date: "dd.MM.yyyy" }}
               </td>
-              <td class="num"></td>
-              <td class="num">{{ day.hours | number: "1.0-2" }}</td>
-              <td class="num"></td>
+              <td class="num">{{ row.orderedHours | number: "1.0-2" }}</td>
+              <td class="num">{{ row.bookedHours | number: "1.0-2" }}</td>
+              <td class="num">{{ row.remainingHours | number: "1.0-2" }}</td>
+            </tr>
+            @for (day of row.days ?? []; track day.date) {
+              <tr class="detail-row day-row">
+                <td></td>
+                <td colspan="2">
+                  {{ day.date | date: "dd.MM.yyyy" }} – {{ day.description }}
+                </td>
+                <td class="num"></td>
+                <td class="num">{{ day.hours | number: "1.0-2" }}</td>
+                <td class="num"></td>
+              </tr>
+            }
+          } @empty {
+            <tr>
+              <td colspan="6" class="empty-hint" data-testid="quota-empty">
+                Keine Kontingente für die aktuelle Selektion.
+              </td>
             </tr>
           }
-        } @empty {
-          <tr>
-            <td colspan="6" class="empty-hint" data-testid="quota-empty">
-              Keine Kontingente für die aktuelle Selektion.
-            </td>
-          </tr>
-        }
-      </tbody>
-    </table>
-  </div>
+        </tbody>
+      </table>
+    </div>
+  }
 </section>

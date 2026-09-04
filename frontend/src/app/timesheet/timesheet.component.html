@@ -11,233 +11,245 @@
   </div>
 </section>
 
-<section class="panel day-nav" data-testid="day-nav">
-  <button type="button" (click)="previousDay()" data-testid="previous-day">
-    ‹ Vortag
-  </button>
-  <input
-    type="date"
-    aria-label="Tagesdatum"
-    [ngModel]="day().date"
-    (ngModelChange)="openDate($event)"
-  />
-  <button type="button" (click)="nextDay()" data-testid="next-day">
-    Folgetag ›
-  </button>
-  <span class="status-badge" data-testid="day-status">{{ statusLabel() }}</span>
-</section>
+<xts-load-status
+  [state]="loader.value()"
+  loadingText="Stundenzettel werden geladen …"
+  (retry)="reload()"
+/>
 
-@if (day().status === "A" && day().rejectionReason) {
-  <section class="panel rejection" data-testid="rejection-banner">
-    <strong>Zurückgewiesen:</strong>
-    <span>{{ day().rejectionReason }}</span>
-    <p>
-      Bitte korrigieren und erneut zur Genehmigung freigeben. Beim Speichern
-      wechselt der Tag zurück in den Entwurf.
-    </p>
+@if (loader.ready()) {
+  <section class="panel day-nav" data-testid="day-nav">
+    <button type="button" (click)="previousDay()" data-testid="previous-day">
+      ‹ Vortag
+    </button>
+    <input
+      type="date"
+      aria-label="Tagesdatum"
+      [ngModel]="day().date"
+      (ngModelChange)="openDate($event)"
+    />
+    <button type="button" (click)="nextDay()" data-testid="next-day">
+      Folgetag ›
+    </button>
+    <span class="status-badge" data-testid="day-status">{{
+      statusLabel()
+    }}</span>
   </section>
-}
 
-<section class="panel">
-  <div class="grid">
-    <label>
-      Kommt
-      <input
-        type="time"
-        step="60"
-        [disabled]="!canEdit()"
-        [ngModel]="day().startTime"
-        (ngModelChange)="updateDay({ startTime: $event })"
-      />
-    </label>
-    <label>
-      Geht
-      <input
-        type="time"
-        step="60"
-        [disabled]="!canEdit()"
-        [ngModel]="day().endTime"
-        (ngModelChange)="updateDay({ endTime: $event })"
-      />
-    </label>
-    <label>
-      Pause (Min.)
-      <input
-        type="number"
-        min="0"
-        step="1"
-        [disabled]="!canEdit()"
-        [ngModel]="day().breakMinutes"
-        (ngModelChange)="updateDay({ breakMinutes: +$event })"
-      />
-    </label>
-    <label>
-      Leistungsort
-      <select
-        [disabled]="!canEdit()"
-        [ngModel]="day().location"
-        (ngModelChange)="updateDay({ location: $event })"
-      >
-        <option value="remote">remote</option>
-        <option value="on-site">on-site</option>
-      </select>
-    </label>
-  </div>
-  <div class="worktime" data-testid="worktime">
-    <span>
-      Arbeitszeit
-      <strong data-testid="work-hours">
-        @if (workHours(); as hours) {
-          {{ hours | number: "1.0-2" }} Std.
-        } @else {
-          –
-        }
-      </strong>
-    </span>
-    <span>
-      Positionen
-      <strong>{{ totalHours() | number: "1.0-2" }} Std.</strong>
-    </span>
-    <span [class.variance-off]="variance() !== null && variance() !== 0">
-      Differenz
-      <strong data-testid="day-variance">{{ varianceLabel() }}</strong>
-    </span>
-  </div>
-  @if (variance() !== null && variance() !== 0) {
-    <label class="variance-reason">
-      Begründung der Abweichung
-      <input
-        aria-label="Abweichungsbegründung"
-        placeholder="z. B. Reisezeit ohne Kontierung"
-        maxlength="255"
-        [disabled]="!canEdit()"
-        [ngModel]="day().varianceReason ?? ''"
-        (ngModelChange)="updateDay({ varianceReason: $event })"
-      />
-    </label>
+  @if (day().status === "A" && day().rejectionReason) {
+    <section class="panel rejection" data-testid="rejection-banner">
+      <strong>Zurückgewiesen:</strong>
+      <span>{{ day().rejectionReason }}</span>
+      <p>
+        Bitte korrigieren und erneut zur Genehmigung freigeben. Beim Speichern
+        wechselt der Tag zurück in den Entwurf.
+      </p>
+    </section>
   }
-</section>
 
-<section class="panel">
-  <div class="section-title">
-    <h2>Kontingente</h2>
-  </div>
-  <div class="lines" data-testid="cost-object-list">
-    @for (item of costObjects(); track item.coIdent) {
-      <div class="line-row" [class.blocked]="!isBookable(item)">
-        <span>{{ item.coIdent }}</span>
-        <span>{{ item.description }}</span>
-        <span>
-          {{ item.remainingHours | number: "1.0-2" }} von
-          {{ item.orderedHours | number: "1.0-2" }} Std. offen ({{
-            item.validFrom | date: "dd.MM.yyyy"
-          }}
-          – {{ item.validTo | date: "dd.MM.yyyy" }})
-          @if (!isBookable(item)) {
-            <em class="blocked-hint">nicht buchbar</em>
-          }
-        </span>
-      </div>
-    }
-  </div>
-</section>
-
-<section class="panel">
-  <div class="section-title">
-    <h2>Leistungspositionen</h2>
-    <div>
-      <select
-        aria-label="Kontierung"
-        [disabled]="!canEdit()"
-        [ngModel]="selectedCostObject()"
-        (ngModelChange)="selectedCostObject.set($event)"
-      >
-        @for (item of bookableCostObjects(); track item.coIdent) {
-          <option [value]="item.coIdent">
-            {{ item.coIdent }} - {{ item.description }} ({{
-              item.remainingHours | number: "1.0-2"
-            }}
-            Std. Rest)
-          </option>
-        }
-      </select>
-      <button
-        type="button"
-        data-testid="add-line"
-        [disabled]="!canEdit() || bookableCostObjects().length === 0"
-        (click)="addLine()"
-      >
-        Position hinzufügen
-      </button>
-    </div>
-  </div>
-
-  <div class="lines">
-    @for (line of day().lines; track $index) {
-      <div class="line-row">
-        <span>{{ line.coIdent }}</span>
+  <section class="panel">
+    <div class="grid">
+      <label>
+        Kommt
         <input
-          aria-label="Leistungsbeschreibung"
+          type="time"
+          step="60"
           [disabled]="!canEdit()"
-          [ngModel]="line.description"
-          (ngModelChange)="updateLine($index, { description: $event })"
+          [ngModel]="day().startTime"
+          (ngModelChange)="updateDay({ startTime: $event })"
         />
+      </label>
+      <label>
+        Geht
         <input
-          aria-label="Stunden"
+          type="time"
+          step="60"
+          [disabled]="!canEdit()"
+          [ngModel]="day().endTime"
+          (ngModelChange)="updateDay({ endTime: $event })"
+        />
+      </label>
+      <label>
+        Pause (Min.)
+        <input
           type="number"
           min="0"
-          max="24"
-          step="0.25"
+          step="1"
           [disabled]="!canEdit()"
-          [ngModel]="line.hours"
-          (ngModelChange)="updateLine($index, { hours: +$event })"
+          [ngModel]="day().breakMinutes"
+          (ngModelChange)="updateDay({ breakMinutes: +$event })"
         />
+      </label>
+      <label>
+        Leistungsort
+        <select
+          [disabled]="!canEdit()"
+          [ngModel]="day().location"
+          (ngModelChange)="updateDay({ location: $event })"
+        >
+          <option value="remote">remote</option>
+          <option value="on-site">on-site</option>
+        </select>
+      </label>
+    </div>
+    <div class="worktime" data-testid="worktime">
+      <span>
+        Arbeitszeit
+        <strong data-testid="work-hours">
+          @if (workHours(); as hours) {
+            {{ hours | number: "1.0-2" }} Std.
+          } @else {
+            –
+          }
+        </strong>
+      </span>
+      <span>
+        Positionen
+        <strong>{{ totalHours() | number: "1.0-2" }} Std.</strong>
+      </span>
+      <span [class.variance-off]="variance() !== null && variance() !== 0">
+        Differenz
+        <strong data-testid="day-variance">{{ varianceLabel() }}</strong>
+      </span>
+    </div>
+    @if (variance() !== null && variance() !== 0) {
+      <label class="variance-reason">
+        Begründung der Abweichung
+        <input
+          aria-label="Abweichungsbegründung"
+          placeholder="z. B. Reisezeit ohne Kontierung"
+          maxlength="255"
+          [disabled]="!canEdit()"
+          [ngModel]="day().varianceReason ?? ''"
+          (ngModelChange)="updateDay({ varianceReason: $event })"
+        />
+      </label>
+    }
+  </section>
+
+  <section class="panel">
+    <div class="section-title">
+      <h2>Kontingente</h2>
+    </div>
+    <div class="lines" data-testid="cost-object-list">
+      @for (item of costObjects(); track item.coIdent) {
+        <div class="line-row" [class.blocked]="!isBookable(item)">
+          <span>{{ item.coIdent }}</span>
+          <span>{{ item.description }}</span>
+          <span>
+            {{ item.remainingHours | number: "1.0-2" }} von
+            {{ item.orderedHours | number: "1.0-2" }} Std. offen ({{
+              item.validFrom | date: "dd.MM.yyyy"
+            }}
+            – {{ item.validTo | date: "dd.MM.yyyy" }})
+            @if (!isBookable(item)) {
+              <em class="blocked-hint">nicht buchbar</em>
+            }
+          </span>
+        </div>
+      }
+    </div>
+  </section>
+
+  <section class="panel">
+    <div class="section-title">
+      <h2>Leistungspositionen</h2>
+      <div>
+        <select
+          aria-label="Kontierung"
+          [disabled]="!canEdit()"
+          [ngModel]="selectedCostObject()"
+          (ngModelChange)="selectedCostObject.set($event)"
+        >
+          @for (item of bookableCostObjects(); track item.coIdent) {
+            <option [value]="item.coIdent">
+              {{ item.coIdent }} - {{ item.description }} ({{
+                item.remainingHours | number: "1.0-2"
+              }}
+              Std. Rest)
+            </option>
+          }
+        </select>
         <button
           type="button"
-          aria-label="Position entfernen"
-          [disabled]="!canEdit()"
-          (click)="removeLine($index)"
+          data-testid="add-line"
+          [disabled]="!canEdit() || bookableCostObjects().length === 0"
+          (click)="addLine()"
         >
-          ✕
+          Position hinzufügen
         </button>
       </div>
-    } @empty {
-      <p class="empty-hint">Noch keine Positionen für diesen Tag.</p>
-    }
-  </div>
+    </div>
 
-  @if (canEdit() && problems().length > 0) {
-    <ul class="problems" data-testid="timesheet-problems">
-      @for (problem of problems(); track problem.field + problem.code) {
-        <li>{{ problem.message }}</li>
+    <div class="lines">
+      @for (line of day().lines; track $index) {
+        <div class="line-row">
+          <span>{{ line.coIdent }}</span>
+          <input
+            aria-label="Leistungsbeschreibung"
+            [disabled]="!canEdit()"
+            [ngModel]="line.description"
+            (ngModelChange)="updateLine($index, { description: $event })"
+          />
+          <input
+            aria-label="Stunden"
+            type="number"
+            min="0"
+            max="24"
+            step="0.25"
+            [disabled]="!canEdit()"
+            [ngModel]="line.hours"
+            (ngModelChange)="updateLine($index, { hours: +$event })"
+          />
+          <button
+            type="button"
+            aria-label="Position entfernen"
+            [disabled]="!canEdit()"
+            (click)="removeLine($index)"
+          >
+            ✕
+          </button>
+        </div>
+      } @empty {
+        <p class="empty-hint">Noch keine Positionen für diesen Tag.</p>
       }
-    </ul>
-  }
+    </div>
 
-  <footer class="summary">
-    <span>Status: {{ statusLabel() }}</span>
-    <strong>{{ totalHours() | number: "1.0-2" }} Std.</strong>
-  </footer>
-</section>
+    @if (canEdit() && problems().length > 0) {
+      <ul class="problems" data-testid="timesheet-problems">
+        @for (problem of problems(); track problem.field + problem.code) {
+          <li>{{ problem.message }}</li>
+        }
+      </ul>
+    }
 
-<section class="actions">
-  <button
-    type="button"
-    [disabled]="!canEdit()"
-    (click)="save()"
-    data-testid="save-draft"
-  >
-    Entwurf speichern
-  </button>
-  <button
-    type="button"
-    [disabled]="!canSubmit()"
-    (click)="submit()"
-    data-testid="submit-timesheet"
-  >
-    Zur Genehmigung freigeben
-  </button>
-  @if (message()) {
-    <span class="message">{{ message() }}</span>
-  }
-</section>
+    <footer class="summary">
+      <span>Status: {{ statusLabel() }}</span>
+      <strong>{{ totalHours() | number: "1.0-2" }} Std.</strong>
+    </footer>
+  </section>
+
+  <section class="actions">
+    <button
+      type="button"
+      [disabled]="!canEdit() || busy.active()"
+      [attr.aria-busy]="busy.active()"
+      (click)="save()"
+      data-testid="save-draft"
+    >
+      {{ busy.active() ? "Wird gespeichert …" : "Entwurf speichern" }}
+    </button>
+    <button
+      type="button"
+      [disabled]="!canSubmit() || busy.active()"
+      [attr.aria-busy]="busy.active()"
+      (click)="submit()"
+      data-testid="submit-timesheet"
+    >
+      Zur Genehmigung freigeben
+    </button>
+    @if (message()) {
+      <span class="message">{{ message() }}</span>
+    }
+  </section>
+}
