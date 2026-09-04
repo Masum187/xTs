@@ -68,14 +68,14 @@ MM-Bestellungen im Bestelldaten-Job-Stub: nur `700000000004` -> `4500001234`. Ei
 
 Stundenzettel (`E` Entwurf, `F` freigegeben, `G` genehmigt, `A` zurueckgewiesen):
 
-| Mitarbeiter | Datum      | Kontierung     | Std. | Status | Bemerkung                                                     |
-| ----------- | ---------- | -------------- | ---- | ------ | ------------------------------------------------------------- |
-| SCHILZ      | 2026-04-13 | `700000000004` | 2    | E      | Standard-Einstiegstag (neuester Tag)                          |
-| SCHILZ      | 2026-04-10 | `600000000001` | 7.5  | A      | Grund: "Bitte Projektreferenz in der Beschreibung ergaenzen." |
-| SCHILZ      | 2026-04-09 | `700000000004` | 8    | G      | genehmigt ohne WE-Beleg (Live-Circle: "WE ausstehend")        |
-| SCHILZ      | 2026-04-08 | `700000000004` | 8    | F      | wartet auf Genehmigung                                        |
-| ROEPER      | 2026-04-08 | `600000000001` | 8    | F      | wartet auf Genehmigung                                        |
-| ROEPER      | 2026-03-31 | `600000000001` | 7.5  | F      | wartet auf Genehmigung                                        |
+| Mitarbeiter | Datum      | Kontierung     | Std. | Status | Bemerkung                                                                                                                           |
+| ----------- | ---------- | -------------- | ---- | ------ | ----------------------------------------------------------------------------------------------------------------------------------- |
+| SCHILZ      | 2026-04-13 | `700000000004` | 2    | E      | Standard-Einstiegstag (neuester Tag); Arbeitszeit 8,5 Std. mit Abweichungsbegruendung "Restzeit interne Abstimmung ohne Kontierung" |
+| SCHILZ      | 2026-04-10 | `600000000001` | 7.5  | A      | Grund: "Bitte Projektreferenz in der Beschreibung ergaenzen."                                                                       |
+| SCHILZ      | 2026-04-09 | `700000000004` | 8    | G      | genehmigt ohne WE-Beleg (Live-Circle: "WE ausstehend")                                                                              |
+| SCHILZ      | 2026-04-08 | `700000000004` | 8    | F      | wartet auf Genehmigung                                                                                                              |
+| ROEPER      | 2026-04-08 | `600000000001` | 8    | F      | wartet auf Genehmigung                                                                                                              |
+| ROEPER      | 2026-03-31 | `600000000001` | 7.5  | F      | wartet auf Genehmigung                                                                                                              |
 
 ## 4. UAT-Drehbuch
 

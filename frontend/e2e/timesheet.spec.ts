@@ -65,8 +65,50 @@ test("blocks invalid hours, times and breaks before anything is sent", async ({
   await page.locator("label:has-text('Pause') input").fill("-30");
   await expect(problems).toContainText("Pause");
   await page.locator("label:has-text('Pause') input").fill("30");
+  // 08:30–17:30 mit 30 Min. Pause = 8,5 Std. Arbeitszeit bei 8 Std. Positionen.
+  await expect(page.getByTestId("work-hours")).toContainText("8,5 Std.");
+  await expect(page.getByTestId("day-variance")).toContainText("−0,5 Std.");
+  await expect(problems).toContainText("weicht von der Arbeitszeit");
+  await expect(page.getByTestId("submit-timesheet")).toBeDisabled();
+  await page
+    .getByLabel("Abweichungsbegründung")
+    .fill("Reisezeit ohne Kontierung");
   await expect(problems).toBeHidden();
   await expect(page.getByTestId("submit-timesheet")).toBeEnabled();
+  await page.locator("label:has-text('Geht') input").fill("17:00");
+  await expect(page.getByTestId("day-variance")).toContainText("0 Std.");
+  await expect(page.getByLabel("Abweichungsbegründung")).toHaveCount(0);
+});
+
+test("approvers see work time and explained variances", async ({
+  page,
+  request,
+}) => {
+  await request.post("http://127.0.0.1:4010/odata/TimesheetDays", {
+    data: {
+      extNr: "SCHILZ",
+      date: "2026-04-05",
+      startTime: "08:00",
+      endTime: "16:30",
+      breakMinutes: 30,
+      location: "on-site",
+      status: "F",
+      varianceReason: "Anreise zum Kunden",
+      lines: [{ coIdent: "700000000004", description: "Workshop", hours: 6 }],
+    },
+  });
+  await page.goto("/");
+  await page
+    .getByTestId("persona-select")
+    .selectOption("christian.roeper@qualitytimes.de");
+  await page.getByRole("link", { name: "Genehmigung" }).click();
+  await expect(page.getByTestId("worktime-SCHILZ-2026-04-05")).toContainText(
+    "08:00–16:30 · Pause 30 Min. · Arbeitszeit 8 Std.",
+  );
+  await expect(page.getByTestId("variance-SCHILZ-2026-04-05")).toContainText(
+    "Abweichung −2 Std. · Anreise zum Kunden",
+  );
+  await expect(page.getByTestId("variance-SCHILZ-2026-04-08")).toHaveCount(0);
 });
 
 test("locks approved days and blocks exhausted cost objects", async ({
@@ -140,6 +182,11 @@ test("blocks bookings beyond the open quota before sending", async ({
 
   if (remaining >= 0.25) {
     await hours.fill(String(remaining));
+    // Die Restbuchung weicht von der Arbeitszeit ab und braucht eine Begruendung.
+    const reason = page.getByLabel("Abweichungsbegründung");
+    if ((await reason.count()) > 0) {
+      await reason.fill("Kontingentprobe");
+    }
     await expect(page.getByTestId("timesheet-problems")).toBeHidden();
     await page.getByTestId("save-draft").click();
     await expect(page.locator(".actions .message")).toContainText(

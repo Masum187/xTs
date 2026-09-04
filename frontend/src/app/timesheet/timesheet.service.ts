@@ -49,6 +49,7 @@ export class TimesheetService {
       breakMinutes: day.breakMinutes,
       location: day.location,
       status: day.status,
+      varianceReason: day.varianceReason,
       lines: day.lines.map(({ coIdent, description, hours }) => ({
         coIdent,
         description,

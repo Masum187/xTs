@@ -195,6 +195,7 @@ export const timesheets = [
     breakMinutes: 30,
     location: "remote",
     status: "E",
+    varianceReason: "Restzeit interne Abstimmung ohne Kontierung",
     lines: [
       {
         coIdent: "700000000004",

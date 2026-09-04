@@ -55,6 +55,29 @@
             <span
               >{{ day.date | date: "dd.MM.yyyy" }} · {{ day.location }}</span
             >
+            <span
+              class="worktime-line"
+              [attr.data-testid]="'worktime-' + day.extNr + '-' + day.date"
+            >
+              {{ day.startTime }}–{{ day.endTime }} · Pause
+              {{ day.breakMinutes }} Min. · Arbeitszeit
+              @if (day.workHours !== null && day.workHours !== undefined) {
+                {{ day.workHours | number: "1.0-2" }} Std.
+              } @else {
+                –
+              }
+            </span>
+            @if (varianceOf(day); as variance) {
+              <span
+                class="variance-line"
+                [attr.data-testid]="'variance-' + day.extNr + '-' + day.date"
+              >
+                Abweichung {{ variance }} Std.
+                @if (day.varianceReason) {
+                  · {{ day.varianceReason }}
+                }
+              </span>
+            }
           </div>
           <strong>{{ totalHours(day) | number: "1.0-2" }} Std.</strong>
         </header>

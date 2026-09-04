@@ -168,7 +168,7 @@ test("rejects timesheet lines without active enablement", async () => {
       extNr: "SCHILZ",
       date: "2026-04-14",
       startTime: "08:30",
-      endTime: "17:30",
+      endTime: "17:00",
       breakMinutes: 30,
       location: "remote",
       status: "F",
@@ -191,7 +191,7 @@ test("rejects timesheet lines outside the enabled period", async () => {
       extNr: "SCHILZ",
       date: "2027-03-01",
       startTime: "08:30",
-      endTime: "17:30",
+      endTime: "17:00",
       breakMinutes: 30,
       location: "remote",
       status: "E",
@@ -241,18 +241,20 @@ test("upserts saved timesheet and returns it on next read", async () => {
     breakMinutes: 45,
     location: "remote",
     status: "F",
+    varianceReason: "Reisezeit ohne Kontierung",
     lines: [{ coIdent: "700000000004", description: "Sprint", hours: 6 }],
   };
   const saveResponse = await routeRequest(
     request("POST", "/odata/TimesheetDays", draft),
   );
   assert.equal(saveResponse.status, 201);
-  assert.deepEqual(JSON.parse(saveResponse.body), draft);
+  const stored = { ...draft, workHours: 7.75 };
+  assert.deepEqual(JSON.parse(saveResponse.body), stored);
 
   const readResponse = await routeRequest(
     request("GET", "/odata/MyTimesheets?date=2026-04-13"),
   );
-  assert.deepEqual(JSON.parse(readResponse.body).value, [draft]);
+  assert.deepEqual(JSON.parse(readResponse.body).value, [stored]);
 });
 
 test("creates a new day for an unknown date", async () => {
@@ -428,6 +430,7 @@ test("budget monitor traffic light turns red from customizing thresholds", async
         endTime: "23:00",
         breakMinutes: 0,
         location: "remote",
+        varianceReason: "Testdaten: Positionssumme weicht bewusst ab",
         status: "F",
         lines: [
           { coIdent: "600000000009", description: "Altprojekt", hours: 20 },
@@ -1819,6 +1822,7 @@ test("critical status changes are written to the audit log", async () => {
       endTime: "17:30",
       breakMinutes: 30,
       location: "remote",
+      varianceReason: "Testdaten: Positionssumme weicht bewusst ab",
       status: "F",
       lines: [{ coIdent: "700000000004", description: "Daily", hours: 2 }],
     }),
@@ -2762,4 +2766,94 @@ test("hour arithmetic works in whole minutes without floating point drift", asyn
   );
   assert.equal(budgetRow.consumedPercent, 2.5);
   assert.equal(budgetRow.remainingHours, 312);
+});
+
+test("work hours are derived from the day header and variances need a reason to submit", async () => {
+  const draft = await saveDay({
+    startTime: "08:30",
+    endTime: "17:00",
+    breakMinutes: 30,
+    lines: [{ coIdent: "700000000004", description: "Konzept", hours: 6 }],
+  });
+  assert.equal(draft.status, 201);
+  assert.equal(draft.body.workHours, 8);
+  assert.equal(draft.body.varianceReason, undefined);
+
+  const unexplained = await saveDay({
+    status: "F",
+    startTime: "08:30",
+    endTime: "17:00",
+    breakMinutes: 30,
+    lines: [{ coIdent: "700000000004", description: "Konzept", hours: 6 }],
+  });
+  assert.equal(unexplained.status, 400);
+  assert.equal(unexplained.body.problems[0].code, "VARIANCE_REASON_REQUIRED");
+  assert.match(
+    unexplained.body.message,
+    /6 Std\.\) weicht von der Arbeitszeit \(8 Std\.\)/,
+  );
+
+  const blank = await saveDay({
+    status: "F",
+    startTime: "08:30",
+    endTime: "17:00",
+    breakMinutes: 30,
+    varianceReason: "   ",
+    lines: [{ coIdent: "700000000004", description: "Konzept", hours: 6 }],
+  });
+  assert.equal(blank.status, 400);
+
+  const explained = await saveDay({
+    status: "F",
+    startTime: "08:30",
+    endTime: "17:00",
+    breakMinutes: 30,
+    varianceReason: "  Reisezeit ohne Kontierung  ",
+    lines: [{ coIdent: "700000000004", description: "Konzept", hours: 6 }],
+  });
+  assert.equal(explained.status, 201);
+  assert.equal(explained.body.workHours, 8);
+  assert.equal(explained.body.varianceReason, "Reisezeit ohne Kontierung");
+
+  const matching = await saveDay({
+    date: "2026-05-19",
+    status: "F",
+    startTime: "08:30",
+    endTime: "17:00",
+    breakMinutes: 30,
+    lines: [
+      { coIdent: "700000000004", description: "a", hours: 7.75 },
+      { coIdent: "700000000004", description: "b", hours: 0.25 },
+    ],
+  });
+  assert.equal(matching.status, 201);
+
+  const tooLong = await saveDay({
+    date: "2026-05-20",
+    varianceReason: "x".repeat(256),
+    lines: [{ coIdent: "700000000004", description: "a", hours: 1 }],
+  });
+  assert.equal(tooLong.status, 400);
+  assert.equal(tooLong.body.problems[0].code, "VARIANCE_REASON_TOO_LONG");
+
+  const clientWorkHours = await saveDay({
+    date: "2026-05-21",
+    startTime: "09:00",
+    endTime: "12:00",
+    breakMinutes: 0,
+    workHours: 99,
+    lines: [{ coIdent: "700000000004", description: "a", hours: 3 }],
+  });
+  assert.equal(clientWorkHours.status, 201);
+  assert.equal(clientWorkHours.body.workHours, 3);
+
+  const fixtures = await routeRequest(
+    request("GET", "/odata/MyTimesheets?date=2026-04-13"),
+  );
+  const fixtureDay = JSON.parse(fixtures.body).value[0];
+  assert.equal(fixtureDay.workHours, 8.5);
+  assert.equal(
+    fixtureDay.varianceReason,
+    "Restzeit interne Abstimmung ohne Kontierung",
+  );
 });

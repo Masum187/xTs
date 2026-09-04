@@ -3,7 +3,32 @@
 // geprueft, bevor irgendetwas gespeichert oder aggregiert wird. Dieselben
 // Regeln gelten im WebClient (frontend/src/app/timesheet/timesheet.logic.ts).
 
+import { fromMinutes, toMinutes } from "./hours.js";
+
 export const HOURS_STEP = 0.25;
+export const MAX_VARIANCE_REASON_LENGTH = 255;
+const hoursFormat = new Intl.NumberFormat("de-DE", {
+  maximumFractionDigits: 2,
+});
+
+export function formatHours(hours) {
+  return hoursFormat.format(hours);
+}
+
+/** Arbeitszeit in Minuten aus Kommt, Geht und Pause; null, wenn nicht berechenbar. */
+export function workMinutesOf(day) {
+  if (!isValidTime(day?.startTime) || !isValidTime(day?.endTime)) return null;
+  const span = minutesOf(day.endTime) - minutesOf(day.startTime);
+  const pause = Number.isInteger(day.breakMinutes) ? day.breakMinutes : 0;
+  if (span <= 0 || pause < 0 || pause >= span) return null;
+  return span - pause;
+}
+
+/** Berechnete Arbeitszeit in Stunden (Minutenpraezision) oder null. */
+export function workHoursOf(day) {
+  const minutes = workMinutesOf(day);
+  return minutes === null ? null : fromMinutes(minutes);
+}
 export const MAX_DAY_HOURS = 24;
 export const MAX_DESCRIPTION_LENGTH = 255;
 export const LOCATIONS = ["remote", "on-site"];
@@ -143,6 +168,26 @@ export function validateTimesheetPayload(day, status) {
     );
   }
 
+  if (day.varianceReason !== undefined) {
+    if (typeof day.varianceReason !== "string") {
+      problems.push(
+        problem(
+          "varianceReason",
+          "VARIANCE_REASON_INVALID",
+          "Die Abweichungsbegründung muss Text sein.",
+        ),
+      );
+    } else if (day.varianceReason.length > MAX_VARIANCE_REASON_LENGTH) {
+      problems.push(
+        problem(
+          "varianceReason",
+          "VARIANCE_REASON_TOO_LONG",
+          `Die Abweichungsbegründung darf höchstens ${MAX_VARIANCE_REASON_LENGTH} Zeichen haben.`,
+        ),
+      );
+    }
+  }
+
   if (!Array.isArray(day.lines)) {
     problems.push(
       problem(
@@ -236,6 +281,30 @@ export function validateTimesheetPayload(day, status) {
     }
     total += line.hours;
   });
+  // Tagesdifferenz (Konzept §10, Audit Nr. 2): Positionssumme muss zur
+  // Arbeitszeit passen oder begruendet abweichen. Ohne Stunden greift die
+  // Freigabepruefung (SUBMIT_REQUIRES_HOURS), daher nur bei total > 0.
+  const workMinutes = workMinutesOf(day);
+  const totalMinutes = toMinutes(total);
+  const hasLineProblems = problems.some((item) =>
+    item.field.startsWith("lines"),
+  );
+  if (
+    submitting &&
+    workMinutes !== null &&
+    totalMinutes > 0 &&
+    !hasLineProblems &&
+    totalMinutes !== workMinutes &&
+    !(typeof day.varianceReason === "string" && day.varianceReason.trim())
+  ) {
+    problems.push(
+      problem(
+        "varianceReason",
+        "VARIANCE_REASON_REQUIRED",
+        `Die Positionssumme (${formatHours(fromMinutes(totalMinutes))} Std.) weicht von der Arbeitszeit (${formatHours(fromMinutes(workMinutes))} Std.) ab: bitte die Abweichung begründen.`,
+      ),
+    );
+  }
   if (total > MAX_DAY_HOURS) {
     problems.push(
       problem(

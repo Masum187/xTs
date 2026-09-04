@@ -3,16 +3,19 @@ import { Component, computed, inject, signal } from "@angular/core";
 import { FormsModule } from "@angular/forms";
 
 import { describeApiError } from "../shared/api-error";
+import { formatSignedHours } from "../shared/hours";
 
 import {
   canEditTimesheet,
   canSubmitTimesheet,
   createEmptyDay,
+  dayVariance,
   isCostObjectBookable,
   quotaProblems,
   shiftDate,
   sumLineHours,
   validateTimesheetDay,
+  workHoursOf,
 } from "./timesheet.logic";
 import { AuthService } from "../auth/auth.service";
 import type {
@@ -50,6 +53,14 @@ export class TimesheetComponent {
   protected readonly totalHours = computed(() =>
     sumLineHours(this.day().lines),
   );
+  /** Arbeitszeit aus Kommt, Geht und Pause (XTS-052) oder null. */
+  protected readonly workHours = computed(() => workHoursOf(this.day()));
+  /** Tagesdifferenz Positionssumme minus Arbeitszeit (XTS-053) oder null. */
+  protected readonly variance = computed(() => dayVariance(this.day()));
+  protected readonly varianceLabel = computed(() => {
+    const variance = this.variance();
+    return variance === null ? "–" : `${formatSignedHours(variance)} Std.`;
+  });
   protected readonly canEdit = computed(() => canEditTimesheet(this.day()));
   /** Kontingentprobleme gegen die zuletzt geladenen Freischaltungen. */
   protected readonly quotaIssues = computed(() =>

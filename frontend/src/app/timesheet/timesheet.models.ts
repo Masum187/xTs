@@ -25,6 +25,10 @@ export interface TimesheetDay {
   breakMinutes: number;
   location: "remote" | "on-site";
   status: TimesheetStatus;
+  /** Servergefuehrte Arbeitszeit aus Kommt, Geht und Pause (Stunden) oder null. */
+  workHours?: number | null;
+  /** Begruendung, wenn die Positionssumme von der Arbeitszeit abweicht. */
+  varianceReason?: string;
   rejectionReason?: string;
   approvedBy?: string;
   approvedAt?: string;

@@ -83,6 +83,39 @@
       </select>
     </label>
   </div>
+  <div class="worktime" data-testid="worktime">
+    <span>
+      Arbeitszeit
+      <strong data-testid="work-hours">
+        @if (workHours(); as hours) {
+          {{ hours | number: "1.0-2" }} Std.
+        } @else {
+          –
+        }
+      </strong>
+    </span>
+    <span>
+      Positionen
+      <strong>{{ totalHours() | number: "1.0-2" }} Std.</strong>
+    </span>
+    <span [class.variance-off]="variance() !== null && variance() !== 0">
+      Differenz
+      <strong data-testid="day-variance">{{ varianceLabel() }}</strong>
+    </span>
+  </div>
+  @if (variance() !== null && variance() !== 0) {
+    <label class="variance-reason">
+      Begründung der Abweichung
+      <input
+        aria-label="Abweichungsbegründung"
+        placeholder="z. B. Reisezeit ohne Kontierung"
+        maxlength="255"
+        [disabled]="!canEdit()"
+        [ngModel]="day().varianceReason ?? ''"
+        (ngModelChange)="updateDay({ varianceReason: $event })"
+      />
+    </label>
+  }
 </section>
 
 <section class="panel">

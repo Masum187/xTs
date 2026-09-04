@@ -34,7 +34,10 @@ import {
 import { buildResourceLifecycle } from "./lifecycle.js";
 import { sumHours } from "./hours.js";
 import { messageFor } from "./messages.js";
-import { validateTimesheetPayload } from "./timesheet-validation.js";
+import {
+  validateTimesheetPayload,
+  workHoursOf,
+} from "./timesheet-validation.js";
 import { buildBudgetMonitor, buildCostObjectQuota } from "./reporting.js";
 
 const timesheetKey = (day) => `${day.extNr}|${day.date}`;
@@ -56,7 +59,11 @@ resetTimesheetStore();
 
 export function resetTimesheetStore() {
   timesheetStore = new Map(
-    timesheets.map((day) => [timesheetKey(day), structuredClone(day)]),
+    timesheets.map((day) => {
+      const stored = structuredClone(day);
+      stored.workHours = workHoursOf(stored);
+      return [timesheetKey(day), stored];
+    }),
   );
   planningStore = structuredClone(planningEntries);
   ordersState = {
@@ -87,6 +94,7 @@ const TIMESHEET_FIELDS = [
   "endTime",
   "breakMinutes",
   "location",
+  "varianceReason",
 ];
 const TIMESHEET_LINE_FIELDS = ["coIdent", "description", "hours"];
 const PROTECTED_TIMESHEET_FIELDS = [
@@ -816,6 +824,13 @@ export async function routeRequest(request) {
     }
     if (status === "F" && !hasBookedHours(saved)) {
       return json({ error: "SUBMIT_REQUIRES_HOURS" }, 409);
+    }
+    // Servergefuehrte Arbeitszeit (ZXTS_TIME_T-ARBEITSZEIT); leere
+    // Begruendung wird nicht gespeichert.
+    saved.workHours = workHoursOf(saved);
+    if (typeof saved.varianceReason === "string") {
+      saved.varianceReason = saved.varianceReason.trim();
+      if (!saved.varianceReason) delete saved.varianceReason;
     }
     const enablementError = validateTimesheetEnablement(
       saved,

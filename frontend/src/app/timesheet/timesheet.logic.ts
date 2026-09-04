@@ -1,4 +1,11 @@
-import { addHours, sumHours } from "../shared/hours";
+import {
+  addHours,
+  formatHours,
+  fromMinutes,
+  subtractHours,
+  sumHours,
+  toMinutes,
+} from "../shared/hours";
 import type { EnabledCostObject, TimesheetDay } from "./timesheet.models";
 
 export function sumLineHours(lines: TimesheetDay["lines"]): number {
@@ -21,6 +28,27 @@ export function canSubmitTimesheet(day: TimesheetDay): boolean {
 export const HOURS_STEP = 0.25;
 export const MAX_DAY_HOURS = 24;
 export const MAX_DESCRIPTION_LENGTH = 255;
+export const MAX_VARIANCE_REASON_LENGTH = 255;
+
+/** Arbeitszeit in Minuten aus Kommt, Geht und Pause; null, wenn nicht berechenbar. */
+export function workMinutesOf(day: TimesheetDay): number | null {
+  if (!isValidTime(day.startTime) || !isValidTime(day.endTime)) return null;
+  const span = minutesOf(day.endTime) - minutesOf(day.startTime);
+  const pause = Number.isInteger(day.breakMinutes) ? day.breakMinutes : 0;
+  if (span <= 0 || pause < 0 || pause >= span) return null;
+  return span - pause;
+}
+
+export function workHoursOf(day: TimesheetDay): number | null {
+  const minutes = workMinutesOf(day);
+  return minutes === null ? null : fromMinutes(minutes);
+}
+
+/** Tagesdifferenz = Positionssumme minus Arbeitszeit (Stunden) oder null. */
+export function dayVariance(day: TimesheetDay): number | null {
+  const work = workHoursOf(day);
+  return work === null ? null : subtractHours(sumLineHours(day.lines), work);
+}
 
 export type TimesheetValidationMode = "draft" | "submit";
 
@@ -152,6 +180,33 @@ export function validateTimesheetDay(
       "Die Summe der Positionen darf 24 Stunden nicht überschreiten.",
     );
   }
+  const reason = day.varianceReason ?? "";
+  if (reason.length > MAX_VARIANCE_REASON_LENGTH) {
+    push(
+      "varianceReason",
+      "VARIANCE_REASON_TOO_LONG",
+      `Die Abweichungsbegründung darf höchstens ${MAX_VARIANCE_REASON_LENGTH} Zeichen haben.`,
+    );
+  }
+  const workMinutes = workMinutesOf(day);
+  const totalMinutes = toMinutes(total);
+  const hasLineProblems = problems.some((item) =>
+    item.field.startsWith("lines"),
+  );
+  if (
+    submitting &&
+    workMinutes !== null &&
+    totalMinutes > 0 &&
+    !hasLineProblems &&
+    totalMinutes !== workMinutes &&
+    !reason.trim()
+  ) {
+    push(
+      "varianceReason",
+      "VARIANCE_REASON_REQUIRED",
+      `Die Positionssumme (${formatHours(fromMinutes(totalMinutes))} Std.) weicht von der Arbeitszeit (${formatHours(fromMinutes(workMinutes))} Std.) ab: bitte die Abweichung begründen.`,
+    );
+  }
   return problems;
 }
 
@@ -206,7 +261,7 @@ export function quotaProblems(
       problems.push({
         field: "lines",
         code: "QUOTA_EXCEEDED",
-        message: `Kontierung ${coIdent}: ${hours} Std. angefragt, aber nur ${available} Std. offen.`,
+        message: `Kontierung ${coIdent}: ${formatHours(hours)} Std. angefragt, aber nur ${formatHours(available)} Std. offen.`,
       });
     }
   }
@@ -220,11 +275,12 @@ export function shiftDate(date: string, days: number): string {
 }
 
 export function createEmptyDay(extNr: string, date: string): TimesheetDay {
+  // Standard 08:30–17:00 mit 30 Min. Pause = 8 Std. Arbeitszeit.
   return {
     extNr,
     date,
     startTime: "08:30",
-    endTime: "17:30",
+    endTime: "17:00",
     breakMinutes: 30,
     location: "remote",
     status: "E",
