@@ -84,6 +84,8 @@ export class AdminComponent {
 
   protected readonly costObjectTypes = COST_OBJECT_TYPES;
   protected readonly loader = new LoadState();
+  /** Eigener Zustand fuer das Protokoll, das auch per Filter neu laedt. */
+  protected readonly auditLoader = new LoadState();
   protected readonly busy = new BusyState();
 
   protected readonly employees = signal<Employee[]>([]);
@@ -322,30 +324,46 @@ export class AdminComponent {
   }
 
   private async loadAll(): Promise<void> {
-    await this.loader.track(async () => {
-      await this.loadEverything();
-    }, "Verwaltungsdaten konnten nicht geladen werden.");
-  }
-
-  private async loadEverything(): Promise<void> {
-    await Promise.all([
-      this.loadEmployees(),
-      this.loadTeams(),
-      this.loadTeamAssignments(),
-      this.loadCostObjects(),
-      this.loadAssignments(),
-      this.adminService.getRules().then((rules) => this.rules.set(rules)),
-      this.loadAuditLog(),
-    ]);
+    await this.loader.track(
+      () =>
+        Promise.all([
+          this.adminService.getEmployees(),
+          this.adminService.getTeams(),
+          this.adminService.getTeamAssignments(),
+          this.adminService.getCostObjects(),
+          this.adminService.getCostObjectAssignments(),
+          this.adminService.getRules(),
+        ]),
+      "Verwaltungsdaten konnten nicht geladen werden.",
+      ([
+        employees,
+        teams,
+        teamAssignments,
+        costObjects,
+        assignments,
+        rules,
+      ]) => {
+        this.employees.set(employees);
+        this.teams.set(teams);
+        this.teamAssignments.set(teamAssignments);
+        this.costObjects.set(costObjects);
+        this.assignments.set(assignments);
+        this.rules.set(rules);
+      },
+    );
+    await this.loadAuditLog();
   }
 
   private async loadAuditLog(): Promise<void> {
-    this.auditEntries.set(
-      await this.adminService.getAuditLog({
-        category: this.auditCategory(),
-        severity: this.auditSeverity(),
-        q: this.auditSearch().trim(),
-      }),
+    await this.auditLoader.track(
+      () =>
+        this.adminService.getAuditLog({
+          category: this.auditCategory(),
+          severity: this.auditSeverity(),
+          q: this.auditSearch().trim(),
+        }),
+      "Protokoll konnte nicht geladen werden.",
+      (entries) => this.auditEntries.set(entries),
     );
   }
 

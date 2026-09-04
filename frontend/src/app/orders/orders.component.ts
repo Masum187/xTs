@@ -35,6 +35,8 @@ export class OrdersComponent {
   private readonly orderTexts = new Map<string, string>();
 
   protected readonly loader = new LoadState();
+  /** Eigener Zustand fuer die Kandidatenliste, die auch per Filter neu laedt. */
+  protected readonly candidatesLoader = new LoadState();
   protected readonly busy = new BusyState();
   protected readonly candidates = signal<OrderCandidate[]>([]);
   protected readonly orders = signal<Order[]>([]);
@@ -155,6 +157,10 @@ export class OrdersComponent {
     void this.load();
   }
 
+  protected reloadCandidates(): void {
+    void this.loadCandidates();
+  }
+
   private async guarded(
     fallback: string,
     action: () => Promise<void>,
@@ -170,27 +176,36 @@ export class OrdersComponent {
   }
 
   private async loadCandidates(): Promise<void> {
-    this.candidates.set(
-      await this.ordersService.getCandidates({
-        extNr: this.filterExtNr(),
-        coIdent: this.filterCoIdent(),
-        from: parseStartMonth(this.filterFrom()) ?? "",
-        to: parseStartMonth(this.filterTo()) ?? "",
-      }),
+    await this.candidatesLoader.track(
+      () =>
+        this.ordersService.getCandidates({
+          extNr: this.filterExtNr(),
+          coIdent: this.filterCoIdent(),
+          from: parseStartMonth(this.filterFrom()) ?? "",
+          to: parseStartMonth(this.filterTo()) ?? "",
+        }),
+      "Beauftragungskandidaten konnten nicht geladen werden.",
+      (candidates) => this.candidates.set(candidates),
     );
   }
 
   private async load(): Promise<void> {
-    await this.loader.track(async () => {
-      await this.loadCandidates();
-      const [orders, protocol] = await Promise.all([
-        this.ordersService.getOrders(),
-        this.ordersService.getProtocol(),
-      ]);
-      this.pruneOrderTexts(orders);
-      this.orders.set(orders);
-      this.protocol.set(protocol);
-    }, "Beauftragungen konnten nicht geladen werden.");
+    await Promise.all([
+      this.loadCandidates(),
+      this.loader.track(
+        () =>
+          Promise.all([
+            this.ordersService.getOrders(),
+            this.ordersService.getProtocol(),
+          ]),
+        "Beauftragungen konnten nicht geladen werden.",
+        ([orders, protocol]) => {
+          this.pruneOrderTexts(orders);
+          this.orders.set(orders);
+          this.protocol.set(protocol);
+        },
+      ),
+    ]);
   }
 
   private pruneOrderTexts(orders: Order[]): void {

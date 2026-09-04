@@ -19,16 +19,27 @@
 
 @if (loader.ready()) {
   <section class="panel day-nav" data-testid="day-nav">
-    <button type="button" (click)="previousDay()" data-testid="previous-day">
+    <button
+      type="button"
+      [disabled]="busy.active()"
+      (click)="previousDay()"
+      data-testid="previous-day"
+    >
       ‹ Vortag
     </button>
     <input
       type="date"
       aria-label="Tagesdatum"
+      [disabled]="busy.active()"
       [ngModel]="day().date"
       (ngModelChange)="openDate($event)"
     />
-    <button type="button" (click)="nextDay()" data-testid="next-day">
+    <button
+      type="button"
+      [disabled]="busy.active()"
+      (click)="nextDay()"
+      data-testid="next-day"
+    >
       Folgetag ›
     </button>
     <span class="status-badge" data-testid="day-status">{{

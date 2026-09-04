@@ -157,9 +157,10 @@ export class PlanningComponent {
           coIdent: this.filterCoIdent(),
         }),
       "Planungsübersicht konnte nicht geladen werden.",
+      (result) => this.overview.set(result),
     );
+    // undefined = Fehler oder von einem neueren Ladevorgang ueberholt.
     if (!overview) return;
-    this.overview.set(overview);
     if (initial) {
       const employees = new Map<string, string>();
       const coIdents = new Map<string, string>();

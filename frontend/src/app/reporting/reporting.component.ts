@@ -130,37 +130,39 @@ export class ReportingComponent {
   }
 
   private async loadLifecycle(): Promise<void> {
-    await this.lifecycleLoader.track(async () => {
-      this.lifecycleRows.set(
-        await this.reportingService.getResourceLifecycle({
+    await this.lifecycleLoader.track(
+      () =>
+        this.reportingService.getResourceLifecycle({
           from: this.lifecycleFrom(),
           to: this.lifecycleTo(),
           ebeln: this.lifecycleEbeln().trim(),
           ebelp: this.lifecycleEbelp().trim(),
         }),
-      );
-    }, "Ressourcen-Live-Circle konnte nicht geladen werden.");
+      "Ressourcen-Live-Circle konnte nicht geladen werden.",
+      (rows) => this.lifecycleRows.set(rows),
+    );
   }
 
   private async loadBudget(): Promise<void> {
-    await this.budgetLoader.track(async () => {
-      this.budgetRows.set(
-        await this.reportingService.getBudgetMonitor(this.budgetDetail()),
-      );
-    }, "Budget-Monitor konnte nicht geladen werden.");
+    await this.budgetLoader.track(
+      () => this.reportingService.getBudgetMonitor(this.budgetDetail()),
+      "Budget-Monitor konnte nicht geladen werden.",
+      (rows) => this.budgetRows.set(rows),
+    );
   }
 
   private async loadQuota(): Promise<void> {
-    await this.quotaLoader.track(async () => {
-      this.quotaRows.set(
-        await this.reportingService.getCostObjectQuota({
+    await this.quotaLoader.track(
+      () =>
+        this.reportingService.getCostObjectQuota({
           lastName: this.quotaLastName(),
           team: this.quotaTeam(),
           from: this.quotaFrom(),
           to: this.quotaTo(),
           detail: this.quotaDayDetail() ? "day" : "none",
         }),
-      );
-    }, "Stundenkontingent-Monitor konnte nicht geladen werden.");
+      "Stundenkontingent-Monitor konnte nicht geladen werden.",
+      (rows) => this.quotaRows.set(rows),
+    );
   }
 }

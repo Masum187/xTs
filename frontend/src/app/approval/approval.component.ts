@@ -127,8 +127,10 @@ export class ApprovalComponent {
   }
 
   private async load(): Promise<void> {
-    await this.loader.track(async () => {
-      this.days.set(await this.approvalService.getApprovalTimesheets());
-    }, "Freigegebene Arbeitstage konnten nicht geladen werden.");
+    await this.loader.track(
+      () => this.approvalService.getApprovalTimesheets(),
+      "Freigegebene Arbeitstage konnten nicht geladen werden.",
+      (days) => this.days.set(days),
+    );
   }
 }

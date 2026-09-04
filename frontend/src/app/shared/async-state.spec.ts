@@ -23,18 +23,38 @@ describe("async state", () => {
     expect(state.value().error).toBe("Laden fehlgeschlagen.");
   });
 
-  it("ignores results of superseded loads", async () => {
+  it("drops results of superseded loads and applies only the latest", async () => {
     const state = new LoadState();
-    let releaseFirst: () => void = () => undefined;
+    const applied: string[] = [];
+    let releaseFirst: (value: string) => void = () => undefined;
     const first = state.track(
-      () => new Promise<void>((resolve) => (releaseFirst = resolve)),
+      () => new Promise<string>((resolve) => (releaseFirst = resolve)),
       "x",
+      (value) => applied.push(value),
+    );
+    const second = await state.track(
+      async () => "neu",
+      "x",
+      (value) => applied.push(value),
+    );
+    expect(second).toBe("neu");
+    releaseFirst("alt");
+    expect(await first).toBeUndefined();
+    expect(applied).toEqual(["neu"]);
+    expect(state.value().status).toBe("ready");
+
+    let releaseSlow: (value: string) => void = () => undefined;
+    const slow = state.track(
+      () => new Promise<string>((resolve) => (releaseSlow = resolve)),
+      "x",
+      (value) => applied.push(value),
     );
     await state.track(async () => {
       throw new Error("second failed");
     }, "Zweiter Fehler");
-    releaseFirst();
-    await first;
+    releaseSlow("zu spät");
+    expect(await slow).toBeUndefined();
+    expect(applied).toEqual(["neu"]);
     expect(state.value().status).toBe("error");
   });
 

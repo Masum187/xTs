@@ -25,57 +25,62 @@
   (retry)="reload()"
 />
 
-@if (loader.ready()) {
-  <fieldset class="plain" [disabled]="busy.active()">
-    <section class="panel">
-      <div class="section-title">
-        <h2>Beauftragungskandidaten</h2>
-        <span>{{ candidates().length }} Vorschläge</span>
-      </div>
-      <p class="hint">
-        Zusammenfassung je Mitarbeiter und Kontierung gemäß Regelwerk — niemals
-        über mehrere Mitarbeiter hinweg.
-      </p>
+<fieldset class="plain" [disabled]="busy.active()">
+  <section class="panel">
+    <div class="section-title">
+      <h2>Beauftragungskandidaten</h2>
+      <span>{{ candidates().length }} Vorschläge</span>
+    </div>
+    <p class="hint">
+      Zusammenfassung je Mitarbeiter und Kontierung gemäß Regelwerk — niemals
+      über mehrere Mitarbeiter hinweg.
+    </p>
 
-      <div class="filters">
-        <label>
-          Mitarbeiter-Nr.
-          <input
-            aria-label="Mitarbeiter-Nr."
-            placeholder="z. B. SCHILZ"
-            [ngModel]="filterExtNr()"
-            (ngModelChange)="updateFilter({ extNr: $event })"
-          />
-        </label>
-        <label>
-          Kontierung
-          <input
-            aria-label="Kontierung"
-            placeholder="z. B. 700000000004"
-            [ngModel]="filterCoIdent()"
-            (ngModelChange)="updateFilter({ coIdent: $event })"
-          />
-        </label>
-        <label>
-          Zeitraum von
-          <input
-            aria-label="Zeitraum von"
-            placeholder="MM.JJJJ"
-            [ngModel]="filterFrom()"
-            (ngModelChange)="updateFilter({ from: $event })"
-          />
-        </label>
-        <label>
-          Zeitraum bis
-          <input
-            aria-label="Zeitraum bis"
-            placeholder="MM.JJJJ"
-            [ngModel]="filterTo()"
-            (ngModelChange)="updateFilter({ to: $event })"
-          />
-        </label>
-      </div>
+    <div class="filters">
+      <label>
+        Mitarbeiter-Nr.
+        <input
+          aria-label="Mitarbeiter-Nr."
+          placeholder="z. B. SCHILZ"
+          [ngModel]="filterExtNr()"
+          (ngModelChange)="updateFilter({ extNr: $event })"
+        />
+      </label>
+      <label>
+        Kontierung
+        <input
+          aria-label="Kontierung"
+          placeholder="z. B. 700000000004"
+          [ngModel]="filterCoIdent()"
+          (ngModelChange)="updateFilter({ coIdent: $event })"
+        />
+      </label>
+      <label>
+        Zeitraum von
+        <input
+          aria-label="Zeitraum von"
+          placeholder="MM.JJJJ"
+          [ngModel]="filterFrom()"
+          (ngModelChange)="updateFilter({ from: $event })"
+        />
+      </label>
+      <label>
+        Zeitraum bis
+        <input
+          aria-label="Zeitraum bis"
+          placeholder="MM.JJJJ"
+          [ngModel]="filterTo()"
+          (ngModelChange)="updateFilter({ to: $event })"
+        />
+      </label>
+    </div>
 
+    <xts-load-status
+      [state]="candidatesLoader.value()"
+      loadingText="Beauftragungskandidaten werden geladen …"
+      (retry)="reloadCandidates()"
+    />
+    @if (candidatesLoader.ready()) {
       <div class="cards" data-testid="candidate-list">
         @for (candidate of candidates(); track candidateKey(candidate)) {
           <article
@@ -118,8 +123,10 @@
           </p>
         }
       </div>
-    </section>
+    }
+  </section>
 
+  @if (loader.ready()) {
     <section class="panel">
       <div class="section-title">
         <h2>Beauftragungen</h2>
@@ -224,5 +231,5 @@
         }
       </div>
     </section>
-  </fieldset>
-}
+  }
+</fieldset>

@@ -21,18 +21,23 @@ export class LoadState {
 
   /**
    * Fuehrt einen Ladevorgang aus. Bei einem Fehler bleibt der Zustand
-   * "error" mit verstaendlicher Meldung; ein spaeterer Aufruf ueberschreibt
-   * das Ergebnis eines aelteren, noch laufenden Aufrufs nicht.
+   * "error" mit verstaendlicher Meldung. Wird der Aufruf von einem neueren
+   * ueberholt, verwirft `track` sein Ergebnis: `apply` wird nicht aufgerufen
+   * und der Rueckgabewert ist `undefined`, damit alte Antworten nie neuere
+   * Daten ueberschreiben.
    */
   async track<T>(
     work: () => Promise<T>,
     fallback: string,
+    apply?: (result: T) => void,
   ): Promise<T | undefined> {
     const id = ++this.run;
     this.value.set({ status: "loading", error: null });
     try {
       const result = await work();
-      if (id === this.run) this.value.set({ status: "ready", error: null });
+      if (id !== this.run) return undefined;
+      apply?.(result);
+      this.value.set({ status: "ready", error: null });
       return result;
     } catch (error) {
       if (id === this.run) {

@@ -65,7 +65,10 @@ export class TimesheetComponent {
     const variance = this.variance();
     return variance === null ? "–" : `${formatSignedHours(variance)} Std.`;
   });
-  protected readonly canEdit = computed(() => canEditTimesheet(this.day()));
+  /** Bearbeitbar nur im Status E/A und solange keine Anfrage laeuft. */
+  protected readonly canEdit = computed(
+    () => canEditTimesheet(this.day()) && !this.busy.active(),
+  );
   /** Kontingentprobleme gegen die zuletzt geladenen Freischaltungen. */
   protected readonly quotaIssues = computed(() =>
     quotaProblems(
@@ -243,21 +246,25 @@ export class TimesheetComponent {
   }
 
   private async loadInitialData(): Promise<void> {
-    await this.loader.track(async () => {
-      const [costObjects, timesheets] = await Promise.all([
-        this.timesheetService.getEnabledCostObjects(),
-        this.timesheetService.getMyTimesheets(),
-      ]);
-      this.costObjects.set(costObjects);
-      this.savedDays.clear();
-      for (const day of timesheets) {
-        this.savedDays.set(day.date, day);
-      }
-      const latestDate =
-        timesheets[0]?.date ?? new Date().toISOString().slice(0, 10);
-      this.openDate(latestDate);
-      const extNr = this.currentExtNr();
-      this.day.update((day) => ({ ...day, extNr }));
-    }, "Stundenzettel konnten nicht geladen werden.");
+    await this.loader.track(
+      () =>
+        Promise.all([
+          this.timesheetService.getEnabledCostObjects(),
+          this.timesheetService.getMyTimesheets(),
+        ]),
+      "Stundenzettel konnten nicht geladen werden.",
+      ([costObjects, timesheets]) => {
+        this.costObjects.set(costObjects);
+        this.savedDays.clear();
+        for (const day of timesheets) {
+          this.savedDays.set(day.date, day);
+        }
+        const latestDate =
+          timesheets[0]?.date ?? new Date().toISOString().slice(0, 10);
+        this.openDate(latestDate);
+        const extNr = this.currentExtNr();
+        this.day.update((day) => ({ ...day, extNr }));
+      },
+    );
   }
 }

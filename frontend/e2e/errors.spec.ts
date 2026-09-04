@@ -38,6 +38,11 @@ test("a slow save locks the buttons and sends exactly one request", async ({
   await expect(save).toBeDisabled();
   await expect(save).toContainText("Wird gespeichert");
   await expect(page.getByTestId("submit-timesheet")).toBeDisabled();
+  // Waehrend der Anfrage sind auch Datum, Tageskopf und Positionen gesperrt.
+  await expect(page.getByLabel("Tagesdatum")).toBeDisabled();
+  await expect(page.locator("label:has-text('Kommt') input")).toBeDisabled();
+  await expect(page.getByLabel("Stunden").last()).toBeDisabled();
+  await expect(page.getByTestId("add-line")).toBeDisabled();
   await save.click({ force: true }).catch(() => undefined);
   await expect(page.locator(".actions .message")).toContainText(
     "Entwurf gespeichert.",
@@ -75,6 +80,38 @@ test("load errors show a message with retry instead of an empty list", async ({
   await page.getByTestId("retry").click();
   await expect(page.getByTestId("approval-list")).toBeVisible();
   await expect(page.getByTestId("load-error")).toHaveCount(0);
+});
+
+test("filter reloads use the same error state with retry", async ({ page }) => {
+  let fail = false;
+  await page.route(`${API}/OrderCandidates*`, async (route) => {
+    if (fail) {
+      await route.fulfill({
+        status: 500,
+        contentType: "application/json",
+        body: JSON.stringify({ error: "INTERNAL", message: "Kandidaten weg" }),
+      });
+      return;
+    }
+    await route.continue();
+  });
+  await page.goto("/");
+  await page
+    .getByTestId("persona-select")
+    .selectOption("christian.roeper@qualitytimes.de");
+  await page.getByRole("link", { name: "Beauftragung" }).click();
+  await expect(page.getByTestId("candidate-list")).toBeVisible();
+
+  fail = true;
+  await page.getByLabel("Mitarbeiter-Nr.").fill("ROEPER");
+  await expect(page.getByTestId("load-error")).toContainText("Kandidaten weg");
+  await expect(page.getByTestId("candidate-list")).toHaveCount(0);
+  await expect(page.getByTestId("orders-table")).toBeVisible();
+
+  fail = false;
+  await page.getByTestId("retry").click();
+  await expect(page.getByTestId("candidate-list")).toBeVisible();
+  await expect(page.getByTestId("candidate-ROEPER-600000000001")).toBeVisible();
 });
 
 test("a slow load shows a loading state before the data", async ({ page }) => {

@@ -100,52 +100,62 @@
           />
         </label>
       </div>
-      <div class="table-wrap">
-        <table data-testid="audit-table" class="audit">
-          <thead>
-            <tr>
-              <th>Zeit</th>
-              <th>Akteur</th>
-              <th>Kategorie</th>
-              <th>Objekt</th>
-              <th>Von → Nach</th>
-              <th>Meldung</th>
-            </tr>
-          </thead>
-          <tbody>
-            @for (entry of auditEntries(); track entry.id) {
-              <tr
-                [attr.data-testid]="'audit-' + entry.id"
-                [class.error-row]="entry.severity === 'error'"
-              >
-                <td class="stamp">{{ formatTime(entry.at) }}</td>
-                <td>{{ entry.actor }}</td>
-                <td>
-                  <span class="tag" [class.error]="entry.severity === 'error'">
-                    {{ categoryLabel(entry.category) }}
-                  </span>
-                </td>
-                <td>
-                  {{ entry.object }}
-                  <span class="sub">{{ entry.objectKey }}</span>
-                </td>
-                <td class="stamp">
-                  @if (entry.from || entry.to) {
-                    {{ entry.from ?? "–" }} → {{ entry.to ?? "–" }}
-                  }
-                </td>
-                <td>{{ entry.message }}</td>
-              </tr>
-            } @empty {
+      <xts-load-status
+        [state]="auditLoader.value()"
+        loadingText="Protokoll wird geladen …"
+        (retry)="reloadAuditLog()"
+      />
+      @if (auditLoader.ready()) {
+        <div class="table-wrap">
+          <table data-testid="audit-table" class="audit">
+            <thead>
               <tr>
-                <td colspan="6" class="empty-hint" data-testid="audit-empty">
-                  Keine Protokolleinträge für die aktuelle Selektion.
-                </td>
+                <th>Zeit</th>
+                <th>Akteur</th>
+                <th>Kategorie</th>
+                <th>Objekt</th>
+                <th>Von → Nach</th>
+                <th>Meldung</th>
               </tr>
-            }
-          </tbody>
-        </table>
-      </div>
+            </thead>
+            <tbody>
+              @for (entry of auditEntries(); track entry.id) {
+                <tr
+                  [attr.data-testid]="'audit-' + entry.id"
+                  [class.error-row]="entry.severity === 'error'"
+                >
+                  <td class="stamp">{{ formatTime(entry.at) }}</td>
+                  <td>{{ entry.actor }}</td>
+                  <td>
+                    <span
+                      class="tag"
+                      [class.error]="entry.severity === 'error'"
+                    >
+                      {{ categoryLabel(entry.category) }}
+                    </span>
+                  </td>
+                  <td>
+                    {{ entry.object }}
+                    <span class="sub">{{ entry.objectKey }}</span>
+                  </td>
+                  <td class="stamp">
+                    @if (entry.from || entry.to) {
+                      {{ entry.from ?? "–" }} → {{ entry.to ?? "–" }}
+                    }
+                  </td>
+                  <td>{{ entry.message }}</td>
+                </tr>
+              } @empty {
+                <tr>
+                  <td colspan="6" class="empty-hint" data-testid="audit-empty">
+                    Keine Protokolleinträge für die aktuelle Selektion.
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      }
     </section>
 
     <section class="panel">
