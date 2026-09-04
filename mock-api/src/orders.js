@@ -1,4 +1,5 @@
 import { purchaseOrders } from "./fixtures.js";
+import { roundHours, sumHours } from "./hours.js";
 import { displayNameFor } from "./masterdata.js";
 
 // Beauftragung (Epic 4) analog ZXTS_MABEAUF_T. Statusmodell:
@@ -62,6 +63,7 @@ export function buildOrderCandidates(planningEntries, orders, filters, rules) {
       const months = [...proposal.months].sort();
       return {
         ...proposal,
+        totalHours: roundHours(proposal.totalHours),
         months,
         periodFrom: months[0],
         periodTo: months[months.length - 1],
@@ -103,7 +105,7 @@ export function createOrder(state, planningEntries, payload) {
     text: normalizedText || `Beauftragung ${displayNameFor(extNr)} ${coIdent}`,
     periodFrom: sorted[0],
     periodTo: sorted[sorted.length - 1],
-    hours: rows.reduce((sum, row) => sum + row.hours, 0),
+    hours: sumHours(rows.map((row) => row.hours)),
     planningRefs: sorted,
     status: "created",
     banfNumber: null,

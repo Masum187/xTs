@@ -1,3 +1,4 @@
+import { roundHours, subtractHours, sumHours } from "./hours.js";
 import {
   costObjectDescription,
   findCostObject,
@@ -48,13 +49,13 @@ function descriptionFor(extNr, coIdent) {
 }
 
 export function bookedHoursFor(days, extNr, coIdent) {
-  return days
+  const lines = days
     .filter(
       (day) => day.extNr === extNr && BOOKED_STATUSES.includes(day.status),
     )
     .flatMap((day) => day.lines)
-    .filter((line) => line.coIdent === coIdent)
-    .reduce((sum, line) => sum + line.hours, 0);
+    .filter((line) => line.coIdent === coIdent);
+  return sumHours(lines.map((line) => line.hours));
 }
 
 export function bookedLinesFor(days, extNr, coIdent) {
@@ -119,9 +120,9 @@ export function buildEnablements(orders, days, rules) {
         description: entry.description,
         validFrom,
         validTo,
-        orderedHours: entry.orderedHours,
+        orderedHours: roundHours(entry.orderedHours),
         bookedHours,
-        remainingHours: entry.orderedHours - bookedHours,
+        remainingHours: subtractHours(entry.orderedHours, bookedHours),
       };
     })
     .sort(

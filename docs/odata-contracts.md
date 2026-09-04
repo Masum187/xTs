@@ -121,6 +121,10 @@ Diese Datei beschreibt die fachlichen Service-Kontrakte fuer SAP-OData und die M
   - Kein gueltiges JSON im Body: HTTP 400 `INVALID_JSON`.
 - Zurueckgewiesene Tage (Status `A`) tragen den Grund im Feld `rejectionReason`. Beim erneuten Speichern/Freigeben durch den Mitarbeiter entfernt der Server das Feld (Flow `A -> E -> F`).
 
+## Stundenwerte
+
+- Stunden sind Dezimalzahlen mit Minutenpraezision (Viertelstundenraster bei der Erfassung, beliebige Dezimalwerte in der Planung). Summen, Differenzen und Prozentwerte bildet die Mock-API in ganzen Minuten (`mock-api/src/hours.js`), damit keine Gleitkomma-Reste in Reststunden, Vergleiche oder Reports gelangen; der WebClient rechnet ebenso (`shared/hours.ts`) und formatiert nur zur Anzeige (Locale `de`: `7,5 Std.`, `13.04.2026`). SAP-seitig entspricht das `QUAN` mit Stunden auf zwei Nachkommastellen; Rundung auf ganze Minuten ist zu vereinbaren.
+
 ## Response Shape
 
 Listen verwenden OData-nahe Form:

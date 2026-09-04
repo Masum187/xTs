@@ -1,3 +1,4 @@
+import { DatePipe, DecimalPipe } from "@angular/common";
 import { Component, computed, inject, signal } from "@angular/core";
 import { FormsModule } from "@angular/forms";
 
@@ -16,7 +17,7 @@ import { ApprovalService } from "./approval.service";
 @Component({
   selector: "xts-approval",
   standalone: true,
-  imports: [FormsModule],
+  imports: [DatePipe, DecimalPipe, FormsModule],
   templateUrl: "./approval.component.html",
   styleUrl: "./approval.component.css",
 })

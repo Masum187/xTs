@@ -1,3 +1,4 @@
+import { DatePipe, DecimalPipe } from "@angular/common";
 import { Component, computed, inject, signal } from "@angular/core";
 import { FormsModule } from "@angular/forms";
 
@@ -31,7 +32,7 @@ const STATUS_LABELS: Record<TimesheetStatus, string> = {
 @Component({
   selector: "xts-timesheet",
   standalone: true,
-  imports: [FormsModule],
+  imports: [DatePipe, DecimalPipe, FormsModule],
   templateUrl: "./timesheet.component.html",
   styleUrl: "./timesheet.component.css",
 })

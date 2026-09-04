@@ -1,3 +1,4 @@
+import { roundHours, sumHours } from "./hours.js";
 import { costObjectDescription, displayNameFor } from "./masterdata.js";
 
 // Ressourcen-Live-Circle (XTS-070) analog ZXRLM: je Mitarbeiter und Kontierung
@@ -51,9 +52,8 @@ function emptyRow(extNr, coIdent) {
 }
 
 function hoursFor(day, coIdent) {
-  return day.lines
-    .filter((line) => line.coIdent === coIdent)
-    .reduce((sum, line) => sum + line.hours, 0);
+  const lines = day.lines.filter((line) => line.coIdent === coIdent);
+  return sumHours(lines.map((line) => line.hours));
 }
 
 export function buildResourceLifecycle(planningEntries, orders, days, filters) {
@@ -119,6 +119,13 @@ export function buildResourceLifecycle(planningEntries, orders, days, filters) {
     )
     .map((row) => ({
       ...row,
+      plannedHours: roundHours(row.plannedHours),
+      orderedHours: roundHours(row.orderedHours),
+      purchaseOrderHours: roundHours(row.purchaseOrderHours),
+      recordedHours: roundHours(row.recordedHours),
+      approvedHours: roundHours(row.approvedHours),
+      goodsReceiptHours: roundHours(row.goodsReceiptHours),
+      pendingGoodsReceiptHours: roundHours(row.pendingGoodsReceiptHours),
       orders: [...row.orders].sort((a, b) =>
         a.orderId.localeCompare(b.orderId),
       ),

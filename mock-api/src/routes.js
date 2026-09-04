@@ -32,6 +32,7 @@ import {
   upsertPlanningEntry,
 } from "./planning.js";
 import { buildResourceLifecycle } from "./lifecycle.js";
+import { sumHours } from "./hours.js";
 import { messageFor } from "./messages.js";
 import { validateTimesheetPayload } from "./timesheet-validation.js";
 import { buildBudgetMonitor, buildCostObjectQuota } from "./reporting.js";
@@ -119,7 +120,7 @@ function pickTimesheetFields(body, status) {
 
 function hasBookedHours(day) {
   const lines = Array.isArray(day.lines) ? day.lines : [];
-  const total = lines.reduce((sum, line) => sum + (Number(line.hours) || 0), 0);
+  const total = sumHours(lines.map((line) => line.hours));
   return lines.length > 0 && total > 0;
 }
 
