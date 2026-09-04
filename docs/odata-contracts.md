@@ -113,7 +113,7 @@ Diese Datei beschreibt die fachlichen Service-Kontrakte fuer SAP-OData und die M
 - `GET /odata/MyTimesheets` liefert alle eigenen Tage absteigend nach Datum, optional gefiltert mit `?date=YYYY-MM-DD`.
 - `POST /odata/TimesheetDays` ist ein Upsert je `EXTNR` + Datum; `extNr` und `date` sind Pflicht (sonst HTTP 400 `TIMESHEET_KEY_REQUIRED`). Die Mock-API haelt die Tage im Speicher, damit Navigation und Korrektur-Flows entwickelbar sind.
 - Statusmaschine (Konzept §6.2, serverseitig erzwungen):
-  - Der Body darf nur `extNr`, `date`, `startTime`, `endTime`, `breakMinutes`, `location`, `status` und `lines[{ coIdent, description, hours }]` enthalten; unbekannte Felder werden verworfen. Servergefuehrte Felder (`approvedBy`, `approvedAt`, `weDocument`, `rejectionReason`) im Body: HTTP 400 `PROTECTED_FIELDS` mit `fields`.
+  - Der Body darf nur `extNr`, `date`, `startTime`, `endTime`, `breakMinutes`, `location`, `status`, `varianceReason` und `lines[{ coIdent, description, hours }]` enthalten; unbekannte Felder werden verworfen. Servergefuehrte Felder (`approvedBy`, `approvedAt`, `weDocument`, `rejectionReason`) im Body: HTTP 400 `PROTECTED_FIELDS` mit `fields`.
   - Mitarbeiter setzen nur `E` (Entwurf) oder `F` (freigeben); andere Werte: HTTP 400 `INVALID_STATUS`. Ohne `status` gilt `E`.
   - Tage im Status `F` oder `G` sind fuer Mitarbeiter gesperrt: HTTP 409 `TIMESHEET_LOCKED` (mit `status`). Tage im Status `E` oder `A` duerfen ueberschrieben werden.
   - Freigeben (`F`) erfordert mindestens eine Position mit Stunden > 0, sonst HTTP 409 `SUBMIT_REQUIRES_HOURS`.
