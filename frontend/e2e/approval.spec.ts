@@ -11,7 +11,7 @@ test("filters, approves and rejects submitted days", async ({
       extNr: "SCHILZ",
       date: "2026-04-01",
       startTime: "08:30",
-      endTime: "16:30",
+      endTime: "16:00",
       breakMinutes: 30,
       location: "remote",
       status: "F",

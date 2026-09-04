@@ -5,7 +5,8 @@ import { FormsModule } from "@angular/forms";
 import { AuthService } from "../auth/auth.service";
 import { describeApiError } from "../shared/api-error";
 
-import { sumLineHours } from "../timesheet/timesheet.logic";
+import { formatSignedHours } from "../shared/hours";
+import { dayVariance, sumLineHours } from "../timesheet/timesheet.logic";
 import type { ApprovalDay } from "../timesheet/timesheet.models";
 import {
   filterApprovals,
@@ -48,6 +49,14 @@ export class ApprovalComponent {
 
   protected totalHours(day: ApprovalDay): number {
     return sumLineHours(day.lines);
+  }
+
+  /** Abweichung Positionssumme zu Arbeitszeit als Text oder null bei 0. */
+  protected varianceOf(day: ApprovalDay): string | null {
+    const variance = dayVariance(day);
+    return variance === null || variance === 0
+      ? null
+      : formatSignedHours(variance);
   }
 
   /** Vier-Augen-Prinzip: eigene Tage genehmigt eine andere Person. */

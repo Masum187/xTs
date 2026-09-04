@@ -17,3 +17,24 @@ export function sumHours(values: readonly number[]): number {
 export function addHours(a: number, b: number): number {
   return fromMinutes(toMinutes(a) + toMinutes(b));
 }
+
+export function subtractHours(a: number, b: number): number {
+  return fromMinutes(toMinutes(a) - toMinutes(b));
+}
+
+const hoursFormat = new Intl.NumberFormat("de-DE", {
+  maximumFractionDigits: 2,
+});
+
+/** Stunden fuer Meldungstexte formatieren (7,5 statt 7.5). */
+export function formatHours(hours: number): string {
+  return hoursFormat.format(hours);
+}
+
+/** Vorzeichenbehaftete Stunden fuer Differenzen (+0,5 / −0,5). */
+export function formatSignedHours(hours: number): string {
+  const formatted = formatHours(Math.abs(hours));
+  if (hours > 0) return `+${formatted}`;
+  if (hours < 0) return `−${formatted}`;
+  return formatted;
+}

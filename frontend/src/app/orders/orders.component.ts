@@ -3,6 +3,7 @@ import { Component, inject, signal } from "@angular/core";
 import { FormsModule } from "@angular/forms";
 
 import { describeApiError } from "../shared/api-error";
+import { formatHours } from "../shared/hours";
 
 import { formatMonthLabel, parseStartMonth } from "../planning/planning.logic";
 import type {
@@ -103,7 +104,7 @@ export class OrdersComponent {
         );
         this.candidateTexts.delete(this.candidateKey(candidate));
         this.message.set(
-          `Beauftragung ${order.orderId} für ${order.displayName} angelegt (${order.hours} Std.).`,
+          `Beauftragung ${order.orderId} für ${order.displayName} angelegt (${formatHours(order.hours)} Std.).`,
         );
       },
     );

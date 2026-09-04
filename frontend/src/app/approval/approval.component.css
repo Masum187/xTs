@@ -150,3 +150,14 @@ button.ghost {
   color: #60718f;
   font-size: 13px;
 }
+
+.worktime-line,
+.variance-line {
+  color: #60718f;
+  display: block;
+  font-size: 13px;
+}
+
+.variance-line {
+  color: #8a5a12;
+}

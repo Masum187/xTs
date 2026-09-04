@@ -4,19 +4,22 @@ import {
   canEditTimesheet,
   canSubmitTimesheet,
   createEmptyDay,
+  dayVariance,
   isCostObjectBookable,
   shiftDate,
   quotaProblems,
   sumLineHours,
   validateTimesheetDay,
+  workHoursOf,
 } from "./timesheet.logic";
 import type { EnabledCostObject, TimesheetDay } from "./timesheet.models";
 
+// 08:30–11:00 mit 30 Min. Pause = 2 Std. Arbeitszeit, passend zur Position.
 const baseDay: TimesheetDay = {
   extNr: "SCHILZ",
   date: "2026-04-13",
   startTime: "08:30",
-  endTime: "17:30",
+  endTime: "11:00",
   breakMinutes: 30,
   location: "remote",
   status: "E",
@@ -190,9 +193,49 @@ describe("timesheet logic", () => {
     ).toEqual([]);
   });
 
+  it("derives work hours and the day variance from the header", () => {
+    expect(workHoursOf(baseDay)).toBe(2);
+    expect(workHoursOf({ ...baseDay, endTime: "17:00" })).toBe(8);
+    expect(workHoursOf({ ...baseDay, startTime: "abc" })).toBeNull();
+    expect(workHoursOf({ ...baseDay, breakMinutes: 600 })).toBeNull();
+    expect(dayVariance(baseDay)).toBe(0);
+    expect(dayVariance({ ...baseDay, endTime: "17:00" })).toBe(-6);
+    expect(
+      dayVariance({
+        ...baseDay,
+        lines: [{ coIdent: "700000000004", description: "x", hours: 2.25 }],
+      }),
+    ).toBe(0.25);
+  });
+
+  it("requires a reason to submit a day whose hours differ from the work time", () => {
+    const codes = (day: TimesheetDay, mode: "draft" | "submit") =>
+      validateTimesheetDay(day, mode).map((problem) => problem.code);
+    const differing = { ...baseDay, endTime: "17:00" };
+    expect(codes(differing, "draft")).toEqual([]);
+    expect(codes(differing, "submit")).toEqual(["VARIANCE_REASON_REQUIRED"]);
+    expect(validateTimesheetDay(differing, "submit")[0].message).toContain(
+      "(2 Std.) weicht von der Arbeitszeit (8 Std.)",
+    );
+    expect(codes({ ...differing, varianceReason: "  " }, "submit")).toEqual([
+      "VARIANCE_REASON_REQUIRED",
+    ]);
+    expect(
+      codes({ ...differing, varianceReason: "Reisezeit" }, "submit"),
+    ).toEqual([]);
+    expect(
+      codes({ ...baseDay, varianceReason: "x".repeat(256) }, "draft"),
+    ).toEqual(["VARIANCE_REASON_TOO_LONG"]);
+    expect(canSubmitTimesheet(differing)).toBe(false);
+    expect(canSubmitTimesheet({ ...differing, varianceReason: "Reise" })).toBe(
+      true,
+    );
+  });
+
   it("creates an empty draft day", () => {
     const day = createEmptyDay("SCHILZ", "2026-04-14");
     expect(day.status).toBe("E");
+    expect(workHoursOf(day)).toBe(8);
     expect(day.lines).toEqual([]);
     expect(day.extNr).toBe("SCHILZ");
     expect(day.date).toBe("2026-04-14");

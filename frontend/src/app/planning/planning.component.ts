@@ -3,6 +3,7 @@ import { Component, computed, inject, signal } from "@angular/core";
 import { FormsModule } from "@angular/forms";
 
 import { describeApiError } from "../shared/api-error";
+import { formatHours } from "../shared/hours";
 
 import type { Team } from "../reporting/reporting.models";
 import { ReportingService } from "../reporting/reporting.service";
@@ -94,7 +95,7 @@ export class PlanningComponent {
       );
       this.warning.set(
         result.overbooked
-          ? `Überplanung: ${result.plannedTotal} Std. geplant bei ${result.availableHours} Std. verfügbar (${row.displayName}, ${this.formatMonth(cell.month)}).`
+          ? `Überplanung: ${formatHours(result.plannedTotal)} Std. geplant bei ${formatHours(result.availableHours)} Std. verfügbar (${row.displayName}, ${this.formatMonth(cell.month)}).`
           : "",
       );
     } catch (error) {
