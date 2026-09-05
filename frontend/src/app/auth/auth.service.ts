@@ -32,6 +32,23 @@ export class AuthService {
   readonly state = signal<AuthState>("loading");
   readonly profile = signal<AuthProfile | null>(null);
 
+  /** Hinweis, wenn eine Route mangels Rolle abgewiesen wurde (Audit Nr. 25). */
+  readonly accessNotice = signal<string | null>(null);
+  private noticeNavigationId = 0;
+
+  /** Zeigt den Rollenhinweis; die Umleitung des Guards (id + 1) loescht ihn nicht. */
+  showAccessNotice(message: string, navigationId: number): void {
+    this.noticeNavigationId = navigationId;
+    this.accessNotice.set(message);
+  }
+
+  /** Loescht den Hinweis bei der naechsten Navigation nach der Guard-Umleitung. */
+  clearAccessNoticeAfter(navigationId: number): void {
+    if (navigationId > this.noticeNavigationId + 1) {
+      this.accessNotice.set(null);
+    }
+  }
+
   /** Angezeigter Name des Entra-Kontos (Modus "entra"). */
   readonly accountName = signal<string | null>(null);
 
@@ -75,8 +92,17 @@ export class AuthService {
     return hasRole(this.profile(), role);
   }
 
+  /**
+   * Identitaetswechsel (Audit Nr. 12): Persona und Zustand "loading" werden
+   * synchron gesetzt, bevor irgendetwas navigiert oder laedt. Damit ist der
+   * Router-Outlet ausgeblendet, laufende Screens werden zerstoert und kein
+   * Datenaufruf laeuft mehr mit der alten Identitaet.
+   */
   async switchPersona(upn: string): Promise<void> {
     this.personaUpn.set(upn);
+    this.state.set("loading");
+    this.profile.set(null);
+    this.accessNotice.set(null);
     await this.loadProfile();
   }
 

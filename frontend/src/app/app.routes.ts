@@ -4,6 +4,7 @@ import { Router } from "@angular/router";
 
 import { AdminComponent } from "./admin/admin.component";
 import { ApprovalComponent } from "./approval/approval.component";
+import { accessDeniedMessage } from "./auth/auth.logic";
 import type { AuthRole } from "./auth/auth.models";
 import { AuthService } from "./auth/auth.service";
 import { NotFoundComponent } from "./not-found.component";
@@ -14,11 +15,19 @@ import { TimesheetComponent } from "./timesheet/timesheet.component";
 
 const roleGuard =
   (role: AuthRole): CanActivateFn =>
-  async () => {
+  async (_route, state) => {
     const auth = inject(AuthService);
     const router = inject(Router);
     await auth.ensureLoaded();
-    return auth.hasRole(role) ? true : router.parseUrl("/");
+    if (auth.hasRole(role)) return true;
+    // Kein stilles Umleiten: der Grund wird in der Kopfzeile angezeigt.
+    if (auth.state() === "ready") {
+      auth.showAccessNotice(
+        accessDeniedMessage(role, state.url),
+        router.getCurrentNavigation()?.id ?? 0,
+      );
+    }
+    return router.parseUrl("/");
   };
 
 export const routes: Routes = [

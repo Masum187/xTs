@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  accessDeniedMessage,
   authIdentifier,
   claimsFromErrorPayload,
   entraConfigured,
@@ -77,6 +78,13 @@ describe("auth logic", () => {
         upn: "neu.extern@qualitytimes.de",
       }),
     ).toBe("stephan.schilz@qualitytimes.de");
+  });
+
+  it("explains a denied route with the missing role", () => {
+    expect(accessDeniedMessage("approver", "/approvals")).toContain(
+      "Projektleiter (Genehmigung)",
+    );
+    expect(accessDeniedMessage("admin", "/admin")).toContain("/admin");
   });
 
   it("checks roles against the profile", () => {

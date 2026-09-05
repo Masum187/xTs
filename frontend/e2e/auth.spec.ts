@@ -31,12 +31,50 @@ test("inactive employee cannot record hours", async ({ page }) => {
   await expect(page.getByTestId("auth-inactive")).toContainText("inaktiv");
 });
 
-test("non-approver is redirected away from approvals", async ({ page }) => {
+test("non-approver is redirected away from approvals with an explanation", async ({
+  page,
+}) => {
   await page.goto("/approvals");
   await expect(
     page.getByRole("heading", { name: "Stundenschreibung" }),
   ).toBeVisible();
   await expect(page.getByRole("link", { name: "Genehmigung" })).toBeHidden();
+  await expect(page.getByTestId("access-denied")).toContainText(
+    "Projektleiter (Genehmigung)",
+  );
+  await page.getByTestId("dismiss-notice").click();
+  await expect(page.getByTestId("access-denied")).toHaveCount(0);
+});
+
+test("switching the identity never loads data with the previous one", async ({
+  page,
+}) => {
+  await page.goto("/");
+  await expect(page.getByTestId("profile")).toContainText("Stephan Schilz");
+
+  const requests: { url: string; upn: string | undefined }[] = [];
+  page.on("request", (request) => {
+    if (request.url().includes(":4010/odata/")) {
+      requests.push({
+        url: request.url(),
+        upn: request.headers()["x-mock-oauth-upn"],
+      });
+    }
+  });
+  await page
+    .getByTestId("persona-select")
+    .selectOption("petra.altmann@qualitytimes.de");
+  await expect(page.getByTestId("auth-inactive")).toBeVisible();
+  await page.waitForTimeout(300);
+
+  const withOldIdentity = requests.filter(
+    (request) => request.upn === "stephan.schilz@qualitytimes.de",
+  );
+  expect(withOldIdentity).toEqual([]);
+  const dataRequests = requests.filter((request) =>
+    /MyTimesheets|MyEnabledCostObjects/.test(request.url),
+  );
+  expect(dataRequests).toEqual([]);
 });
 
 test("approver reaches approvals via navigation", async ({ page }) => {
