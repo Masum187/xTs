@@ -217,6 +217,30 @@ function requireApprover(persona) {
   return requireRole(persona, "approver");
 }
 
+function hasRole(persona, role) {
+  return persona.employee.roles.includes(role);
+}
+
+function hasAnyRole(persona, roles) {
+  return roles.some((role) => hasRole(persona, role));
+}
+
+function requireAnyRole(persona, roles) {
+  if (!hasAnyRole(persona, roles)) {
+    return json(
+      { error: "NOT_AUTHORIZED", requiredRole: roles.join("|") },
+      403,
+    );
+  }
+  return null;
+}
+
+/** Mitarbeiterdaten ohne Zugangs- und Personaldetails (fuer Nicht-Admins). */
+function publicEmployee(employee) {
+  const { extNr, displayName, firstName, lastName, company, active } = employee;
+  return { extNr, displayName, firstName, lastName, company, active };
+}
+
 export async function routeRequest(request) {
   const url = new URL(request.url, "http://127.0.0.1");
   const path = url.pathname.replace(/\/$/, "");
@@ -225,22 +249,50 @@ export async function routeRequest(request) {
     return json({ status: "ok" });
   }
 
+  // Stammdaten lesen (Audit Nr. 6): immer angemeldet, Umfang nach Rolle.
+  // Nur `admin` sieht Zugangs- und Personaldetails (aadOid, aadUpn,
+  // sapAccount, resourceManager, roles) sowie geloeschte/inaktive Saetze.
   if (request.method === "GET" && path === "/odata/Employees") {
+    const persona = resolvePersona(request);
+    if (persona.error) return persona.error;
     const includeDeleted = url.searchParams.get("includeDeleted") === "true";
-    return json({ value: listEmployees({ includeDeleted }) });
+    const isAdmin = hasRole(persona, "admin");
+    if (includeDeleted && !isAdmin) {
+      return json({ error: "NOT_AUTHORIZED", requiredRole: "admin" }, 403);
+    }
+    const employees = listEmployees({ includeDeleted });
+    if (isAdmin) return json({ value: employees });
+    const visible = hasAnyRole(persona, ["planner", "approver"])
+      ? employees
+      : employees.filter((item) => item.extNr === persona.employee.extNr);
+    return json({ value: visible.map(publicEmployee) });
   }
 
   if (request.method === "GET" && path === "/odata/Teams") {
+    const persona = resolvePersona(request);
+    if (persona.error) return persona.error;
     const includeInactive = url.searchParams.get("includeInactive") === "true";
+    if (includeInactive && !hasRole(persona, "admin")) {
+      return json({ error: "NOT_AUTHORIZED", requiredRole: "admin" }, 403);
+    }
     return json({ value: listTeams({ includeInactive }) });
   }
 
   if (request.method === "GET" && path === "/odata/CostObjects") {
+    const persona = resolvePersona(request);
+    if (persona.error) return persona.error;
     const includeDeleted = url.searchParams.get("includeDeleted") === "true";
+    if (includeDeleted && !hasRole(persona, "admin")) {
+      return json({ error: "NOT_AUTHORIZED", requiredRole: "admin" }, 403);
+    }
     return json({ value: listCostObjects({ includeDeleted }) });
   }
 
   if (request.method === "GET" && path === "/odata/TeamAssignments") {
+    const persona = resolvePersona(request);
+    if (persona.error) return persona.error;
+    const roleError = requireAnyRole(persona, ["admin", "planner"]);
+    if (roleError) return roleError;
     return json({
       value: listTeamAssignments().map((item) => ({
         ...item,
@@ -250,6 +302,10 @@ export async function routeRequest(request) {
   }
 
   if (request.method === "GET" && path === "/odata/CostObjectAssignments") {
+    const persona = resolvePersona(request);
+    if (persona.error) return persona.error;
+    const roleError = requireAnyRole(persona, ["admin", "planner"]);
+    if (roleError) return roleError;
     return json({
       value: listAssignments().map((item) => ({
         ...item,

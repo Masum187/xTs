@@ -1378,7 +1378,7 @@ test("employee maintenance validates required fields and stamps changes", async 
   assert.equal(employee.changedBy, "ROEPER");
   assert.match(employee.changedAt, /^\d{4}-\d{2}-\d{2}T/);
 
-  const listed = await routeRequest(request("GET", "/odata/Employees"));
+  const listed = await routeRequest(approverRequest("GET", "/odata/Employees"));
   assert.ok(
     JSON.parse(listed.body).value.some((item) => item.extNr === "TESTER"),
   );
@@ -1389,12 +1389,14 @@ test("employee maintenance validates required fields and stamps changes", async 
       deleted: true,
     }),
   );
-  const afterDelete = await routeRequest(request("GET", "/odata/Employees"));
+  const afterDelete = await routeRequest(
+    approverRequest("GET", "/odata/Employees"),
+  );
   assert.ok(
     !JSON.parse(afterDelete.body).value.some((item) => item.extNr === "TESTER"),
   );
   const withDeleted = await routeRequest(
-    request("GET", "/odata/Employees?includeDeleted=true"),
+    approverRequest("GET", "/odata/Employees?includeDeleted=true"),
   );
   assert.ok(
     JSON.parse(withDeleted.body).value.some(
@@ -1447,7 +1449,7 @@ test("inactive or deleted teams are not offered in selections", async () => {
     ["TRANSFORMATION_MC", "ENTW_SUPPORT"],
   );
   const all = await routeRequest(
-    request("GET", "/odata/Teams?includeInactive=true"),
+    approverRequest("GET", "/odata/Teams?includeInactive=true"),
   );
   assert.equal(JSON.parse(all.body).value.length, 3);
 
@@ -2856,4 +2858,70 @@ test("work hours are derived from the day header and variances need a reason to 
     fixtureDay.varianceReason,
     "Restzeit interne Abstimmung ohne Kontierung",
   );
+});
+
+test("master data reads require a mapped identity and are scoped by role", async () => {
+  const unmapped = await routeRequest(
+    request("GET", "/odata/Employees", undefined, {
+      "x-mock-oauth-oid": "00000000-0000-4000-8000-000000000099",
+    }),
+  );
+  assert.equal(unmapped.status, 404);
+  assert.equal(JSON.parse(unmapped.body).error, "NO_EXTNR_MAPPING");
+
+  // Rolle user: nur der eigene Datensatz, ohne Zugangs-/Personaldetails.
+  const own = await routeRequest(request("GET", "/odata/Employees"));
+  const ownBody = JSON.parse(own.body).value;
+  assert.equal(own.status, 200);
+  assert.deepEqual(
+    ownBody.map((item) => item.extNr),
+    ["SCHILZ"],
+  );
+  assert.deepEqual(Object.keys(ownBody[0]).sort(), [
+    "active",
+    "company",
+    "displayName",
+    "extNr",
+    "firstName",
+    "lastName",
+  ]);
+
+  // Rolle admin (ROEPER): alle Felder, inkl. aadOid/sapAccount.
+  const admin = await routeRequest(approverRequest("GET", "/odata/Employees"));
+  const adminBody = JSON.parse(admin.body).value;
+  assert.equal(adminBody.length, 3);
+  assert.ok(adminBody[0].aadOid);
+  assert.ok("sapAccount" in adminBody[0]);
+
+  // Geloeschte/inaktive Saetze nur fuer admin.
+  for (const path of [
+    "/odata/Employees?includeDeleted=true",
+    "/odata/Teams?includeInactive=true",
+    "/odata/CostObjects?includeDeleted=true",
+  ]) {
+    const denied = await routeRequest(request("GET", path));
+    assert.equal(denied.status, 403, path);
+    assert.equal(JSON.parse(denied.body).error, "NOT_AUTHORIZED");
+  }
+
+  // Teams und Kontierungen sind fuer angemeldete Nutzer lesbar (Auswahlen).
+  assert.equal(
+    (await routeRequest(request("GET", "/odata/Teams"))).status,
+    200,
+  );
+  assert.equal(
+    (await routeRequest(request("GET", "/odata/CostObjects"))).status,
+    200,
+  );
+
+  // Zuordnungen nur fuer admin/planner.
+  for (const path of [
+    "/odata/TeamAssignments",
+    "/odata/CostObjectAssignments",
+  ]) {
+    const denied = await routeRequest(request("GET", path));
+    assert.equal(denied.status, 403, path);
+    const allowed = await routeRequest(approverRequest("GET", path));
+    assert.equal(allowed.status, 200, path);
+  }
 });
