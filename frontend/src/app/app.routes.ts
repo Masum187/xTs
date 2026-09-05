@@ -6,6 +6,7 @@ import { AdminComponent } from "./admin/admin.component";
 import { ApprovalComponent } from "./approval/approval.component";
 import type { AuthRole } from "./auth/auth.models";
 import { AuthService } from "./auth/auth.service";
+import { NotFoundComponent } from "./not-found.component";
 import { OrdersComponent } from "./orders/orders.component";
 import { PlanningComponent } from "./planning/planning.component";
 import { ReportingComponent } from "./reporting/reporting.component";
@@ -55,5 +56,10 @@ export const routes: Routes = [
     component: AdminComponent,
     title: "xTS Verwaltung",
     canActivate: [roleGuard("admin")],
+  },
+  {
+    path: "**",
+    component: NotFoundComponent,
+    title: "xTS – Seite nicht gefunden",
   },
 ];

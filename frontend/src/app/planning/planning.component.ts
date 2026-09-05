@@ -3,6 +3,8 @@ import { Component, computed, inject, signal } from "@angular/core";
 import { FormsModule } from "@angular/forms";
 
 import { describeApiError } from "../shared/api-error";
+import { BusyState, LoadState } from "../shared/async-state";
+import { LoadStatusComponent } from "../shared/load-status.component";
 import { formatHours } from "../shared/hours";
 
 import type { Team } from "../reporting/reporting.models";
@@ -23,7 +25,7 @@ interface FilterOption {
 @Component({
   selector: "xts-planning",
   standalone: true,
-  imports: [DecimalPipe, FormsModule],
+  imports: [DecimalPipe, FormsModule, LoadStatusComponent],
   templateUrl: "./planning.component.html",
   styleUrl: "./planning.component.css",
 })
@@ -31,6 +33,8 @@ export class PlanningComponent {
   private readonly planningService = inject(PlanningService);
   private readonly reportingService = inject(ReportingService);
 
+  protected readonly loader = new LoadState();
+  protected readonly busy = new BusyState();
   protected readonly startInput = signal<string>("03.2026");
   protected readonly startError = signal<boolean>(false);
   protected readonly filterExtNr = signal<string>("");
@@ -76,6 +80,10 @@ export class PlanningComponent {
     await this.load();
   }
 
+  protected reload(): void {
+    void this.load();
+  }
+
   protected async saveCell(
     row: PlanningRow,
     cell: PlanningCell,
@@ -83,51 +91,55 @@ export class PlanningComponent {
   ): Promise<void> {
     const hours = Number(rawValue);
     if (Number.isNaN(hours) || hours < 0) return;
-    try {
-      const result = await this.planningService.saveEntry(
-        row.extNr,
-        row.coIdent,
-        cell.month,
-        hours,
-      );
-      this.message.set(
-        `Planstunden für ${row.displayName}, ${this.formatMonth(cell.month)} gespeichert.`,
-      );
-      this.warning.set(
-        result.overbooked
-          ? `Überplanung: ${formatHours(result.plannedTotal)} Std. geplant bei ${formatHours(result.availableHours)} Std. verfügbar (${row.displayName}, ${this.formatMonth(cell.month)}).`
-          : "",
-      );
-    } catch (error) {
-      this.message.set(
-        describeApiError(
-          error,
-          "Planstunden konnten nicht gespeichert werden.",
-        ),
-      );
-    }
-    await this.load();
+    await this.busy.guard(async () => {
+      try {
+        const result = await this.planningService.saveEntry(
+          row.extNr,
+          row.coIdent,
+          cell.month,
+          hours,
+        );
+        this.message.set(
+          `Planstunden für ${row.displayName}, ${this.formatMonth(cell.month)} gespeichert.`,
+        );
+        this.warning.set(
+          result.overbooked
+            ? `Überplanung: ${formatHours(result.plannedTotal)} Std. geplant bei ${formatHours(result.availableHours)} Std. verfügbar (${row.displayName}, ${this.formatMonth(cell.month)}).`
+            : "",
+        );
+      } catch (error) {
+        this.message.set(
+          describeApiError(
+            error,
+            "Planstunden konnten nicht gespeichert werden.",
+          ),
+        );
+      }
+      await this.load();
+    });
   }
 
   protected async releaseCell(
     row: PlanningRow,
     cell: PlanningCell,
   ): Promise<void> {
-    try {
-      await this.planningService.releaseEntry(
-        row.extNr,
-        row.coIdent,
-        cell.month,
-      );
-      this.message.set(
-        `Planzeile ${row.displayName}, ${this.formatMonth(cell.month)} für BANF freigegeben.`,
-      );
-    } catch (error) {
-      this.message.set(
-        describeApiError(error, "Planzeile konnte nicht freigegeben werden."),
-      );
-    }
-    await this.load();
+    await this.busy.guard(async () => {
+      try {
+        await this.planningService.releaseEntry(
+          row.extNr,
+          row.coIdent,
+          cell.month,
+        );
+        this.message.set(
+          `Planzeile ${row.displayName}, ${this.formatMonth(cell.month)} für BANF freigegeben.`,
+        );
+      } catch (error) {
+        this.message.set(
+          describeApiError(error, "Planzeile konnte nicht freigegeben werden."),
+        );
+      }
+      await this.load();
+    });
   }
 
   private async load(initial = false): Promise<void> {
@@ -137,12 +149,18 @@ export class PlanningComponent {
       return;
     }
     this.startError.set(false);
-    const overview = await this.planningService.getOverview(start, {
-      extNr: this.filterExtNr(),
-      team: this.filterTeam(),
-      coIdent: this.filterCoIdent(),
-    });
-    this.overview.set(overview);
+    const overview = await this.loader.track(
+      () =>
+        this.planningService.getOverview(start, {
+          extNr: this.filterExtNr(),
+          team: this.filterTeam(),
+          coIdent: this.filterCoIdent(),
+        }),
+      "Planungsübersicht konnte nicht geladen werden.",
+      (result) => this.overview.set(result),
+    );
+    // undefined = Fehler oder von einem neueren Ladevorgang ueberholt.
+    if (!overview) return;
     if (initial) {
       const employees = new Map<string, string>();
       const coIdents = new Map<string, string>();

@@ -2,6 +2,8 @@ import { Component, inject, signal } from "@angular/core";
 import { FormsModule } from "@angular/forms";
 
 import { ApiError, describeApiError } from "../shared/api-error";
+import { BusyState, LoadState } from "../shared/async-state";
+import { LoadStatusComponent } from "../shared/load-status.component";
 import type {
   AuditEntry,
   CostObject,
@@ -73,7 +75,7 @@ function emptyCostObjectAssignment(): CostObjectAssignmentDraft {
 @Component({
   selector: "xts-admin",
   standalone: true,
-  imports: [FormsModule],
+  imports: [FormsModule, LoadStatusComponent],
   templateUrl: "./admin.component.html",
   styleUrl: "./admin.component.css",
 })
@@ -81,6 +83,10 @@ export class AdminComponent {
   private readonly adminService = inject(AdminService);
 
   protected readonly costObjectTypes = COST_OBJECT_TYPES;
+  protected readonly loader = new LoadState();
+  /** Eigener Zustand fuer das Protokoll, das auch per Filter neu laedt. */
+  protected readonly auditLoader = new LoadState();
+  protected readonly busy = new BusyState();
 
   protected readonly employees = signal<Employee[]>([]);
   protected readonly teams = signal<Team[]>([]);
@@ -293,15 +299,21 @@ export class AdminComponent {
     });
   }
 
+  protected reload(): void {
+    void this.loadAll();
+  }
+
   private async run(action: () => Promise<string>): Promise<void> {
-    try {
-      this.message.set(await action());
-      this.messageKind.set("ok");
-    } catch (error) {
-      this.messageKind.set("error");
-      this.message.set(this.describeError(error));
-    }
-    await this.loadAuditLog();
+    await this.busy.guard(async () => {
+      try {
+        this.message.set(await action());
+        this.messageKind.set("ok");
+      } catch (error) {
+        this.messageKind.set("error");
+        this.message.set(this.describeError(error));
+      }
+      await this.loadAuditLog();
+    });
   }
 
   private describeError(error: unknown): string {
@@ -312,24 +324,46 @@ export class AdminComponent {
   }
 
   private async loadAll(): Promise<void> {
-    await Promise.all([
-      this.loadEmployees(),
-      this.loadTeams(),
-      this.loadTeamAssignments(),
-      this.loadCostObjects(),
-      this.loadAssignments(),
-      this.adminService.getRules().then((rules) => this.rules.set(rules)),
-      this.loadAuditLog(),
-    ]);
+    await this.loader.track(
+      () =>
+        Promise.all([
+          this.adminService.getEmployees(),
+          this.adminService.getTeams(),
+          this.adminService.getTeamAssignments(),
+          this.adminService.getCostObjects(),
+          this.adminService.getCostObjectAssignments(),
+          this.adminService.getRules(),
+        ]),
+      "Verwaltungsdaten konnten nicht geladen werden.",
+      ([
+        employees,
+        teams,
+        teamAssignments,
+        costObjects,
+        assignments,
+        rules,
+      ]) => {
+        this.employees.set(employees);
+        this.teams.set(teams);
+        this.teamAssignments.set(teamAssignments);
+        this.costObjects.set(costObjects);
+        this.assignments.set(assignments);
+        this.rules.set(rules);
+      },
+    );
+    await this.loadAuditLog();
   }
 
   private async loadAuditLog(): Promise<void> {
-    this.auditEntries.set(
-      await this.adminService.getAuditLog({
-        category: this.auditCategory(),
-        severity: this.auditSeverity(),
-        q: this.auditSearch().trim(),
-      }),
+    await this.auditLoader.track(
+      () =>
+        this.adminService.getAuditLog({
+          category: this.auditCategory(),
+          severity: this.auditSeverity(),
+          q: this.auditSearch().trim(),
+        }),
+      "Protokoll konnte nicht geladen werden.",
+      (entries) => this.auditEntries.set(entries),
     );
   }
 

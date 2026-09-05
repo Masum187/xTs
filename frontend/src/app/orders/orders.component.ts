@@ -3,6 +3,8 @@ import { Component, inject, signal } from "@angular/core";
 import { FormsModule } from "@angular/forms";
 
 import { describeApiError } from "../shared/api-error";
+import { BusyState, LoadState } from "../shared/async-state";
+import { LoadStatusComponent } from "../shared/load-status.component";
 import { formatHours } from "../shared/hours";
 
 import { formatMonthLabel, parseStartMonth } from "../planning/planning.logic";
@@ -23,7 +25,7 @@ const STATUS_LABELS: Record<OrderStatus, string> = {
 @Component({
   selector: "xts-orders",
   standalone: true,
-  imports: [DecimalPipe, FormsModule],
+  imports: [DecimalPipe, FormsModule, LoadStatusComponent],
   templateUrl: "./orders.component.html",
   styleUrl: "./orders.component.css",
 })
@@ -32,6 +34,10 @@ export class OrdersComponent {
   private readonly candidateTexts = new Map<string, string>();
   private readonly orderTexts = new Map<string, string>();
 
+  protected readonly loader = new LoadState();
+  /** Eigener Zustand fuer die Kandidatenliste, die auch per Filter neu laedt. */
+  protected readonly candidatesLoader = new LoadState();
+  protected readonly busy = new BusyState();
   protected readonly candidates = signal<OrderCandidate[]>([]);
   protected readonly orders = signal<Order[]>([]);
   protected readonly protocol = signal<ProtocolEntry[]>([]);
@@ -147,38 +153,59 @@ export class OrdersComponent {
     );
   }
 
+  protected reload(): void {
+    void this.load();
+  }
+
+  protected reloadCandidates(): void {
+    void this.loadCandidates();
+  }
+
   private async guarded(
     fallback: string,
     action: () => Promise<void>,
   ): Promise<void> {
-    try {
-      await action();
-    } catch (error) {
-      this.message.set(describeApiError(error, fallback));
-    }
-    await this.load();
+    await this.busy.guard(async () => {
+      try {
+        await action();
+      } catch (error) {
+        this.message.set(describeApiError(error, fallback));
+      }
+      await this.load();
+    });
   }
 
   private async loadCandidates(): Promise<void> {
-    this.candidates.set(
-      await this.ordersService.getCandidates({
-        extNr: this.filterExtNr(),
-        coIdent: this.filterCoIdent(),
-        from: parseStartMonth(this.filterFrom()) ?? "",
-        to: parseStartMonth(this.filterTo()) ?? "",
-      }),
+    await this.candidatesLoader.track(
+      () =>
+        this.ordersService.getCandidates({
+          extNr: this.filterExtNr(),
+          coIdent: this.filterCoIdent(),
+          from: parseStartMonth(this.filterFrom()) ?? "",
+          to: parseStartMonth(this.filterTo()) ?? "",
+        }),
+      "Beauftragungskandidaten konnten nicht geladen werden.",
+      (candidates) => this.candidates.set(candidates),
     );
   }
 
   private async load(): Promise<void> {
-    await this.loadCandidates();
-    const [orders, protocol] = await Promise.all([
-      this.ordersService.getOrders(),
-      this.ordersService.getProtocol(),
+    await Promise.all([
+      this.loadCandidates(),
+      this.loader.track(
+        () =>
+          Promise.all([
+            this.ordersService.getOrders(),
+            this.ordersService.getProtocol(),
+          ]),
+        "Beauftragungen konnten nicht geladen werden.",
+        ([orders, protocol]) => {
+          this.pruneOrderTexts(orders);
+          this.orders.set(orders);
+          this.protocol.set(protocol);
+        },
+      ),
     ]);
-    this.pruneOrderTexts(orders);
-    this.orders.set(orders);
-    this.protocol.set(protocol);
   }
 
   private pruneOrderTexts(orders: Order[]): void {

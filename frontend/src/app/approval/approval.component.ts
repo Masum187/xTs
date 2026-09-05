@@ -4,6 +4,8 @@ import { FormsModule } from "@angular/forms";
 
 import { AuthService } from "../auth/auth.service";
 import { describeApiError } from "../shared/api-error";
+import { BusyState, LoadState } from "../shared/async-state";
+import { LoadStatusComponent } from "../shared/load-status.component";
 
 import { formatSignedHours } from "../shared/hours";
 import { dayVariance, sumLineHours } from "../timesheet/timesheet.logic";
@@ -18,7 +20,7 @@ import { ApprovalService } from "./approval.service";
 @Component({
   selector: "xts-approval",
   standalone: true,
-  imports: [DatePipe, DecimalPipe, FormsModule],
+  imports: [DatePipe, DecimalPipe, FormsModule, LoadStatusComponent],
   templateUrl: "./approval.component.html",
   styleUrl: "./approval.component.css",
 })
@@ -26,6 +28,8 @@ export class ApprovalComponent {
   private readonly approvalService = inject(ApprovalService);
   private readonly auth = inject(AuthService);
 
+  protected readonly loader = new LoadState();
+  protected readonly busy = new BusyState();
   protected readonly days = signal<ApprovalDay[]>([]);
   protected readonly monthFilter = signal<string>("");
   protected readonly employeeFilter = signal<string>("");
@@ -64,21 +68,27 @@ export class ApprovalComponent {
     return day.extNr === this.auth.profile()?.extNr;
   }
 
+  protected reload(): void {
+    void this.load();
+  }
+
   protected async approve(day: ApprovalDay): Promise<void> {
-    try {
-      const approved = await this.approvalService.approveDay(
-        day.extNr,
-        day.date,
-      );
-      this.removeDay(day);
-      this.message.set(
-        `Tag ${day.date} von ${day.displayName} genehmigt, Wareneingang ${approved.weDocument} gebucht.`,
-      );
-    } catch (error) {
-      this.message.set(
-        describeApiError(error, "Tag konnte nicht genehmigt werden."),
-      );
-    }
+    await this.busy.guard(async () => {
+      try {
+        const approved = await this.approvalService.approveDay(
+          day.extNr,
+          day.date,
+        );
+        this.removeDay(day);
+        this.message.set(
+          `Tag ${day.date} von ${day.displayName} genehmigt, Wareneingang ${approved.weDocument} gebucht.`,
+        );
+      } catch (error) {
+        this.message.set(
+          describeApiError(error, "Tag konnte nicht genehmigt werden."),
+        );
+      }
+    });
   }
 
   protected startReject(day: ApprovalDay): void {
@@ -94,18 +104,20 @@ export class ApprovalComponent {
   protected async confirmReject(day: ApprovalDay): Promise<void> {
     const reason = this.rejectReason().trim();
     if (!reason) return;
-    try {
-      await this.approvalService.rejectDay(day.extNr, day.date, reason);
-      this.removeDay(day);
-      this.cancelReject();
-      this.message.set(
-        `Tag ${day.date} von ${day.displayName} zurückgewiesen.`,
-      );
-    } catch (error) {
-      this.message.set(
-        describeApiError(error, "Tag konnte nicht zurückgewiesen werden."),
-      );
-    }
+    await this.busy.guard(async () => {
+      try {
+        await this.approvalService.rejectDay(day.extNr, day.date, reason);
+        this.removeDay(day);
+        this.cancelReject();
+        this.message.set(
+          `Tag ${day.date} von ${day.displayName} zurückgewiesen.`,
+        );
+      } catch (error) {
+        this.message.set(
+          describeApiError(error, "Tag konnte nicht zurückgewiesen werden."),
+        );
+      }
+    });
   }
 
   private removeDay(day: ApprovalDay): void {
@@ -115,6 +127,10 @@ export class ApprovalComponent {
   }
 
   private async load(): Promise<void> {
-    this.days.set(await this.approvalService.getApprovalTimesheets());
+    await this.loader.track(
+      () => this.approvalService.getApprovalTimesheets(),
+      "Freigegebene Arbeitstage konnten nicht geladen werden.",
+      (days) => this.days.set(days),
+    );
   }
 }

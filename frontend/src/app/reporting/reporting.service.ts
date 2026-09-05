@@ -2,6 +2,7 @@ import { Injectable, inject } from "@angular/core";
 
 import { environment } from "../../environments/environment";
 import { AuthService } from "../auth/auth.service";
+import { readApiJson } from "../shared/api-error";
 import type {
   BudgetDetailLevel,
   BudgetRow,
@@ -59,10 +60,7 @@ export class ReportingService {
 
   private async readValues<T>(url: string): Promise<T[]> {
     const response = await fetch(url, { headers: this.auth.authHeaders() });
-    if (!response.ok) {
-      throw new Error(`Request failed with HTTP ${response.status}`);
-    }
-    const body = (await response.json()) as ODataResponse<T>;
+    const body = await readApiJson<ODataResponse<T>>(response);
     return body.value;
   }
 }
