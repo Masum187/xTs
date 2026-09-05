@@ -1,11 +1,14 @@
 import { Component, computed, inject } from "@angular/core";
+import { takeUntilDestroyed } from "@angular/core/rxjs-interop";
 import { FormsModule } from "@angular/forms";
 import {
+  NavigationStart,
   Router,
   RouterLink,
   RouterLinkActive,
   RouterOutlet,
 } from "@angular/router";
+import { filter } from "rxjs";
 
 import { MOCK_PERSONAS } from "./auth/auth.models";
 import { AuthService } from "./auth/auth.service";
@@ -73,6 +76,22 @@ import { AuthService } from "./auth/auth.service";
       }
     </header>
     <main>
+      @if (auth.accessNotice(); as notice) {
+        <section
+          class="auth-panel auth-notice"
+          role="status"
+          data-testid="access-denied"
+        >
+          <p>{{ notice }}</p>
+          <button
+            type="button"
+            (click)="auth.accessNotice.set(null)"
+            data-testid="dismiss-notice"
+          >
+            Schließen
+          </button>
+        </section>
+      }
       @switch (auth.state()) {
         @case ("ready") {
           <router-outlet />
@@ -167,10 +186,26 @@ export class AppComponent {
 
   constructor() {
     void this.auth.loadProfile();
+    // Ein Rollenhinweis gilt bis zur naechsten Navigation.
+    this.router.events
+      .pipe(
+        filter((event) => event instanceof NavigationStart),
+        takeUntilDestroyed(),
+      )
+      .subscribe((event) =>
+        this.auth.clearAccessNoticeAfter((event as NavigationStart).id),
+      );
   }
 
+  /**
+   * Identitaetswechsel (Audit Nr. 12): erst Persona und "loading" setzen
+   * (blendet den Outlet aus und zerstoert den aktiven Screen), dann zur
+   * Startseite navigieren, dann das Profil laden. Der Screen entsteht erst
+   * wieder im Zustand "ready" und laedt nur mit der neuen Identitaet.
+   */
   protected async switchPersona(upn: string): Promise<void> {
+    const profileLoaded = this.auth.switchPersona(upn);
     await this.router.navigateByUrl("/");
-    await this.auth.switchPersona(upn);
+    await profileLoaded;
   }
 }

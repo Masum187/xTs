@@ -23,6 +23,8 @@ import { EntraAuth } from "./entra-auth";
 export class AuthService {
   private readonly baseUrl = environment.apiBaseUrl;
   private pending: Promise<AuthState> | null = null;
+  /** Laufnummer des Profil-Loads: nur der neueste darf Zustand und Profil setzen. */
+  private profileRun = 0;
   private entra: EntraAuth | null = null;
 
   /** Modus "entra": echte Anmeldung ueber Microsoft Entra ID (XTS-050). */
@@ -31,6 +33,23 @@ export class AuthService {
   readonly personaUpn = signal<string>(MOCK_PERSONAS[0].upn);
   readonly state = signal<AuthState>("loading");
   readonly profile = signal<AuthProfile | null>(null);
+
+  /** Hinweis, wenn eine Route mangels Rolle abgewiesen wurde (Audit Nr. 25). */
+  readonly accessNotice = signal<string | null>(null);
+  private noticeNavigationId = 0;
+
+  /** Zeigt den Rollenhinweis; die Umleitung des Guards (id + 1) loescht ihn nicht. */
+  showAccessNotice(message: string, navigationId: number): void {
+    this.noticeNavigationId = navigationId;
+    this.accessNotice.set(message);
+  }
+
+  /** Loescht den Hinweis bei der naechsten Navigation nach der Guard-Umleitung. */
+  clearAccessNoticeAfter(navigationId: number): void {
+    if (navigationId > this.noticeNavigationId + 1) {
+      this.accessNotice.set(null);
+    }
+  }
 
   /** Angezeigter Name des Entra-Kontos (Modus "entra"). */
   readonly accountName = signal<string | null>(null);
@@ -75,8 +94,17 @@ export class AuthService {
     return hasRole(this.profile(), role);
   }
 
+  /**
+   * Identitaetswechsel (Audit Nr. 12): Persona und Zustand "loading" werden
+   * synchron gesetzt, bevor irgendetwas navigiert oder laedt. Damit ist der
+   * Router-Outlet ausgeblendet, laufende Screens werden zerstoert und kein
+   * Datenaufruf laeuft mehr mit der alten Identitaet.
+   */
   async switchPersona(upn: string): Promise<void> {
     this.personaUpn.set(upn);
+    this.state.set("loading");
+    this.profile.set(null);
+    this.accessNotice.set(null);
     await this.loadProfile();
   }
 
@@ -100,13 +128,27 @@ export class AuthService {
   }
 
   async loadProfile(): Promise<AuthState> {
+    const run = ++this.profileRun;
     this.state.set("loading");
     this.profile.set(null);
-    this.pending = this.usesEntra
-      ? this.fetchProfileViaEntra()
-      : this.fetchProfile();
-    const state = await this.pending;
-    this.pending = null;
+    const load = this.usesEntra
+      ? this.fetchProfileViaEntra(run)
+      : this.fetchProfile(run);
+    this.pending = load;
+    const state = await load;
+    if (run === this.profileRun) this.pending = null;
+    return state;
+  }
+
+  /** Wendet ein Ladeergebnis nur an, wenn kein neuerer Profil-Load laeuft. */
+  private applyProfile(
+    run: number,
+    state: AuthState,
+    profile: AuthProfile | null = null,
+  ): AuthState {
+    if (run !== this.profileRun) return this.state();
+    this.profile.set(profile);
+    this.state.set(state);
     return state;
   }
 
@@ -115,51 +157,49 @@ export class AuthService {
     return this.entra;
   }
 
-  private async fetchProfileViaEntra(): Promise<AuthState> {
+  private async fetchProfileViaEntra(run: number): Promise<AuthState> {
     if (!entraConfigured(environment.auth.entra)) {
-      this.state.set("not-configured");
-      return "not-configured";
+      return this.applyProfile(run, "not-configured");
     }
     try {
       const account = await this.entraAuth().initialize();
       if (!account) {
-        this.state.set("signed-out");
-        return "signed-out";
+        return this.applyProfile(run, "signed-out");
       }
+      if (run !== this.profileRun) return this.state();
       this.accountName.set(account.name ?? account.username);
       this.entraClaims.set({ oid: "", upn: account.username ?? "" });
       const token = await this.entraAuth().acquireToken();
       if (!token) {
         // Interaktive Anmeldung laeuft per Redirect.
-        this.state.set("signed-out");
-        return "signed-out";
+        return this.applyProfile(run, "signed-out");
       }
+      if (run !== this.profileRun) return this.state();
       this.accessToken.set(token);
     } catch (error) {
       console.error("Entra-Anmeldung fehlgeschlagen", error);
-      this.state.set("error");
-      return "error";
+      return this.applyProfile(run, "error");
     }
-    return this.fetchProfile();
+    return this.fetchProfile(run);
   }
 
-  private async fetchProfile(): Promise<AuthState> {
+  private async fetchProfile(run: number): Promise<AuthState> {
     try {
       const response = await fetch(`${this.baseUrl}/MyProfile`, {
         headers: this.authHeaders(),
       });
       const state = stateFromStatus(response.status);
       const body = await response.json();
+      if (run !== this.profileRun) return this.state();
       if (state === "ready") {
-        this.profile.set(body as AuthProfile);
-      } else if (this.usesEntra) {
+        return this.applyProfile(run, state, body as AuthProfile);
+      }
+      if (this.usesEntra) {
         this.entraClaims.set(claimsFromErrorPayload(body));
       }
-      this.state.set(state);
-      return state;
+      return this.applyProfile(run, state);
     } catch {
-      this.state.set("error");
-      return "error";
+      return this.applyProfile(run, "error");
     }
   }
 }

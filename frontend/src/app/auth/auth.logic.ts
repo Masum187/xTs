@@ -50,6 +50,18 @@ export function authIdentifier(
     : personaUpn;
 }
 
+const ROLE_LABELS: Record<AuthRole, string> = {
+  user: "xTS User",
+  approver: "Projektleiter (Genehmigung)",
+  planner: "Ressourcenmanager (Planung/Beauftragung)",
+  admin: "xTS Administrator",
+};
+
+/** Meldung, wenn eine Route mangels Rolle nicht geoeffnet werden kann (Audit Nr. 25). */
+export function accessDeniedMessage(role: AuthRole, path: string): string {
+  return `Für ${path} fehlt Ihrem Konto die Rolle „${ROLE_LABELS[role]}". Sie wurden zur Stundenschreibung geleitet.`;
+}
+
 export function hasRole(profile: AuthProfile | null, role: AuthRole): boolean {
   return profile?.roles.includes(role) ?? false;
 }
