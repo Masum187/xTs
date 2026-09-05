@@ -30,7 +30,6 @@ const ORDER_STATUS_LABELS: Record<OrderStatus, string> = {
 
 @Component({
   selector: "xts-reporting",
-  standalone: true,
   imports: [DatePipe, DecimalPipe, FormsModule, LoadStatusComponent],
   templateUrl: "./reporting.component.html",
   styleUrl: "./reporting.component.css",

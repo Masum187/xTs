@@ -36,7 +36,6 @@ const STATUS_LABELS: Record<TimesheetStatus, string> = {
 
 @Component({
   selector: "xts-timesheet",
-  standalone: true,
   imports: [DatePipe, DecimalPipe, FormsModule, LoadStatusComponent],
   templateUrl: "./timesheet.component.html",
   styleUrl: "./timesheet.component.css",

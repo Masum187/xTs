@@ -74,7 +74,6 @@ function emptyCostObjectAssignment(): CostObjectAssignmentDraft {
 
 @Component({
   selector: "xts-admin",
-  standalone: true,
   imports: [FormsModule, LoadStatusComponent],
   templateUrl: "./admin.component.html",
   styleUrl: "./admin.component.css",

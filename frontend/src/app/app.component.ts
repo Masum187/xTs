@@ -15,7 +15,6 @@ import { AuthService } from "./auth/auth.service";
 
 @Component({
   selector: "xts-root",
-  standalone: true,
   imports: [FormsModule, RouterLink, RouterLinkActive, RouterOutlet],
   template: `
     <header class="topbar">

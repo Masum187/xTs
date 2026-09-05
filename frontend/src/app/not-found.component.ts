@@ -3,7 +3,6 @@ import { RouterLink } from "@angular/router";
 
 @Component({
   selector: "xts-not-found",
-  standalone: true,
   imports: [RouterLink],
   template: `
     <section class="auth-panel" data-testid="not-found">

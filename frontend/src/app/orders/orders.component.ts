@@ -24,7 +24,6 @@ const STATUS_LABELS: Record<OrderStatus, string> = {
 
 @Component({
   selector: "xts-orders",
-  standalone: true,
   imports: [DecimalPipe, FormsModule, LoadStatusComponent],
   templateUrl: "./orders.component.html",
   styleUrl: "./orders.component.css",

@@ -24,7 +24,7 @@ const roleGuard =
     if (auth.state() === "ready") {
       auth.showAccessNotice(
         accessDeniedMessage(role, state.url),
-        router.getCurrentNavigation()?.id ?? 0,
+        router.currentNavigation()?.id ?? 0,
       );
     }
     return router.parseUrl("/");

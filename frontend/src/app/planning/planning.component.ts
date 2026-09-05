@@ -24,7 +24,6 @@ interface FilterOption {
 
 @Component({
   selector: "xts-planning",
-  standalone: true,
   imports: [DecimalPipe, FormsModule, LoadStatusComponent],
   templateUrl: "./planning.component.html",
   styleUrl: "./planning.component.css",

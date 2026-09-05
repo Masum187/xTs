@@ -19,7 +19,6 @@ import { ApprovalService } from "./approval.service";
 
 @Component({
   selector: "xts-approval",
-  standalone: true,
   imports: [DatePipe, DecimalPipe, FormsModule, LoadStatusComponent],
   templateUrl: "./approval.component.html",
   styleUrl: "./approval.component.css",
