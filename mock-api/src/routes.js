@@ -262,9 +262,11 @@ export async function routeRequest(request) {
     }
     const employees = listEmployees({ includeDeleted });
     if (isAdmin) return json({ value: employees });
+    // Nicht-Admins sehen nur aktive, nicht geloeschte Mitarbeiter.
+    const active = employees.filter((item) => item.active);
     const visible = hasAnyRole(persona, ["planner", "approver"])
-      ? employees
-      : employees.filter((item) => item.extNr === persona.employee.extNr);
+      ? active
+      : active.filter((item) => item.extNr === persona.employee.extNr);
     return json({ value: visible.map(publicEmployee) });
   }
 

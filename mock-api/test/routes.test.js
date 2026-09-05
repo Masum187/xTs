@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { Readable } from "node:stream";
 import test from "node:test";
 
+import { store as masterData } from "../src/masterdata.js";
 import {
   InvalidJsonError,
   resetTimesheetStore,
@@ -2924,4 +2925,27 @@ test("master data reads require a mapped identity and are scoped by role", async
     const allowed = await routeRequest(approverRequest("GET", path));
     assert.equal(allowed.status, 200, path);
   }
+});
+
+test("planners and approvers do not see inactive employees, admins do", async () => {
+  // ROEPER ohne admin-Rolle: nur aktive Mitarbeiter, ohne Details.
+  const roeper = masterData.employees.find((item) => item.extNr === "ROEPER");
+  roeper.roles = ["user", "approver", "planner"];
+  const scoped = await routeRequest(approverRequest("GET", "/odata/Employees"));
+  const scopedBody = JSON.parse(scoped.body).value;
+  assert.equal(scoped.status, 200);
+  assert.deepEqual(scopedBody.map((item) => item.extNr).sort(), [
+    "ROEPER",
+    "SCHILZ",
+  ]);
+  assert.ok(!scopedBody.some((item) => item.extNr === "ALTMANN"));
+  assert.ok(scopedBody.every((item) => item.aadOid === undefined));
+  assert.ok(scopedBody.every((item) => item.sapAccount === undefined));
+
+  // Mit admin-Rolle: alle, inklusive inaktiver ALTMANN.
+  roeper.roles = ["user", "approver", "planner", "admin"];
+  const admin = await routeRequest(approverRequest("GET", "/odata/Employees"));
+  const adminBody = JSON.parse(admin.body).value;
+  assert.ok(adminBody.some((item) => item.extNr === "ALTMANN" && !item.active));
+  assert.ok(adminBody.every((item) => "aadOid" in item));
 });
