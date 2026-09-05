@@ -1,5 +1,11 @@
 import { DecimalPipe } from "@angular/common";
-import { Component, computed, inject, signal } from "@angular/core";
+import {
+  Component,
+  computed,
+  inject,
+  signal,
+  ChangeDetectionStrategy,
+} from "@angular/core";
 import { FormsModule } from "@angular/forms";
 
 import { describeApiError } from "../shared/api-error";
@@ -26,6 +32,7 @@ interface FilterOption {
   selector: "xts-planning",
   imports: [DecimalPipe, FormsModule, LoadStatusComponent],
   templateUrl: "./planning.component.html",
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrl: "./planning.component.css",
 })
 export class PlanningComponent {

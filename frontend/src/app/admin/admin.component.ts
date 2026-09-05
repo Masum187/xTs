@@ -1,4 +1,9 @@
-import { Component, inject, signal } from "@angular/core";
+import {
+  Component,
+  inject,
+  signal,
+  ChangeDetectionStrategy,
+} from "@angular/core";
 import { FormsModule } from "@angular/forms";
 
 import { ApiError, describeApiError } from "../shared/api-error";
@@ -76,6 +81,7 @@ function emptyCostObjectAssignment(): CostObjectAssignmentDraft {
   selector: "xts-admin",
   imports: [FormsModule, LoadStatusComponent],
   templateUrl: "./admin.component.html",
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrl: "./admin.component.css",
 })
 export class AdminComponent {
