@@ -1,6 +1,12 @@
 # xTS MVP Backlog v0.1
 
-Stand: 2026-05-08
+Stand: 2026-05-08 (Baseline; Umsetzungsstand siehe unten)
+
+## Umsetzungsstand (2026-09-06)
+
+- Im WebClient und in der Mock-API umgesetzt: Epics 2 bis 8, XTS-081, XTS-082 sowie Epics 10 bis 13. XTS-050 ist mit Option B umgesetzt (MSAL im WebClient, Token-Mapping in der Mock-API).
+- SAP-seitig offen: Epic 1 (XTS-001/002 Foundation), XTS-080 (Berechtigungen im OData-Service, Vorgabe in `odata-contracts.md`), Epic 14, echte BANF-/WE-Integration (XTS-032/033/061A sind simuliert).
+- Bekannte Luecken und Reihenfolge der Stabilisierung: `audit-2026-09-03.md`; offene Entscheidungen: `entscheidungen-v0.1.md`.
 
 ## Priorisierung
 

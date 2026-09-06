@@ -1,7 +1,7 @@
 # xTS Entscheidungen v0.1
 
-Stand: 2026-05-08  
-Quelle der Antworten: `xTS Offene Entscheidungen v0.docx` und `xTS Entwicklungskonzept v0.docx`
+Stand: 2026-09-06 (Grundsatzentscheidungen 1 bis 10 vom 2026-05-08, Ergaenzungen aus der Stabilisierung im September 2026)  
+Quelle der Antworten: `xTS Offene Entscheidungen v0.docx`, `xTS Entwicklungskonzept v0.docx`, Reviews der Pull Requests #15 bis #23
 
 Dieses Dokument enthaelt die fachlich beantworteten Entscheidungen fuer die MVP-Umsetzung. Punkte mit Umsetzungsfolgen sind in `entwicklungskonzept-v0.1.md` und `backlog-v0.1.md` uebernommen.
 
@@ -96,15 +96,12 @@ Umsetzungsregel:
 - xTS muss den authentifizierten Benutzer auf `EXTNR` in `ZXTS_WIW_T` mappen.
 - SAP-User ist optional, aber nicht Voraussetzung fuer WebClient-Nutzung.
 
-Offener Folgepunkt:
-
-- Welches AD/OAuth-Attribut das Mapping traegt, ist noch nicht entschieden.
-  Entscheidungsvorlage mit Optionen und Empfehlung:
-  [entscheidungsvorlage-extnr-mapping.md](entscheidungsvorlage-extnr-mapping.md)
-- Entschieden am 2026-09-02: **Option B** (Entra `oid` als `AAD_OID`,
-  `AAD_UPN` als Fallback). WebClient meldet ueber Entra ID (MSAL) an, die
-  Mock-API mappt Bearer-Token-Claims; Anleitung und offene SAP-Punkte in
-  [entra-anbindung.md](entra-anbindung.md).
+Folgepunkt, entschieden am 2026-09-02: **Option B** (Entra `oid` als `AAD_OID`,
+`AAD_UPN` als Fallback), Vorlage in
+[entscheidungsvorlage-extnr-mapping.md](entscheidungsvorlage-extnr-mapping.md).
+WebClient meldet ueber Entra ID (MSAL) an, die Mock-API mappt
+Bearer-Token-Claims; Anleitung und offene SAP-Punkte in
+[entra-anbindung.md](entra-anbindung.md).
 
 ## Entscheidung 7 - Abwesenheitsmanagement
 
@@ -174,3 +171,49 @@ Kontierungsarten:
 - `OR`: `EBAN-PSTYP = F`, `COBL-AUFNR = ZXTS_MABEAUF_T-KONTIERUNG`
 - `KS`: `EBAN-PSTYP = K`, `COBL-KOSTL = ZXTS_MABEAUF_T-KONTIERUNG`
 - `PR`: `EBAN-PSTYP = F`, `COBL-PS_POSID = ZXTS_MABEAUF_T-KONTIERUNG`
+
+## Entscheidungen aus der Stabilisierung (September 2026)
+
+Getroffen in den Reviews der Pull Requests #15 bis #22 auf Basis des Audits vom 2026-09-03 (`audit-2026-09-03.md`).
+
+### Entscheidung 11 - Statusmodell serverseitig
+
+Status: entschieden  
+Entscheidung: Mitarbeiter setzen nur `E` und `F`; `F` und `G` sind fuer Mitarbeiter gesperrt; `A` ist korrigierbar; Genehmigungsfelder fuehrt der Server.
+
+### Entscheidung 12 - Vier-Augen-Prinzip
+
+Status: entschieden  
+Entscheidung: Niemand genehmigt oder weist eigene Tage zurueck (`SELF_APPROVAL`). Folge: Ein Genehmiger braucht selbst einen anderen Genehmiger.
+
+### Entscheidung 13 - Erfassungsraster und Grenzen
+
+Status: entschieden  
+Entscheidung: Stunden im Viertelstundenraster, je Position 0,25 bis 24 Stunden, Tagessumme hoechstens 24; Zeiten `HH:MM`, Geht nach Kommt, Pause in ganzen Minuten; Kontingent wird mit der Tagessumme geprueft, Reststunden werden nicht negativ.
+
+### Entscheidung 14 - Arbeitszeit und Abweichung
+
+Status: entschieden  
+Entscheidung: Arbeitszeit = Geht - Kommt - Pause, serverseitig berechnet. Weicht die Positionssumme bei der Freigabe ab, ist eine Begruendung Pflicht (Warnung mit Pflichtbegruendung, keine Blockade), Projektleiter sehen Abweichung und Begruendung.
+
+### Entscheidung 15 - Stundenarithmetik
+
+Status: entschieden  
+Entscheidung: Rechnen in ganzen Minuten, Anzeige deutsch formatiert (`7,5 Std.`, `13.04.2026`); SAP-seitig `QUAN` mit Rundung auf ganze Minuten zu vereinbaren.
+
+### Entscheidung 16 - Rollenschnitt Stammdaten lesen
+
+Status: entschieden  
+Entscheidung: Stammdaten nur angemeldet; Zugangs- und Personaldetails sowie inaktive/geloeschte Saetze nur fuer `admin`; Zuordnungen fuer `admin`/`planner`.
+
+## Offene Entscheidungen
+
+| Nr. | Thema                                                                                      | Bezug                             | Wer                           |
+| --- | ------------------------------------------------------------------------------------------ | --------------------------------- | ----------------------------- |
+| O1  | SAP OData V2 oder V4 als Ziel (bestimmt Adapter, Decimal-/Datumsformat, ETag, Paginierung) | Audit Nr. 13, 16; Schritt 9       | SAP-Entwicklung / Architektur |
+| O2  | Erfassung rueckwirkend und in die Zukunft: bis wann erlaubt, Wochenende/Feiertag           | Audit Nr. 17                      | Fachbereich                   |
+| O3  | Zustaendigkeitsschnitt der Genehmiger (Kontierung, Team, Ressourcenmanager)                | Audit Nr. 33, Konzept §4          | Fachbereich / Projektleitung  |
+| O4  | Bestellpositionsbezug und Fehlerfall der WE-Buchung, Wiederholung                          | XTS-061A, Audit Nr. 34            | SAP-MM / Einkauf              |
+| O5  | Ueberplanung: Warnung (heute) oder Blockade                                                | XTS-022                           | Ressourcenmanagement          |
+| O6  | Rollen aus AD-Gruppen statt Stammdaten; Pflegeprozess `AAD_OID`/`AAD_UPN` beim Onboarding  | XTS-050/080, `entra-anbindung.md` | IT / xTS-Administration       |
+| O7  | Status `L` (geloescht) fuer Stundenzettel und Planung                                      | Konzept §6                        | Fachbereich                   |

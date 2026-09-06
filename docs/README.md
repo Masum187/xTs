@@ -1,28 +1,29 @@
-# xTS Konzeptbasis
+# xTS Dokumentation
 
-Dieser Ordner enthaelt die konsolidierte Arbeitsbasis fuer den Entwicklungsstart von xTS.
+Dieser Ordner enthaelt die Konzept-Baseline (v0.1, Stand 2026-05-08) und die seitdem gepflegte Umsetzungsdokumentation. Bei Widerspruechen gilt: `odata-contracts.md` und `entscheidungen-v0.1.md` beschreiben den umgesetzten Stand, `entwicklungskonzept-v0.1.md` und `backlog-v0.1.md` sind die fachliche Baseline mit Hinweisen auf Abweichungen.
 
 ## Dateien
 
-| Datei                                   | Zweck                                                                                               |
-| --------------------------------------- | --------------------------------------------------------------------------------------------------- |
-| `entwicklungskonzept-v0.1.md`           | Fachlich-technisches Zielbild, MVP-Scope, Prozesse, Datenmodell, Services, Screens und Architektur. |
-| `backlog-v0.1.md`                       | Erstes MVP-Backlog mit Epics, User Stories und Akzeptanzkriterien.                                  |
-| `entscheidungen-v0.1.md`                | Entscheidungslog mit den inzwischen fachlich beantworteten Grundsatzfragen.                         |
-| `development-workflow.md`               | GitHub-, Branching-, PR- und lokale Hook-Regeln.                                                    |
-| `odata-contracts.md`                    | OData-nahe Kontraktbasis fuer SAP und Mock-API.                                                     |
-| `entscheidungsvorlage-extnr-mapping.md` | Entscheidungsvorlage fuer das AD/OAuth-Attribut des EXTNR-Mappings (XTS-050).                       |
-| `testdaten-uat-v0.1.md`                 | Testdatenpaket und UAT-Drehbuch: Ausgangsstand, durchgehender Fall, Rueckweisung, Fehlerfaelle.     |
-| `entra-anbindung.md`                    | Anmeldung ueber Microsoft Entra ID (MSAL): App-Registrierung, Konfiguration, Ablauf, SAP-Punkte.    |
-| `audit-2026-09-03.md`                   | Audit des Stunden-Tools: Befunde mit Fundstellen, Luecken, priorisierte Stabilisierungsschritte.    |
+| Datei                                   | Zweck                                                                                                                               |
+| --------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------- |
+| `entwicklungskonzept-v0.1.md`           | Baseline: fachlich-technisches Zielbild, Prozesse, Datenmodell, Services, Screens; mit Abschnitt "Umsetzungsstand" zu Abweichungen. |
+| `backlog-v0.1.md`                       | MVP-Backlog mit Epics, User Stories und Akzeptanzkriterien; Umsetzungsstand im Kopf des Dokuments.                                  |
+| `entscheidungen-v0.1.md`                | Entscheidungslog: Grundsatzfragen, Entscheidungen aus der Stabilisierung, offene Entscheidungen.                                    |
+| `development-workflow.md`               | GitHub-, Branching-, PR- und lokale Hook-Regeln.                                                                                    |
+| `odata-contracts.md`                    | OData-nahe Kontraktbasis fuer SAP und Mock-API.                                                                                     |
+| `entscheidungsvorlage-extnr-mapping.md` | Entscheidungsvorlage fuer das AD/OAuth-Attribut des EXTNR-Mappings (XTS-050).                                                       |
+| `testdaten-uat-v0.1.md`                 | Testdatenpaket und UAT-Drehbuch: Ausgangsstand, durchgehender Fall, Rueckweisung, Fehlerfaelle.                                     |
+| `entra-anbindung.md`                    | Anmeldung ueber Microsoft Entra ID (MSAL): App-Registrierung, Konfiguration, Ablauf, SAP-Punkte.                                    |
+| `audit-2026-09-03.md`                   | Audit des Stunden-Tools: Befunde mit Fundstellen, Luecken, priorisierte Stabilisierungsschritte.                                    |
 
-## Empfohlene Reihenfolge
+## Empfohlene Reihenfolge fuer neue Beteiligte
 
-1. `entwicklungskonzept-v0.1.md` fachlich gegenlesen.
-2. Entscheidungen in `entscheidungen-v0.1.md` gegenlesen und technische Folgefragen priorisieren.
-3. `backlog-v0.1.md` in ein Projekttool uebertragen.
-4. `development-workflow.md` fuer GitHub/CI/CD einrichten.
-5. Sprint 1 mit Monorepo, Mock-API, Angular Foundation und SAP Foundation starten.
+1. `README.md` im Repository-Root fuer Stand und Stack.
+2. `odata-contracts.md` fuer das umgesetzte Verhalten der Services (fuehrend fuer die SAP-Implementierung).
+3. `entscheidungen-v0.1.md` fuer getroffene und offene Entscheidungen.
+4. `testdaten-uat-v0.1.md` und die laufende Anwendung fuer die Prozesskette.
+5. `audit-2026-09-03.md` fuer bekannte Luecken und die Reihenfolge der Stabilisierung.
+6. `entwicklungskonzept-v0.1.md` und `backlog-v0.1.md` als fachliche Baseline.
 
 ## Wichtige Arbeitsannahmen
 
@@ -30,6 +31,6 @@ Dieser Ordner enthaelt die konsolidierte Arbeitsbasis fuer den Entwicklungsstart
 - Der MVP fokussiert Planung, Beauftragung, Stundenschreibung, Genehmigung und Reporting.
 - xTS legt MM-BANF aktiv an, liest MM-Bestellungen per Job nach und bucht nach Genehmigung synchron den Wareneingang.
 - Die BANF-Anlage nutzt das im Konzept definierte EBAN/EBKN/COBL-Feldmapping.
-- WebClient-Authentifizierung erfolgt ueber AD/OAuth.
+- WebClient-Authentifizierung erfolgt ueber Microsoft Entra ID (Entscheidung 6, Option B: `AAD_OID`, Fallback `AAD_UPN`).
 - Vollautomatische Rechnung, Zahllauf, Gutschriftsverfahren und Obligobereinigung sind nicht Teil des MVP.
 - `ZXTS_MAPLAN_T` wird als konsolidierter Name fuer die Planungstabelle verwendet.
