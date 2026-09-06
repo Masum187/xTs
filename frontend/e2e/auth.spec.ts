@@ -51,6 +51,9 @@ test("switching the identity never loads data with the previous one", async ({
 }) => {
   await page.goto("/");
   await expect(page.getByTestId("profile")).toContainText("Stephan Schilz");
+  // Erst wenn der Erstaufruf (inkl. Folgeseiten bei OData-Paginierung)
+  // abgeschlossen ist, zaehlen Anfragen als "nach dem Wechsel".
+  await page.waitForLoadState("networkidle");
 
   const requests: { url: string; upn: string | undefined }[] = [];
   page.on("request", (request) => {

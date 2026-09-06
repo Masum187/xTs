@@ -1,8 +1,7 @@
 import { Injectable, inject } from "@angular/core";
 
-import { environment } from "../../environments/environment";
-import { AuthService } from "../auth/auth.service";
-import { readApiJson } from "../shared/api-error";
+import { ODataClient } from "../shared/odata";
+import { budgetRow, lifecycleRow, quotaRow, team } from "./reporting.decoders";
 import type {
   BudgetDetailLevel,
   BudgetRow,
@@ -13,54 +12,38 @@ import type {
   Team,
 } from "./reporting.models";
 
-interface ODataResponse<T> {
-  value: T[];
-}
-
 @Injectable({
   providedIn: "root",
 })
 export class ReportingService {
-  private readonly baseUrl = environment.apiBaseUrl;
-  private readonly auth = inject(AuthService);
+  private readonly odata = inject(ODataClient);
 
-  async getBudgetMonitor(detail: BudgetDetailLevel): Promise<BudgetRow[]> {
-    const query = detail === "none" ? "" : `?detail=${detail}`;
-    return this.readValues<BudgetRow>(`${this.baseUrl}/BudgetMonitor${query}`);
+  getBudgetMonitor(detail: BudgetDetailLevel): Promise<BudgetRow[]> {
+    return this.odata.list("BudgetMonitor", budgetRow, {
+      detail: detail === "none" ? "" : detail,
+    });
   }
 
-  async getCostObjectQuota(filters: QuotaFilters): Promise<QuotaRow[]> {
-    const params = new URLSearchParams();
-    if (filters.lastName) params.set("lastName", filters.lastName);
-    if (filters.team) params.set("team", filters.team);
-    if (filters.from) params.set("from", filters.from);
-    if (filters.to) params.set("to", filters.to);
-    if (filters.detail !== "none") params.set("detail", filters.detail);
-    const query = params.size > 0 ? `?${params.toString()}` : "";
-    return this.readValues<QuotaRow>(`${this.baseUrl}/CostObjectQuota${query}`);
+  getCostObjectQuota(filters: QuotaFilters): Promise<QuotaRow[]> {
+    return this.odata.list("CostObjectQuota", quotaRow, {
+      lastName: filters.lastName,
+      team: filters.team,
+      from: filters.from,
+      to: filters.to,
+      detail: filters.detail === "none" ? "" : filters.detail,
+    });
   }
 
-  async getResourceLifecycle(
-    filters: LifecycleFilters,
-  ): Promise<LifecycleRow[]> {
-    const params = new URLSearchParams();
-    if (filters.from) params.set("from", filters.from);
-    if (filters.to) params.set("to", filters.to);
-    if (filters.ebeln) params.set("ebeln", filters.ebeln);
-    if (filters.ebelp) params.set("ebelp", filters.ebelp);
-    const query = params.size > 0 ? `?${params.toString()}` : "";
-    return this.readValues<LifecycleRow>(
-      `${this.baseUrl}/ResourceLifecycle${query}`,
-    );
+  getResourceLifecycle(filters: LifecycleFilters): Promise<LifecycleRow[]> {
+    return this.odata.list("ResourceLifecycle", lifecycleRow, {
+      from: filters.from,
+      to: filters.to,
+      ebeln: filters.ebeln,
+      ebelp: filters.ebelp,
+    });
   }
 
-  async getTeams(): Promise<Team[]> {
-    return this.readValues<Team>(`${this.baseUrl}/Teams`);
-  }
-
-  private async readValues<T>(url: string): Promise<T[]> {
-    const response = await fetch(url, { headers: this.auth.authHeaders() });
-    const body = await readApiJson<ODataResponse<T>>(response);
-    return body.value;
+  getTeams(): Promise<Team[]> {
+    return this.odata.list("Teams", team);
   }
 }

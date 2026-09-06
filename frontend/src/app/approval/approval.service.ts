@@ -1,34 +1,24 @@
 import { Injectable, inject } from "@angular/core";
 
-import { environment } from "../../environments/environment";
-import { AuthService } from "../auth/auth.service";
-import { readApiJson } from "../shared/api-error";
+import { ODataClient } from "../shared/odata";
+import { approvalDay, timesheetDay } from "../timesheet/timesheet.decoders";
 import type { ApprovalDay, TimesheetDay } from "../timesheet/timesheet.models";
-
-interface ODataResponse<T> {
-  value: T[];
-}
 
 @Injectable({
   providedIn: "root",
 })
 export class ApprovalService {
-  private readonly baseUrl = environment.apiBaseUrl;
-  private readonly auth = inject(AuthService);
+  private readonly odata = inject(ODataClient);
 
-  async getApprovalTimesheets(): Promise<ApprovalDay[]> {
-    const response = await fetch(`${this.baseUrl}/ApprovalTimesheets`, {
-      headers: this.auth.authHeaders(),
-    });
-    const body = await this.readJson<ODataResponse<ApprovalDay>>(response);
-    return body.value;
+  getApprovalTimesheets(): Promise<ApprovalDay[]> {
+    return this.odata.list("ApprovalTimesheets", approvalDay);
   }
 
-  async approveDay(extNr: string, date: string): Promise<TimesheetDay> {
+  approveDay(extNr: string, date: string): Promise<TimesheetDay> {
     return this.sendApproval({ extNr, date, action: "approve" });
   }
 
-  async rejectDay(
+  rejectDay(
     extNr: string,
     date: string,
     reason: string,
@@ -36,24 +26,12 @@ export class ApprovalService {
     return this.sendApproval({ extNr, date, action: "reject", reason });
   }
 
-  private async sendApproval(payload: {
+  private sendApproval(payload: {
     extNr: string;
     date: string;
     action: "approve" | "reject";
     reason?: string;
   }): Promise<TimesheetDay> {
-    const response = await fetch(`${this.baseUrl}/TimesheetApprovals`, {
-      method: "POST",
-      headers: {
-        "content-type": "application/json",
-        ...this.auth.authHeaders(),
-      },
-      body: JSON.stringify(payload),
-    });
-    return this.readJson<TimesheetDay>(response);
-  }
-
-  private readJson<T>(response: Response): Promise<T> {
-    return readApiJson<T>(response);
+    return this.odata.post("TimesheetApprovals", payload, timesheetDay);
   }
 }

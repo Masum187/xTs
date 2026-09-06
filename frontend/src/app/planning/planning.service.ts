@@ -1,8 +1,8 @@
 import { Injectable, inject } from "@angular/core";
 
-import { environment } from "../../environments/environment";
-import { AuthService } from "../auth/auth.service";
-import { readApiJson } from "../shared/api-error";
+import { D } from "../shared/decode";
+import { ODataClient } from "../shared/odata";
+import { planningOverview, saveEntryResult } from "./planning.decoders";
 import type {
   PlanningFilters,
   PlanningOverview,
@@ -13,36 +13,31 @@ import type {
   providedIn: "root",
 })
 export class PlanningService {
-  private readonly baseUrl = environment.apiBaseUrl;
-  private readonly auth = inject(AuthService);
+  private readonly odata = inject(ODataClient);
 
-  async getOverview(
+  getOverview(
     start: string,
     filters: PlanningFilters,
   ): Promise<PlanningOverview> {
-    const params = new URLSearchParams({ start });
-    if (filters.extNr) params.set("extNr", filters.extNr);
-    if (filters.team) params.set("team", filters.team);
-    if (filters.coIdent) params.set("coIdent", filters.coIdent);
-    const response = await fetch(
-      `${this.baseUrl}/PlanningOverview?${params.toString()}`,
-      { headers: this.auth.authHeaders() },
-    );
-    return this.readJson<PlanningOverview>(response);
+    return this.odata.get("PlanningOverview", planningOverview, {
+      start,
+      extNr: filters.extNr,
+      team: filters.team,
+      coIdent: filters.coIdent,
+    });
   }
 
-  async saveEntry(
+  saveEntry(
     extNr: string,
     coIdent: string,
     month: string,
     hours: number,
   ): Promise<SaveEntryResult> {
-    return this.post<SaveEntryResult>(`${this.baseUrl}/PlanningEntries`, {
-      extNr,
-      coIdent,
-      month,
-      hours,
-    });
+    return this.odata.post(
+      "PlanningEntries",
+      { extNr, coIdent, month, hours },
+      saveEntryResult,
+    );
   }
 
   async releaseEntry(
@@ -50,26 +45,10 @@ export class PlanningService {
     coIdent: string,
     month: string,
   ): Promise<void> {
-    await this.post(`${this.baseUrl}/PlanningReleases`, {
-      extNr,
-      coIdent,
-      month,
-    });
-  }
-
-  private async post<T>(url: string, payload: unknown): Promise<T> {
-    const response = await fetch(url, {
-      method: "POST",
-      headers: {
-        "content-type": "application/json",
-        ...this.auth.authHeaders(),
-      },
-      body: JSON.stringify(payload),
-    });
-    return this.readJson<T>(response);
-  }
-
-  private readJson<T>(response: Response): Promise<T> {
-    return readApiJson<T>(response);
+    await this.odata.post(
+      "PlanningReleases",
+      { extNr, coIdent, month },
+      D.unknown,
+    );
   }
 }

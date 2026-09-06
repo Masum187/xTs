@@ -5,6 +5,7 @@
   "type": "module",
   "scripts": {
     "start": "node src/server.js",
+    "start:v2": "XTS_ODATA=v2 node src/server.js",
     "lint": "for f in src/*.js test/*.js; do node --check \"$f\" || exit 1; done",
     "test": "node --test test/*.test.js"
   }

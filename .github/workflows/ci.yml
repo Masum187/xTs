@@ -31,3 +31,6 @@ jobs:
 
       - name: Run smoke tests
         run: npm run test:smoke
+
+      - name: Run smoke tests (SAP OData V2 shape)
+        run: npm run test:smoke:v2
