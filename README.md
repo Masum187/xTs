@@ -8,7 +8,7 @@ Dieses Repository ist als Monorepo aufgebaut, damit Konzept, SAP-Artefakte, ODat
 
 - Alle Epics des MVP-Backlogs, die sich im WebClient und in der Mock-API abbilden lassen, sind umgesetzt: Stammdaten, Planung, Beauftragung (BANF/Bestellung simuliert), Freischaltung, Stundenschreibung, Genehmigung mit simulierter WE-Buchung, Reporting (Budget-Monitor, Stundenkontingent-Monitor, Ressourcen-Live-Circle), Regelwerk, Aenderungs-/Fehlerprotokoll, Testdatenpaket.
 - Authentifizierung: Entscheidung 6 ist fuer **Option B** gefallen (Entra `oid` als `AAD_OID`, `AAD_UPN` als Fallback); der WebClient meldet ueber Microsoft Entra ID (MSAL) an, siehe `docs/entra-anbindung.md`.
-- Audit vom 2026-09-03 (`docs/audit-2026-09-03.md`): die Stabilisierungsschritte 1 bis 8 und 10a sind umgesetzt (Statusmaschine, Payload-Validierung, Kontingentpruefung, Minutenarithmetik, Arbeitszeit/Tagesdifferenz, Lade-/Fehlerzustaende, Identitaetswechsel, rollengeschuetzte Lesepfade, Angular 22).
+- Audit vom 2026-09-03 (`docs/audit-2026-09-03.md`): die Stabilisierungsschritte 1 bis 8, 10a und 10b sind umgesetzt (Statusmaschine, Payload-Validierung, Kontingentpruefung, Minutenarithmetik, Arbeitszeit/Tagesdifferenz, Lade-/Fehlerzustaende, Identitaetswechsel, rollengeschuetzte Lesepfade, Angular 22, Doku-Konsolidierung).
 - Offen: OData-Adapter (Schritt 9) erst nach Entscheidung SAP OData V2 oder V4; SAP-seitige Umsetzung (Epics 9 und 14); offene Fachentscheidungen in `docs/entscheidungen-v0.1.md`.
 
 ## Struktur
