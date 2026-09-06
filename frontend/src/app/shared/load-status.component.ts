@@ -1,4 +1,9 @@
-import { Component, input, output } from "@angular/core";
+import {
+  Component,
+  input,
+  output,
+  ChangeDetectionStrategy,
+} from "@angular/core";
 
 import type { LoadStateValue } from "./async-state";
 
@@ -20,6 +25,7 @@ import type { LoadStateValue } from "./async-state";
       </div>
     }
   `,
+  changeDetection: ChangeDetectionStrategy.Eager,
   styles: `
     .load-status {
       border-radius: 8px;

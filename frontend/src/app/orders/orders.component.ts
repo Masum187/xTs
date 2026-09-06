@@ -1,5 +1,10 @@
 import { DecimalPipe } from "@angular/common";
-import { Component, inject, signal } from "@angular/core";
+import {
+  Component,
+  inject,
+  signal,
+  ChangeDetectionStrategy,
+} from "@angular/core";
 import { FormsModule } from "@angular/forms";
 
 import { describeApiError } from "../shared/api-error";
@@ -24,9 +29,9 @@ const STATUS_LABELS: Record<OrderStatus, string> = {
 
 @Component({
   selector: "xts-orders",
-  standalone: true,
   imports: [DecimalPipe, FormsModule, LoadStatusComponent],
   templateUrl: "./orders.component.html",
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrl: "./orders.component.css",
 })
 export class OrdersComponent {

@@ -7,7 +7,7 @@
     "mock-api"
   ],
   "engines": {
-    "node": ">=20 <21"
+    "node": "^22.22.3 || ^24.15.0 || >=26.0.0"
   },
   "scripts": {
     "format": "prettier --write .",
@@ -22,6 +22,6 @@
     "ci": "npm run format:check && npm run docs:links && npm run lint && npm run typecheck && npm test && npm run build"
   },
   "devDependencies": {
-    "prettier": "^3.3.3"
+    "prettier": "^3.8.0"
   }
 }

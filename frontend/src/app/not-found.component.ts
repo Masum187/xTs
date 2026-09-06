@@ -1,9 +1,8 @@
-import { Component } from "@angular/core";
+import { Component, ChangeDetectionStrategy } from "@angular/core";
 import { RouterLink } from "@angular/router";
 
 @Component({
   selector: "xts-not-found",
-  standalone: true,
   imports: [RouterLink],
   template: `
     <section class="auth-panel" data-testid="not-found">
@@ -12,6 +11,7 @@ import { RouterLink } from "@angular/router";
       <p><a routerLink="/">Zur Stundenschreibung</a></p>
     </section>
   `,
+  changeDetection: ChangeDetectionStrategy.Eager,
   styles: `
     .auth-panel {
       background: #ffffff;

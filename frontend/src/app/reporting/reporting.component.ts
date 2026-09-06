@@ -1,5 +1,10 @@
 import { DatePipe, DecimalPipe } from "@angular/common";
-import { Component, inject, signal } from "@angular/core";
+import {
+  Component,
+  inject,
+  signal,
+  ChangeDetectionStrategy,
+} from "@angular/core";
 import { FormsModule } from "@angular/forms";
 
 import { LoadState } from "../shared/async-state";
@@ -30,9 +35,9 @@ const ORDER_STATUS_LABELS: Record<OrderStatus, string> = {
 
 @Component({
   selector: "xts-reporting",
-  standalone: true,
   imports: [DatePipe, DecimalPipe, FormsModule, LoadStatusComponent],
   templateUrl: "./reporting.component.html",
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrl: "./reporting.component.css",
 })
 export class ReportingComponent {

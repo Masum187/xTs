@@ -1,5 +1,11 @@
 import { DatePipe, DecimalPipe } from "@angular/common";
-import { Component, computed, inject, signal } from "@angular/core";
+import {
+  Component,
+  computed,
+  inject,
+  signal,
+  ChangeDetectionStrategy,
+} from "@angular/core";
 import { FormsModule } from "@angular/forms";
 
 import { AuthService } from "../auth/auth.service";
@@ -19,9 +25,9 @@ import { ApprovalService } from "./approval.service";
 
 @Component({
   selector: "xts-approval",
-  standalone: true,
   imports: [DatePipe, DecimalPipe, FormsModule, LoadStatusComponent],
   templateUrl: "./approval.component.html",
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrl: "./approval.component.css",
 })
 export class ApprovalComponent {

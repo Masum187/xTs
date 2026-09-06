@@ -1,6 +1,6 @@
 import { registerLocaleData } from "@angular/common";
 import localeDe from "@angular/common/locales/de";
-import { LOCALE_ID } from "@angular/core";
+import { LOCALE_ID, provideZoneChangeDetection } from "@angular/core";
 import { bootstrapApplication } from "@angular/platform-browser";
 import { provideRouter } from "@angular/router";
 
@@ -12,7 +12,11 @@ import { routes } from "./app/app.routes";
 registerLocaleData(localeDe);
 
 bootstrapApplication(AppComponent, {
-  providers: [provideRouter(routes), { provide: LOCALE_ID, useValue: "de" }],
+  providers: [
+    provideZoneChangeDetection(),
+    provideRouter(routes),
+    { provide: LOCALE_ID, useValue: "de" },
+  ],
 }).catch((error: unknown) => {
   console.error(error);
 });

@@ -1,5 +1,11 @@
 import { DatePipe, DecimalPipe } from "@angular/common";
-import { Component, computed, inject, signal } from "@angular/core";
+import {
+  Component,
+  computed,
+  inject,
+  signal,
+  ChangeDetectionStrategy,
+} from "@angular/core";
 import { FormsModule } from "@angular/forms";
 
 import { describeApiError } from "../shared/api-error";
@@ -36,9 +42,9 @@ const STATUS_LABELS: Record<TimesheetStatus, string> = {
 
 @Component({
   selector: "xts-timesheet",
-  standalone: true,
   imports: [DatePipe, DecimalPipe, FormsModule, LoadStatusComponent],
   templateUrl: "./timesheet.component.html",
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrl: "./timesheet.component.css",
 })
 export class TimesheetComponent {
