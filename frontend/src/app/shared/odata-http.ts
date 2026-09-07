@@ -109,10 +109,41 @@ export class ODataHttp {
         ),
       );
       url = collection.nextLink
-        ? new URL(collection.nextLink, `${this.baseUrl}/`).toString()
+        ? this.resolveNextLink(path, collection.nextLink)
         : null;
     }
     return items;
+  }
+
+  /**
+   * Folge-URLs muessen im eigenen OData-Service-Root liegen (gleiche Origin,
+   * gleicher Pfadanfang); sonst wuerden Auth-/Persona-Header an eine fremde
+   * Adresse gehen.
+   */
+  private resolveNextLink(path: string, nextLink: string): string {
+    const root = new URL(`${this.baseUrl}/`);
+    let next: URL;
+    try {
+      next = new URL(nextLink, root);
+    } catch {
+      throw this.invalidNextLink(path, nextLink);
+    }
+    if (
+      next.origin !== root.origin ||
+      !next.pathname.startsWith(root.pathname)
+    ) {
+      throw this.invalidNextLink(path, nextLink);
+    }
+    return next.toString();
+  }
+
+  private invalidNextLink(path: string, nextLink: string): ApiError {
+    return new ApiError(
+      200,
+      "INVALID_NEXT_LINK",
+      `Die Folgeseite von ${path} liegt ausserhalb des OData-Dienstes.`,
+      { nextLink },
+    );
   }
 
   async get<T>(

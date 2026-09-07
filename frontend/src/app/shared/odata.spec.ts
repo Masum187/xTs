@@ -135,6 +135,25 @@ describe("ODataClient", () => {
     expect(headers["x-mock-oauth-upn"]).toBe("u");
   });
 
+  it("refuses next links outside the own service root", async () => {
+    for (const nextLink of [
+      "https://evil.example/odata/Rows?$skip=1",
+      "http://127.0.0.1:4010/other/Rows?$skip=1",
+      "http://127.0.0.1:4011/odata/Rows?$skip=1",
+      "//evil.example/odata/Rows",
+    ]) {
+      const fetchMock = vi.fn(async () =>
+        jsonResponse({ d: { results: [{}], __next: nextLink } }),
+      );
+      vi.stubGlobal("fetch", fetchMock);
+      await expect(client().list("Rows", D.unknown)).rejects.toMatchObject({
+        code: "INVALID_NEXT_LINK",
+        details: { nextLink },
+      });
+      expect(fetchMock).toHaveBeenCalledTimes(1);
+    }
+  });
+
   it("stops following pages when the identity changes in between", async () => {
     let upn = "a";
     const fetchMock = vi.fn(async () => {

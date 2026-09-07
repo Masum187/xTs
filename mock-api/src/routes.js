@@ -246,7 +246,10 @@ export async function routeRequest(request) {
   const path = url.pathname.replace(/\/$/, "");
 
   if (path === "/health") {
-    return json({ status: "ok" });
+    // Antwortform (Entscheidung 17), damit ein wiederverwendeter Server in den
+    // Smoke-Tests gegen die erwartete Form geprueft werden kann.
+    const odata = process.env.XTS_ODATA === "v2" ? "v2" : "mock";
+    return json({ status: "ok", odata });
   }
 
   // Stammdaten lesen (Audit Nr. 6): immer angemeldet, Umfang nach Rolle.

@@ -65,7 +65,7 @@ E2E-Smoke-Tests (setzen das Testdatenpaket der laufenden Mock-API vor dem Lauf z
 
 ```bash
 npm run test:smoke
-npm run test:smoke:v2   # gleiche Specs gegen die SAP-OData-V2-Antwortform
+npm run test:smoke:v2   # gleiche Specs gegen die SAP-OData-V2-Antwortform (laufende Mock-API muss mit XTS_ODATA=v2 gestartet sein, sonst bricht der Lauf ab)
 ```
 
 ## Quality Gates
