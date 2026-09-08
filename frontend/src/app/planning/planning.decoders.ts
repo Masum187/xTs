@@ -1,0 +1,55 @@
+import { D, type Decoder } from "../shared/decode";
+import type {
+  PlanningCell,
+  PlanningMonth,
+  PlanningOverview,
+  PlanningRow,
+  SaveEntryResult,
+} from "./planning.models";
+
+const planningStatus = D.literal("V", "F", "P", "B");
+
+export const planningMonth: Decoder<PlanningMonth> = D.object<PlanningMonth>({
+  month: D.string,
+  availableHours: D.number,
+});
+
+export const planningCell: Decoder<PlanningCell> = D.object<PlanningCell>({
+  month: D.string,
+  hours: D.number,
+  status: D.nullable(planningStatus),
+  valid: D.boolean,
+  locked: D.boolean,
+  overbooked: D.boolean,
+});
+
+export const planningRow: Decoder<PlanningRow> = D.object<PlanningRow>({
+  extNr: D.string,
+  displayName: D.string,
+  teamId: D.text,
+  coIdent: D.string,
+  description: D.text,
+  validFrom: D.date,
+  validTo: D.date,
+  cells: D.array(planningCell),
+});
+
+export const planningOverview: Decoder<PlanningOverview> =
+  D.object<PlanningOverview>({
+    months: D.array(planningMonth),
+    rows: D.array(planningRow),
+  });
+
+export const saveEntryResult: Decoder<SaveEntryResult> =
+  D.object<SaveEntryResult>({
+    entry: D.object<SaveEntryResult["entry"]>({
+      extNr: D.string,
+      coIdent: D.string,
+      month: D.string,
+      hours: D.number,
+      status: planningStatus,
+    }),
+    overbooked: D.boolean,
+    availableHours: D.number,
+    plannedTotal: D.number,
+  });

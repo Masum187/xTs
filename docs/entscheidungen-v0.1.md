@@ -206,14 +206,22 @@ Entscheidung: Rechnen in ganzen Minuten, Anzeige deutsch formatiert (`7,5 Std.`,
 Status: entschieden  
 Entscheidung: Stammdaten nur angemeldet; Zugangs- und Personaldetails sowie inaktive/geloeschte Saetze nur fuer `admin`; Zuordnungen fuer `admin`/`planner`.
 
+### Entscheidung 17 - SAP OData V2 (Ziel SAP ECC)
+
+Status: entschieden (2026-09-06)
+
+Entscheidung: Zielsystem ist SAP ECC mit klassischem SAP Gateway (SEGW), daher OData V2. Der WebClient bekommt eine Adapterschicht (`frontend/src/app/shared/odata-http.ts`, `decode.ts`, `api-error.ts`), die die Mock-Form und die V2-Form (`d.results`, `Edm.Decimal` als String, `/Date(ms)/`, `Edm.Time`, V2-Fehlerobjekt, `__next`) gleichermassen versteht und jede Antwort zur Laufzeit gegen den Kontrakt prueft. Die Mock-API liefert mit `XTS_ODATA=v2` die V2-Form; beide Formen laufen in CI durch die Smoke-Tests. Abbildungsregeln: `docs/odata-contracts.md`, Abschnitt "Antwortformen".
+
+Folgepunkte (mit dem ersten echten Gateway-Service): CSRF-Token-Handshake (`x-csrf-token: fetch` vor `POST`), ETag/`If-Match` fuer optimistisches Sperren, Abbildung der benannten Filterparameter (`?month=`, `?extNr=`, `?from=`/`?to=`) auf `$filter` oder Funktionsimporte; `$batch` wird nicht benoetigt. Der Zeitraum fuer `MyTimesheets` (Audit Nr. 16) folgt als Schritt 9b.
+
 ## Offene Entscheidungen
 
-| Nr. | Thema                                                                                      | Bezug                             | Wer                           |
-| --- | ------------------------------------------------------------------------------------------ | --------------------------------- | ----------------------------- |
-| O1  | SAP OData V2 oder V4 als Ziel (bestimmt Adapter, Decimal-/Datumsformat, ETag, Paginierung) | Audit Nr. 13, 16; Schritt 9       | SAP-Entwicklung / Architektur |
-| O2  | Erfassung rueckwirkend und in die Zukunft: bis wann erlaubt, Wochenende/Feiertag           | Audit Nr. 17                      | Fachbereich                   |
-| O3  | Zustaendigkeitsschnitt der Genehmiger (Kontierung, Team, Ressourcenmanager)                | Audit Nr. 33, Konzept §4          | Fachbereich / Projektleitung  |
-| O4  | Bestellpositionsbezug und Fehlerfall der WE-Buchung, Wiederholung                          | XTS-061A, Audit Nr. 34            | SAP-MM / Einkauf              |
-| O5  | Ueberplanung: Warnung (heute) oder Blockade                                                | XTS-022                           | Ressourcenmanagement          |
-| O6  | Rollen aus AD-Gruppen statt Stammdaten; Pflegeprozess `AAD_OID`/`AAD_UPN` beim Onboarding  | XTS-050/080, `entra-anbindung.md` | IT / xTS-Administration       |
-| O7  | Status `L` (geloescht) fuer Stundenzettel und Planung                                      | Konzept §6                        | Fachbereich                   |
+| Nr. | Thema                                                                                     | Bezug                             | Wer                          |
+| --- | ----------------------------------------------------------------------------------------- | --------------------------------- | ---------------------------- |
+| O1  | Entschieden am 2026-09-06: SAP OData V2, Zielsystem SAP ECC (siehe Entscheidung 17)       | Audit Nr. 13, 16; Schritt 9       | erledigt                     |
+| O2  | Erfassung rueckwirkend und in die Zukunft: bis wann erlaubt, Wochenende/Feiertag          | Audit Nr. 17                      | Fachbereich                  |
+| O3  | Zustaendigkeitsschnitt der Genehmiger (Kontierung, Team, Ressourcenmanager)               | Audit Nr. 33, Konzept §4          | Fachbereich / Projektleitung |
+| O4  | Bestellpositionsbezug und Fehlerfall der WE-Buchung, Wiederholung                         | XTS-061A, Audit Nr. 34            | SAP-MM / Einkauf             |
+| O5  | Ueberplanung: Warnung (heute) oder Blockade                                               | XTS-022                           | Ressourcenmanagement         |
+| O6  | Rollen aus AD-Gruppen statt Stammdaten; Pflegeprozess `AAD_OID`/`AAD_UPN` beim Onboarding | XTS-050/080, `entra-anbindung.md` | IT / xTS-Administration      |
+| O7  | Status `L` (geloescht) fuer Stundenzettel und Planung                                     | Konzept §6                        | Fachbereich                  |

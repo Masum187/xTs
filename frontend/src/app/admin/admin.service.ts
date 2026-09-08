@@ -1,8 +1,17 @@
 import { Injectable, inject } from "@angular/core";
 
-import { environment } from "../../environments/environment";
-import { AuthService } from "../auth/auth.service";
-import { readApiJson } from "../shared/api-error";
+import { ODataClient } from "../shared/odata";
+import {
+  auditEntry,
+  costObject,
+  costObjectAssignment,
+  costObjectCheck,
+  employee,
+  rule,
+  team,
+  teamAssignment,
+  testDataReset,
+} from "./admin.decoders";
 import type {
   AuditEntry,
   AuditFilters,
@@ -16,110 +25,86 @@ import type {
   TestDataReset,
 } from "./admin.models";
 
-interface ODataResponse<T> {
-  value: T[];
-}
-
 @Injectable({
   providedIn: "root",
 })
 export class AdminService {
-  private readonly baseUrl = environment.apiBaseUrl;
-  private readonly auth = inject(AuthService);
+  private readonly odata = inject(ODataClient);
 
   getRules(): Promise<Rule[]> {
-    return this.list<Rule>("Rules");
+    return this.odata.list("Rules", rule);
   }
 
-  saveRule(rule: Rule): Promise<Rule> {
-    return this.post<Rule>("Rules", rule);
+  saveRule(payload: Rule): Promise<Rule> {
+    return this.odata.post("Rules", payload, rule);
   }
 
   getEmployees(): Promise<Employee[]> {
-    return this.list<Employee>("Employees", "includeDeleted=true");
+    return this.odata.list("Employees", employee, { includeDeleted: "true" });
   }
 
-  saveEmployee(employee: Partial<Employee>): Promise<Employee> {
-    return this.post<Employee>("Employees", employee);
+  saveEmployee(payload: Partial<Employee>): Promise<Employee> {
+    return this.odata.post("Employees", payload, employee);
   }
 
   getTeams(): Promise<Team[]> {
-    return this.list<Team>("Teams", "includeInactive=true");
+    return this.odata.list("Teams", team, { includeInactive: "true" });
   }
 
-  saveTeam(team: Partial<Team>): Promise<Team> {
-    return this.post<Team>("Teams", team);
+  saveTeam(payload: Partial<Team>): Promise<Team> {
+    return this.odata.post("Teams", payload, team);
   }
 
   getTeamAssignments(): Promise<TeamAssignment[]> {
-    return this.list<TeamAssignment>("TeamAssignments");
+    return this.odata.list("TeamAssignments", teamAssignment);
   }
 
   saveTeamAssignment(
-    assignment: Partial<TeamAssignment>,
+    payload: Partial<TeamAssignment>,
   ): Promise<TeamAssignment> {
-    return this.post<TeamAssignment>("TeamAssignments", assignment);
+    return this.odata.post("TeamAssignments", payload, teamAssignment);
   }
 
   getCostObjects(): Promise<CostObject[]> {
-    return this.list<CostObject>("CostObjects", "includeDeleted=true");
+    return this.odata.list("CostObjects", costObject, {
+      includeDeleted: "true",
+    });
   }
 
-  saveCostObject(costObject: Partial<CostObject>): Promise<CostObject> {
-    return this.post<CostObject>("CostObjects", costObject);
+  saveCostObject(payload: Partial<CostObject>): Promise<CostObject> {
+    return this.odata.post("CostObjects", payload, costObject);
   }
 
-  checkCostObject(costObject: {
+  checkCostObject(payload: {
     coIdent: string;
     type: string;
   }): Promise<CostObjectCheck> {
-    return this.post<CostObjectCheck>("CostObjectChecks", costObject);
+    return this.odata.post("CostObjectChecks", payload, costObjectCheck);
   }
 
   getCostObjectAssignments(): Promise<CostObjectAssignment[]> {
-    return this.list<CostObjectAssignment>("CostObjectAssignments");
+    return this.odata.list("CostObjectAssignments", costObjectAssignment);
   }
 
   saveCostObjectAssignment(
-    assignment: Partial<CostObjectAssignment>,
+    payload: Partial<CostObjectAssignment>,
   ): Promise<CostObjectAssignment> {
-    return this.post<CostObjectAssignment>("CostObjectAssignments", assignment);
+    return this.odata.post(
+      "CostObjectAssignments",
+      payload,
+      costObjectAssignment,
+    );
   }
 
   getAuditLog(filters: AuditFilters): Promise<AuditEntry[]> {
-    const params = new URLSearchParams();
-    if (filters.category) params.set("category", filters.category);
-    if (filters.severity) params.set("severity", filters.severity);
-    if (filters.q) params.set("q", filters.q);
-    return this.list<AuditEntry>("AuditLog", params.toString());
+    return this.odata.list("AuditLog", auditEntry, {
+      category: filters.category,
+      severity: filters.severity,
+      q: filters.q,
+    });
   }
 
   resetTestData(): Promise<TestDataReset> {
-    return this.post<TestDataReset>("TestDataResets", {});
-  }
-
-  private async list<T>(path: string, query = ""): Promise<T[]> {
-    const suffix = query ? `?${query}` : "";
-    const response = await fetch(`${this.baseUrl}/${path}${suffix}`, {
-      headers: this.auth.authHeaders(),
-    });
-    const body = await this.readJson<ODataResponse<T>>(response);
-    return body.value;
-  }
-
-  private async post<T>(path: string, payload: unknown): Promise<T> {
-    const response = await fetch(`${this.baseUrl}/${path}`, {
-      method: "POST",
-      headers: {
-        "content-type": "application/json",
-        ...this.auth.authHeaders(),
-      },
-      body: JSON.stringify(payload),
-    });
-    return this.readJson<T>(response);
-  }
-
-  private readJson<T>(response: Response): Promise<T> {
-    return readApiJson<T>(response);
+    return this.odata.post("TestDataResets", {}, testDataReset);
   }
 }

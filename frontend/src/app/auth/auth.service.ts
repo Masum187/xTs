@@ -1,6 +1,10 @@
 import { Injectable, signal } from "@angular/core";
 
 import { environment } from "../../environments/environment";
+import { parseErrorBody } from "../shared/api-error";
+import { decode } from "../shared/decode";
+import { unwrapEntity } from "../shared/odata-http";
+import { authProfile } from "./auth.decoders";
 import {
   authIdentifier,
   claimsFromErrorPayload,
@@ -186,16 +190,19 @@ export class AuthService {
   private async fetchProfile(run: number): Promise<AuthState> {
     try {
       const response = await fetch(`${this.baseUrl}/MyProfile`, {
-        headers: this.authHeaders(),
+        headers: { accept: "application/json", ...this.authHeaders() },
       });
       const state = stateFromStatus(response.status);
-      const body = await response.json();
+      const body: unknown = await response.json();
       if (run !== this.profileRun) return this.state();
       if (state === "ready") {
-        return this.applyProfile(run, state, body as AuthProfile);
+        // Profil wird geprueft (Audit Nr. 13); unerwartete Form -> "error".
+        const profile = decode(authProfile, unwrapEntity(body));
+        return this.applyProfile(run, state, profile);
       }
       if (this.usesEntra) {
-        this.entraClaims.set(claimsFromErrorPayload(body));
+        const { details } = parseErrorBody(body, response.status);
+        this.entraClaims.set(claimsFromErrorPayload(details));
       }
       return this.applyProfile(run, state);
     } catch {

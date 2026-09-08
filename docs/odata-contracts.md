@@ -126,17 +126,30 @@ Diese Datei beschreibt die fachlichen Service-Kontrakte fuer SAP-OData und die M
 
 - Stunden sind Dezimalzahlen mit Minutenpraezision (Viertelstundenraster bei der Erfassung, beliebige Dezimalwerte in der Planung). Summen, Differenzen und Prozentwerte bildet die Mock-API in ganzen Minuten (`mock-api/src/hours.js`), damit keine Gleitkomma-Reste in Reststunden, Vergleiche oder Reports gelangen; der WebClient rechnet ebenso (`shared/hours.ts`) und formatiert nur zur Anzeige (Locale `de`: `7,5 Std.`, `13.04.2026`). SAP-seitig entspricht das `QUAN` mit Stunden auf zwei Nachkommastellen; Rundung auf ganze Minuten ist zu vereinbaren.
 
-## Response Shape
+## Antwortformen (Mock-Form und SAP OData V2)
 
-Listen verwenden OData-nahe Form:
+Zielsystem ist SAP ECC mit klassischem Gateway, also OData V2 (Entscheidung 17). Der WebClient versteht ueber seine Adapterschicht (`frontend/src/app/shared/odata-http.ts`, `decode.ts`, `api-error.ts`) beide Formen; die Fachlogik arbeitet nur mit der App-Form (JSON-Zahlen, `JJJJ-MM-TT`, `HH:MM`). Die Mock-API liefert standardmaessig die Mock-Form und mit `XTS_ODATA=v2` (`npm run start:v2 --workspace mock-api`, Smoke-Tests `npm run test:smoke:v2`) die V2-Form; beide Formen laufen in CI.
 
-```json
-{
-  "value": []
-}
-```
+| Element                                                      | Mock-Form                                   | SAP OData V2                                                                                                | App-Form                                   |
+| ------------------------------------------------------------ | ------------------------------------------- | ----------------------------------------------------------------------------------------------------------- | ------------------------------------------ |
+| Liste                                                        | `{ "value": [...] }`                        | `{ "d": { "results": [...], "__count"?, "__next"? } }`                                                      | Array                                      |
+| Einzelobjekt                                                 | direkt                                      | `{ "d": { "__metadata": { "type" }, ... } }`                                                                | Objekt                                     |
+| Stunden, Prozent, Preis (`Edm.Decimal`, QUAN 13,3)           | JSON-Zahl `7.5`                             | String `"7.500"`                                                                                            | Zahl                                       |
+| Ganzzahlen (`breakMinutes`, `updated`, `counts`, `infotype`) | JSON-Zahl                                   | JSON-Zahl (`Edm.Int32`)                                                                                     | Zahl                                       |
+| Tag (`date`, `validFrom`, `validTo`)                         | `"2026-04-13"`                              | `"/Date(1776038400000)/"` (`Edm.DateTime`, UTC-Mitternacht)                                                 | `"2026-04-13"`                             |
+| Zeitstempel (`at`, `changedAt`, `approvedAt`, `resetAt`)     | ISO 8601                                    | `"/Date(ms)/"`                                                                                              | ISO 8601 (UTC)                             |
+| Uhrzeit (`startTime`, `endTime`)                             | `"08:30"`                                   | `"PT08H30M00S"` (`Edm.Time`)                                                                                | `"08:30"`                                  |
+| Monat (`month`, `months`, `periodFrom`/`periodTo`, `start`)  | `"2026-04"`                                 | `"2026-04"` (`Edm.String`)                                                                                  | `"2026-04"`                                |
+| Fehler (HTTP >= 400)                                         | `{ "error": "CODE", "message", ...Zusatz }` | `{ "error": { "code": "CODE", "message": { "lang": "de", "value": "..." }, "innererror": { ...Zusatz } } }` | `ApiError(status, code, message, details)` |
 
-Einzelobjekte werden direkt als JSON-Objekt geliefert.
+Regeln:
+
+- Der Fehlercode dieses Kontrakts steht in V2 in `error.code`, die deutsche Meldung in `error.message.value`; Zusatzangaben (`fields`, `allowed`, `conflictId`, `problems`, `status`, `coIdent`, `requested`, `remaining`, `oid`, `upn`, `requiredRole`) stehen in `error.innererror`. Der WebClient liest beide Formen in denselben `ApiError`.
+- Stundenwerte werden in beiden Formen als Dezimalzahl mit Minutenpraezision transportiert; das Dekodieren wandelt Strings in Zahlen, gerechnet wird weiterhin in ganzen Minuten (`shared/hours.ts`).
+- Paginierung: Listen akzeptieren `$top`, `$skip` und `$inlinecount=allpages` (`__count` als String); der WebClient folgt `__next` (bzw. `@odata.nextLink`) bis zu einer Obergrenze von 100 Seiten und liefert der Fachlogik immer die vollstaendige Liste. Die Mock-API seitet serverseitig nur mit `XTS_ODATA_PAGE_SIZE=n`.
+- Der WebClient sendet `Accept: application/json`. Unbekannte Felder (`__metadata`) entfallen beim Dekodieren. Eine Antwort, die dem Kontrakt nicht entspricht (fehlendes Feld, falscher Typ, unbekannter Status), ergibt `INVALID_RESPONSE` mit Feldpfad in der Meldung statt stiller Fehlrechnung.
+- Unerwartete Serverfehler liefert die Mock-API als HTTP 500 `INTERNAL_ERROR` mit `message`.
+- Mit dem ersten echten Gateway-Service zu vereinbaren (aendert nur die Adapterschicht): CSRF-Token-Handshake (`x-csrf-token: fetch` vor `POST`), ETag/`If-Match` fuer optimistisches Sperren, Abbildung der benannten Filterparameter (`?month=`, `?extNr=`, `?from=`/`?to=`, `?detail=`) auf `$filter` oder Funktionsimporte. `$batch` wird nicht benoetigt.
 
 ## Offener technischer Punkt
 

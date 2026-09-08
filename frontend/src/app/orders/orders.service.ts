@@ -1,8 +1,12 @@
 import { Injectable, inject } from "@angular/core";
 
-import { environment } from "../../environments/environment";
-import { AuthService } from "../auth/auth.service";
-import { readApiJson } from "../shared/api-error";
+import { ODataClient } from "../shared/odata";
+import {
+  order,
+  orderCandidate,
+  protocolEntry,
+  syncResult,
+} from "./orders.decoders";
 import type {
   CandidateFilters,
   Order,
@@ -11,77 +15,51 @@ import type {
   SyncResult,
 } from "./orders.models";
 
-interface ODataResponse<T> {
-  value: T[];
-}
-
 @Injectable({
   providedIn: "root",
 })
 export class OrdersService {
-  private readonly baseUrl = environment.apiBaseUrl;
-  private readonly auth = inject(AuthService);
+  private readonly odata = inject(ODataClient);
 
-  async getCandidates(filters: CandidateFilters): Promise<OrderCandidate[]> {
-    const params = new URLSearchParams();
-    if (filters.extNr) params.set("extNr", filters.extNr);
-    if (filters.coIdent) params.set("coIdent", filters.coIdent);
-    if (filters.from) params.set("from", filters.from);
-    if (filters.to) params.set("to", filters.to);
-    const query = params.size > 0 ? `?${params.toString()}` : "";
-    return this.readValues<OrderCandidate>(
-      `${this.baseUrl}/OrderCandidates${query}`,
+  getCandidates(filters: CandidateFilters): Promise<OrderCandidate[]> {
+    return this.odata.list("OrderCandidates", orderCandidate, {
+      extNr: filters.extNr,
+      coIdent: filters.coIdent,
+      from: filters.from,
+      to: filters.to,
+    });
+  }
+
+  getOrders(): Promise<Order[]> {
+    return this.odata.list("Orders", order);
+  }
+
+  getProtocol(): Promise<ProtocolEntry[]> {
+    return this.odata.list("OrderProtocol", protocolEntry);
+  }
+
+  createOrder(candidate: OrderCandidate, text: string): Promise<Order> {
+    return this.odata.post(
+      "Orders",
+      {
+        extNr: candidate.extNr,
+        coIdent: candidate.coIdent,
+        months: candidate.months,
+        text,
+      },
+      order,
     );
   }
 
-  async getOrders(): Promise<Order[]> {
-    return this.readValues<Order>(`${this.baseUrl}/Orders`);
+  updateOrderText(orderId: string, text: string): Promise<Order> {
+    return this.odata.post("Orders", { orderId, text }, order);
   }
 
-  async getProtocol(): Promise<ProtocolEntry[]> {
-    return this.readValues<ProtocolEntry>(`${this.baseUrl}/OrderProtocol`);
+  createBanf(orderId: string): Promise<Order> {
+    return this.odata.post("OrderBanfs", { orderId }, order);
   }
 
-  async createOrder(candidate: OrderCandidate, text: string): Promise<Order> {
-    return this.post<Order>(`${this.baseUrl}/Orders`, {
-      extNr: candidate.extNr,
-      coIdent: candidate.coIdent,
-      months: candidate.months,
-      text,
-    });
-  }
-
-  async updateOrderText(orderId: string, text: string): Promise<Order> {
-    return this.post<Order>(`${this.baseUrl}/Orders`, { orderId, text });
-  }
-
-  async createBanf(orderId: string): Promise<Order> {
-    return this.post<Order>(`${this.baseUrl}/OrderBanfs`, { orderId });
-  }
-
-  async runPurchaseOrderSync(): Promise<SyncResult> {
-    return this.post<SyncResult>(`${this.baseUrl}/PurchaseOrderSyncRuns`, {});
-  }
-
-  private async post<T>(url: string, payload: unknown): Promise<T> {
-    const response = await fetch(url, {
-      method: "POST",
-      headers: {
-        "content-type": "application/json",
-        ...this.auth.authHeaders(),
-      },
-      body: JSON.stringify(payload),
-    });
-    return this.readJson<T>(response);
-  }
-
-  private async readValues<T>(url: string): Promise<T[]> {
-    const response = await fetch(url, { headers: this.auth.authHeaders() });
-    const body = await this.readJson<ODataResponse<T>>(response);
-    return body.value;
-  }
-
-  private readJson<T>(response: Response): Promise<T> {
-    return readApiJson<T>(response);
+  runPurchaseOrderSync(): Promise<SyncResult> {
+    return this.odata.post("PurchaseOrderSyncRuns", {}, syncResult);
   }
 }

@@ -1,4 +1,5 @@
 import { expect, test } from "@playwright/test";
+import { errorMessageOf } from "./odata";
 
 test("admin maintains the enablement rule and sees the effect", async ({
   page,
@@ -176,7 +177,9 @@ test("admin sees status changes and job errors in the audit log", async ({
     data: { orderId: "BEAUF-9001" },
   });
   expect(duplicateBanf.status()).toBe(409);
-  expect((await duplicateBanf.json()).message).toContain("bereits eine BANF");
+  expect(errorMessageOf(await duplicateBanf.json())).toContain(
+    "bereits eine BANF",
+  );
 
   await page.goto("/");
   await page

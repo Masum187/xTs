@@ -1,4 +1,5 @@
 import { expect, test } from "@playwright/test";
+import { itemsOf, numberOf } from "./odata";
 
 test("loads timesheet and submits draft", async ({ page }) => {
   await page.goto("/");
@@ -134,11 +135,12 @@ test("blocks bookings beyond the open quota before sending", async ({
   const api = "http://127.0.0.1:4010/odata";
   const remainingOf = async () => {
     const response = await request.get(`${api}/MyEnabledCostObjects`);
-    const body = (await response.json()) as {
-      value: { coIdent: string; remainingHours: number }[];
-    };
-    return body.value.find((item) => item.coIdent === "600000000001")!
-      .remainingHours;
+    const items = itemsOf<{ coIdent: string; remainingHours: unknown }>(
+      await response.json(),
+    );
+    return numberOf(
+      items.find((item) => item.coIdent === "600000000001")!.remainingHours,
+    );
   };
   // Kontingent 600000000001 per API auf unter 24 Std. bringen.
   let day = 14;
