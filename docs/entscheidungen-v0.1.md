@@ -212,7 +212,7 @@ Status: entschieden (2026-09-06)
 
 Entscheidung: Zielsystem ist SAP ECC mit klassischem SAP Gateway (SEGW), daher OData V2. Der WebClient bekommt eine Adapterschicht (`frontend/src/app/shared/odata-http.ts`, `decode.ts`, `api-error.ts`), die die Mock-Form und die V2-Form (`d.results`, `Edm.Decimal` als String, `/Date(ms)/`, `Edm.Time`, V2-Fehlerobjekt, `__next`) gleichermassen versteht und jede Antwort zur Laufzeit gegen den Kontrakt prueft. Die Mock-API liefert mit `XTS_ODATA=v2` die V2-Form; beide Formen laufen in CI durch die Smoke-Tests. Abbildungsregeln: `docs/odata-contracts.md`, Abschnitt "Antwortformen".
 
-Folgepunkte (mit dem ersten echten Gateway-Service): CSRF-Token-Handshake (`x-csrf-token: fetch` vor `POST`), ETag/`If-Match` fuer optimistisches Sperren, Abbildung der benannten Filterparameter (`?month=`, `?extNr=`, `?from=`/`?to=`) auf `$filter` oder Funktionsimporte; `$batch` wird nicht benoetigt. Der Zeitraum fuer `MyTimesheets` (Audit Nr. 16) folgt als Schritt 9b.
+Folgepunkte (mit dem ersten echten Gateway-Service): CSRF-Token-Handshake (`x-csrf-token: fetch` vor `POST`), ETag/`If-Match` fuer optimistisches Sperren, Abbildung der benannten Filterparameter (`?month=`, `?extNr=`, `?from=`/`?to=`) auf `$filter` oder Funktionsimporte; `$batch` wird nicht benoetigt. Der Zeitraum fuer `MyTimesheets` (Audit Nr. 16) ist als Schritt 9b umgesetzt: Standardtag heute, Ladefenster Vormonat bis Folgemonat, `from`/`to` im Kontrakt.
 
 ## Offene Entscheidungen
 

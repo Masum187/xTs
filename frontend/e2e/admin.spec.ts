@@ -45,6 +45,7 @@ test("admin maintains the enablement rule and sees the effect", async ({
     .getByTestId("persona-select")
     .selectOption("stephan.schilz@qualitytimes.de");
   await expect(page.getByTestId("profile")).toContainText("Stephan Schilz");
+  await page.getByLabel("Tagesdatum").fill("2026-04-13");
   await page.getByTestId("submit-timesheet").click();
   await expect(
     page.getByText("Kontierung ist für diesen Tag nicht freigeschaltet"),

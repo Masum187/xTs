@@ -2,6 +2,7 @@ import { Injectable, inject } from "@angular/core";
 
 import { ODataClient } from "../shared/odata";
 import { enabledCostObject, timesheetDay } from "./timesheet.decoders";
+import type { DatePeriod } from "./timesheet.logic";
 import type { EnabledCostObject, TimesheetDay } from "./timesheet.models";
 
 @Injectable({
@@ -14,8 +15,12 @@ export class TimesheetService {
     return this.odata.list("MyEnabledCostObjects", enabledCostObject, { date });
   }
 
-  getMyTimesheets(): Promise<TimesheetDay[]> {
-    return this.odata.list("MyTimesheets", timesheetDay);
+  /** Eigene Tage im Zeitfenster (Audit Nr. 16); nie mehr alle Tage. */
+  getMyTimesheets(period: DatePeriod): Promise<TimesheetDay[]> {
+    return this.odata.list("MyTimesheets", timesheetDay, {
+      from: period.from,
+      to: period.to,
+    });
   }
 
   /**

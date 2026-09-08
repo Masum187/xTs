@@ -19,12 +19,16 @@ import {
   createEmptyDay,
   dayVariance,
   isCostObjectBookable,
+  isWithinPeriod,
+  periodAround,
   quotaProblems,
   shiftDate,
   sumLineHours,
+  todayIso,
   validateTimesheetDay,
   workHoursOf,
 } from "./timesheet.logic";
+import type { DatePeriod } from "./timesheet.logic";
 import { AuthService } from "../auth/auth.service";
 import type {
   EnabledCostObject,
@@ -50,7 +54,15 @@ const STATUS_LABELS: Record<TimesheetStatus, string> = {
 export class TimesheetComponent {
   private readonly timesheetService = inject(TimesheetService);
   private readonly auth = inject(AuthService);
+  /** Gespeicherte Tage des geladenen Zeitfensters (Audit Nr. 16). */
   private readonly savedDays = new Map<string, TimesheetDay>();
+  private loadedPeriod: DatePeriod | null = null;
+  /**
+   * Zuletzt angefordertes Datum. Basis fuer `reload()`: scheitert ein
+   * Fensterwechsel, zeigt `day()` noch den alten Tag, der Retry muss aber das
+   * angeforderte Fenster laden.
+   */
+  private requestedDate = todayIso();
 
   protected readonly profile = this.auth.profile;
   protected readonly loader = new LoadState();
@@ -111,9 +123,19 @@ export class TimesheetComponent {
     return isCostObjectBookable(costObject, this.day().date);
   }
 
+  /** Oeffnet einen Tag; ausserhalb des geladenen Fensters wird nachgeladen. */
   protected openDate(date: string): void {
     if (!date) return;
     this.message.set("");
+    this.requestedDate = date;
+    if (!isWithinPeriod(this.loadedPeriod, date)) {
+      void this.loadPeriod(date);
+      return;
+    }
+    this.showDay(date);
+  }
+
+  private showDay(date: string): void {
     const saved = this.savedDays.get(date);
     this.day.set(saved ?? createEmptyDay(this.currentExtNr(), date));
     this.ensureSelectableCostObject();
@@ -171,7 +193,7 @@ export class TimesheetComponent {
   }
 
   protected reload(): void {
-    void this.loadInitialData();
+    void this.loadPeriod(this.requestedDate);
   }
 
   protected async save(): Promise<void> {
@@ -251,12 +273,19 @@ export class TimesheetComponent {
     );
   }
 
-  private async loadInitialData(): Promise<void> {
+  /** Standardtag ist heute (Audit Nr. 16), nicht der zuletzt gespeicherte Tag. */
+  private loadInitialData(): Promise<void> {
+    return this.loadPeriod(this.requestedDate);
+  }
+
+  /** Laedt Freischaltungen und die Tage des Fensters um `date`, oeffnet `date`. */
+  private async loadPeriod(date: string): Promise<void> {
+    const period = periodAround(date);
     await this.loader.track(
       () =>
         Promise.all([
           this.timesheetService.getEnabledCostObjects(),
-          this.timesheetService.getMyTimesheets(),
+          this.timesheetService.getMyTimesheets(period),
         ]),
       "Stundenzettel konnten nicht geladen werden.",
       ([costObjects, timesheets]) => {
@@ -265,9 +294,8 @@ export class TimesheetComponent {
         for (const day of timesheets) {
           this.savedDays.set(day.date, day);
         }
-        const latestDate =
-          timesheets[0]?.date ?? new Date().toISOString().slice(0, 10);
-        this.openDate(latestDate);
+        this.loadedPeriod = period;
+        this.showDay(date);
         const extNr = this.currentExtNr();
         this.day.update((day) => ({ ...day, extNr }));
       },

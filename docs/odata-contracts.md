@@ -110,7 +110,7 @@ Diese Datei beschreibt die fachlichen Service-Kontrakte fuer SAP-OData und die M
 
 ## Timesheet-Verhalten
 
-- `GET /odata/MyTimesheets` liefert alle eigenen Tage absteigend nach Datum, optional gefiltert mit `?date=YYYY-MM-DD`.
+- `GET /odata/MyTimesheets` liefert eigene Tage absteigend nach Datum. Zeitfenster (Audit Nr. 16): `?from=YYYY-MM-DD` und `?to=YYYY-MM-DD` (inklusive) begrenzen die Liste; ungueltige Tage oder `from` nach `to`: HTTP 400 `INVALID_TIMESHEET_PERIOD`. `?date=YYYY-MM-DD` liefert genau einen Tag. Ohne Parameter liefert die Mock-API alle Tage (nur fuer Tests und Kontraktpruefung; SAP-seitig darf hier serverseitig paginiert oder begrenzt werden). Der WebClient oeffnet standardmaessig den heutigen Tag und laedt das Fenster Vormonat bis Folgemonat um den geoeffneten Tag; verlaesst die Navigation das Fenster, wird das Fenster um den neuen Tag nachgeladen.
 - `POST /odata/TimesheetDays` ist ein Upsert je `EXTNR` + Datum; `extNr` und `date` sind Pflicht (sonst HTTP 400 `TIMESHEET_KEY_REQUIRED`). Die Mock-API haelt die Tage im Speicher, damit Navigation und Korrektur-Flows entwickelbar sind.
 - Statusmaschine (Konzept §6.2, serverseitig erzwungen):
   - Der Body darf nur `extNr`, `date`, `startTime`, `endTime`, `breakMinutes`, `location`, `status`, `varianceReason` und `lines[{ coIdent, description, hours }]` enthalten; unbekannte Felder werden verworfen. Servergefuehrte Felder (`approvedBy`, `approvedAt`, `weDocument`, `rejectionReason`) im Body: HTTP 400 `PROTECTED_FIELDS` mit `fields`.

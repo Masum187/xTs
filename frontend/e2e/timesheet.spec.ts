@@ -7,6 +7,8 @@ test("loads timesheet and submits draft", async ({ page }) => {
     page.getByRole("heading", { name: "Stundenschreibung" }),
   ).toBeVisible();
   await expect(page.getByTestId("profile")).toContainText("Stephan Schilz");
+  // Standardtag ist heute (Audit Nr. 16); der Fixture-Entwurf liegt im April.
+  await page.getByLabel("Tagesdatum").fill("2026-04-13");
   await expect(page.getByTestId("day-status")).toHaveText("Entwurf");
   await page.getByTestId("submit-timesheet").click();
   await expect(page.getByText("Zur Genehmigung freigegeben.")).toBeVisible();

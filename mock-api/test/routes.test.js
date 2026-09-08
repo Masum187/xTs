@@ -2949,3 +2949,43 @@ test("planners and approvers do not see inactive employees, admins do", async ()
   assert.ok(adminBody.some((item) => item.extNr === "ALTMANN" && !item.active));
   assert.ok(adminBody.every((item) => "aadOid" in item));
 });
+
+test("own timesheets can be limited to a period and reject invalid periods", async () => {
+  const inPeriod = await routeRequest(
+    request("GET", "/odata/MyTimesheets?from=2026-04-13&to=2026-04-13"),
+  );
+  assert.equal(inPeriod.status, 200);
+  assert.deepEqual(
+    JSON.parse(inPeriod.body).value.map((day) => day.date),
+    ["2026-04-13"],
+  );
+
+  const later = await routeRequest(
+    request("GET", "/odata/MyTimesheets?from=2026-05-01"),
+  );
+  assert.deepEqual(JSON.parse(later.body).value, []);
+
+  const all = JSON.parse(
+    (await routeRequest(request("GET", "/odata/MyTimesheets"))).body,
+  ).value;
+  const until = JSON.parse(
+    (await routeRequest(request("GET", "/odata/MyTimesheets?to=2026-04-12")))
+      .body,
+  ).value;
+  assert.equal(until.length, all.length - 1);
+  assert.ok(until.every((day) => day.date <= "2026-04-12"));
+
+  for (const query of [
+    "from=2026-04-31",
+    "to=2026-4-1",
+    "from=2026-04-20&to=2026-04-01",
+  ]) {
+    const response = await routeRequest(
+      request("GET", `/odata/MyTimesheets?${query}`),
+    );
+    assert.equal(response.status, 400, query);
+    const body = JSON.parse(response.body);
+    assert.equal(body.error, "INVALID_TIMESHEET_PERIOD");
+    assert.match(body.message, /Zeitraum/);
+  }
+});

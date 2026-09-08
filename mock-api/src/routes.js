@@ -35,6 +35,7 @@ import { buildResourceLifecycle } from "./lifecycle.js";
 import { sumHours } from "./hours.js";
 import { messageFor } from "./messages.js";
 import {
+  isValidDate,
   validateTimesheetPayload,
   workHoursOf,
 } from "./timesheet-validation.js";
@@ -491,9 +492,21 @@ export async function routeRequest(request) {
     const persona = resolvePersona(request);
     if (persona.error) return persona.error;
     const date = url.searchParams.get("date");
+    // Zeitfenster (Audit Nr. 16): der WebClient laedt nie mehr alle Tage,
+    // sondern `from`/`to` (JJJJ-MM-TT, inklusive) um den geoeffneten Tag.
+    const from = url.searchParams.get("from") ?? "";
+    const to = url.searchParams.get("to") ?? "";
+    if (
+      (from && !isValidDate(from)) ||
+      (to && !isValidDate(to)) ||
+      (from && to && from > to)
+    ) {
+      return json({ error: "INVALID_TIMESHEET_PERIOD", from, to }, 400);
+    }
     const value = [...timesheetStore.values()]
       .filter((day) => day.extNr === persona.employee.extNr)
       .filter((day) => !date || day.date === date)
+      .filter((day) => (!from || day.date >= from) && (!to || day.date <= to))
       .sort((a, b) => b.date.localeCompare(a.date));
     return json({ value });
   }
