@@ -274,6 +274,39 @@ export function shiftDate(date: string, days: number): string {
   return parsed.toISOString().slice(0, 10);
 }
 
+/** Heutiger Kalendertag in lokaler Zeit als `JJJJ-MM-TT`. */
+export function todayIso(now: Date = new Date()): string {
+  const month = String(now.getMonth() + 1).padStart(2, "0");
+  const day = String(now.getDate()).padStart(2, "0");
+  return `${now.getFullYear()}-${month}-${day}`;
+}
+
+export interface DatePeriod {
+  from: string;
+  to: string;
+}
+
+/**
+ * Ladefenster fuer `MyTimesheets` (Audit Nr. 16): Vormonat bis Folgemonat um
+ * den geoeffneten Tag, damit Vor-/Folgetag ohne Nachladen erreichbar sind.
+ */
+export function periodAround(date: string): DatePeriod {
+  const [year, month] = date.split("-").map(Number);
+  const from = new Date(Date.UTC(year, month - 2, 1));
+  const to = new Date(Date.UTC(year, month + 1, 0));
+  return {
+    from: from.toISOString().slice(0, 10),
+    to: to.toISOString().slice(0, 10),
+  };
+}
+
+export function isWithinPeriod(
+  period: DatePeriod | null,
+  date: string,
+): boolean {
+  return period !== null && date >= period.from && date <= period.to;
+}
+
 export function createEmptyDay(extNr: string, date: string): TimesheetDay {
   // Standard 08:30–17:00 mit 30 Min. Pause = 8 Std. Arbeitszeit.
   return {

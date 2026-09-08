@@ -3,6 +3,8 @@
 // Tests und Frontend-Logik, die Texte gehen 1:1 an den Anwender.
 
 const MESSAGES = {
+  INVALID_TIMESHEET_PERIOD:
+    "Der Zeitraum ist ungültig: from und to als JJJJ-MM-TT, from nicht nach to.",
   NO_EXTNR_MAPPING:
     "Ihr Benutzerkonto ist noch keinem xTS-Mitarbeiter (EXTNR) zugeordnet.",
   EMPLOYEE_INACTIVE:

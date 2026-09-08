@@ -1,6 +1,9 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  isWithinPeriod,
+  periodAround,
+  todayIso,
   canEditTimesheet,
   canSubmitTimesheet,
   createEmptyDay,
@@ -239,5 +242,30 @@ describe("timesheet logic", () => {
     expect(day.lines).toEqual([]);
     expect(day.extNr).toBe("SCHILZ");
     expect(day.date).toBe("2026-04-14");
+  });
+
+  it("builds the load window from previous to next month around a day", () => {
+    expect(periodAround("2026-04-13")).toEqual({
+      from: "2026-03-01",
+      to: "2026-05-31",
+    });
+    expect(periodAround("2026-01-05")).toEqual({
+      from: "2025-12-01",
+      to: "2026-02-28",
+    });
+    expect(periodAround("2026-12-31")).toEqual({
+      from: "2026-11-01",
+      to: "2027-01-31",
+    });
+    const period = periodAround("2026-04-13");
+    expect(isWithinPeriod(period, "2026-03-01")).toBe(true);
+    expect(isWithinPeriod(period, "2026-05-31")).toBe(true);
+    expect(isWithinPeriod(period, "2026-06-01")).toBe(false);
+    expect(isWithinPeriod(null, "2026-04-13")).toBe(false);
+  });
+
+  it("formats today in local time", () => {
+    expect(todayIso(new Date(2026, 8, 8, 0, 30))).toBe("2026-09-08");
+    expect(todayIso(new Date(2026, 0, 1, 23, 59))).toBe("2026-01-01");
   });
 });
