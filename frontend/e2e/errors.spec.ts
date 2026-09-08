@@ -129,3 +129,32 @@ test("a slow load shows a loading state before the data", async ({ page }) => {
   );
   await expect(page.getByTestId("budget-table")).toBeVisible();
 });
+
+test("a failed window change retries the requested day, not the old one", async ({
+  page,
+}) => {
+  // Juni-Fenster (Mai bis Juli) scheitert einmal, das April-Fenster nicht.
+  let failJune = true;
+  await page.route(`${API}/MyTimesheets*`, async (route) => {
+    if (failJune && route.request().url().includes("from=2026-05-01")) {
+      failJune = false;
+      await route.fulfill({
+        status: 500,
+        contentType: "application/json",
+        body: JSON.stringify({ error: "INTERNAL", message: "Juni weg" }),
+      });
+      return;
+    }
+    await route.continue();
+  });
+  await page.goto("/");
+  await expect(page.getByTestId("profile")).toContainText("Stephan Schilz");
+  await page.getByLabel("Tagesdatum").fill("2026-04-13");
+  await expect(page.getByTestId("day-status")).toHaveText("Entwurf");
+
+  await page.getByLabel("Tagesdatum").fill("2026-06-01");
+  await expect(page.getByTestId("load-error")).toContainText("Juni weg");
+  await page.getByTestId("retry").click();
+  await expect(page.getByLabel("Tagesdatum")).toHaveValue("2026-06-01");
+  await expect(page.getByTestId("day-status")).toHaveText("Entwurf");
+});

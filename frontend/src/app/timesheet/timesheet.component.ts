@@ -57,6 +57,12 @@ export class TimesheetComponent {
   /** Gespeicherte Tage des geladenen Zeitfensters (Audit Nr. 16). */
   private readonly savedDays = new Map<string, TimesheetDay>();
   private loadedPeriod: DatePeriod | null = null;
+  /**
+   * Zuletzt angefordertes Datum. Basis fuer `reload()`: scheitert ein
+   * Fensterwechsel, zeigt `day()` noch den alten Tag, der Retry muss aber das
+   * angeforderte Fenster laden.
+   */
+  private requestedDate = todayIso();
 
   protected readonly profile = this.auth.profile;
   protected readonly loader = new LoadState();
@@ -121,6 +127,7 @@ export class TimesheetComponent {
   protected openDate(date: string): void {
     if (!date) return;
     this.message.set("");
+    this.requestedDate = date;
     if (!isWithinPeriod(this.loadedPeriod, date)) {
       void this.loadPeriod(date);
       return;
@@ -186,7 +193,7 @@ export class TimesheetComponent {
   }
 
   protected reload(): void {
-    void this.loadPeriod(this.day().date || todayIso());
+    void this.loadPeriod(this.requestedDate);
   }
 
   protected async save(): Promise<void> {
@@ -268,7 +275,7 @@ export class TimesheetComponent {
 
   /** Standardtag ist heute (Audit Nr. 16), nicht der zuletzt gespeicherte Tag. */
   private loadInitialData(): Promise<void> {
-    return this.loadPeriod(todayIso());
+    return this.loadPeriod(this.requestedDate);
   }
 
   /** Laedt Freischaltungen und die Tage des Fensters um `date`, oeffnet `date`. */
