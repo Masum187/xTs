@@ -2,7 +2,7 @@
 
 Stand: 2026-09-09 (Grundsatzentscheidungen 1 bis 10 vom 2026-05-08, Ergaenzungen aus der Stabilisierung im September 2026, Fachentscheidungen 18 und 19 vom 2026-09-09)
 
-Quelle der Antworten: `xTS Offene Entscheidungen v0.docx`, `xTS Entwicklungskonzept v0.docx`, Reviews der Pull Requests #15 bis #23
+Quelle der Antworten: `xTS Offene Entscheidungen v0.docx`, `xTS Entwicklungskonzept v0.docx`, Reviews der Pull Requests #15 bis #26, Entscheidungsrunde O2/O3 vom 2026-09-09
 
 Dieses Dokument enthaelt die fachlich beantworteten Entscheidungen fuer die MVP-Umsetzung. Punkte mit Umsetzungsfolgen sind in `entwicklungskonzept-v0.1.md` und `backlog-v0.1.md` uebernommen.
 

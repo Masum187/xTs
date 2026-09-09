@@ -414,7 +414,7 @@ Akzeptanzkriterien:
 - `GET /odata/ApprovalTimesheets` liefert einem `approver` nur Tage mit Status `F`, die mindestens eine Position auf einer Kontierung enthalten, fuer die er zum Tagesdatum Genehmiger oder Vertreter ist; `admin` sieht alle Tage. Ohne Zuordnung: leere Liste, der WebClient zeigt einen Hinweis.
 - `POST /odata/TimesheetApprovals` prueft dieselbe Zustaendigkeit (sonst HTTP 403 `NOT_RESPONSIBLE`); das Vier-Augen-Prinzip (`SELF_APPROVAL`) bleibt vorrangig.
 - Die Genehmigungskarte zeigt alle Positionen des Tages, auch die auf fremden Kontierungen, mit Kennzeichnung "nicht in Ihrer Zustaendigkeit"; die Tagesfreigabe wirkt gesamthaft und ist so beschriftet.
-- Reporting fuer `approver` (Budget-Monitor, Kontingent-Monitor, Ressourcen-Live-Circle) nur fuer zustaendige Kontierungen; neue Rolle `controller` (und `admin`) sieht alles. Rollenpruefung: `approver` oder `controller`.
+- Reporting-Endpunkte (Budget-Monitor, Kontingent-Monitor, Ressourcen-Live-Circle) erlauben `approver`, `controller` oder `admin`: `approver` sieht nur zustaendige Kontierungen, `controller` und `admin` sehen ungeschnitten alles. `controller` ist eine neue Rolle im Mitarbeiterstamm.
 - Contract-Tests fuer Sichtbarkeit, Vertretung, fremde Kontierung und Reporting-Schnitt; E2E fuer den zweiten Genehmiger aus dem Testdatenpaket.
 
 ### XTS-064 - Positionsweise Genehmigung (Ausbaustufe)
