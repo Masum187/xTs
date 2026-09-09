@@ -10,7 +10,8 @@ Dieses Repository ist als Monorepo aufgebaut, damit Konzept, SAP-Artefakte, ODat
 - Authentifizierung: Entscheidung 6 ist fuer **Option B** gefallen (Entra `oid` als `AAD_OID`, `AAD_UPN` als Fallback); der WebClient meldet ueber Microsoft Entra ID (MSAL) an, siehe `docs/entra-anbindung.md`.
 - Audit vom 2026-09-03 (`docs/audit-2026-09-03.md`): die Stabilisierungsschritte 1 bis 8, 10a und 10b sind umgesetzt (Statusmaschine, Payload-Validierung, Kontingentpruefung, Minutenarithmetik, Arbeitszeit/Tagesdifferenz, Lade-/Fehlerzustaende, Identitaetswechsel, rollengeschuetzte Lesepfade, Angular 22, Doku-Konsolidierung).
 - OData: Zielsystem ist SAP ECC, also OData V2 (Entscheidung 17). Der WebClient hat eine Adapterschicht mit Laufzeitpruefung jeder Antwort; die Mock-API liefert mit `XTS_ODATA=v2` die V2-Form, beide Formen laufen in CI (Audit-Schritt 9a). `MyTimesheets` wird je Zeitfenster (Vormonat bis Folgemonat) geladen, Standardtag ist heute (Schritt 9b).
-- Offen: SAP-seitige Umsetzung (Epics 9 und 14); offene Fachentscheidungen O2 bis O7 in `docs/entscheidungen-v0.1.md`.
+- Fachentscheidungen 18 (Datumsregeln) und 19 (Genehmigerzustaendigkeit je Kontierung) sind gefallen; die Restbefunde des Audits sind als Schritte 11 bis 15 neu sortiert (`docs/audit-2026-09-03.md`), die zugehoerigen Stories sind XTS-014, XTS-056 und XTS-063.
+- Offen: Schritte 11 bis 15, SAP-seitige Umsetzung (Epics 9 und 14), Fachentscheidungen O4 bis O7 in `docs/entscheidungen-v0.1.md`.
 
 ## Struktur
 
