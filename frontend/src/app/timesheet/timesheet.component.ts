@@ -58,14 +58,15 @@ export class TimesheetComponent {
   /** Gespeicherte Tage des geladenen Zeitfensters (Audit Nr. 16). */
   private readonly savedDays = new Map<string, TimesheetDay>();
   private loadedPeriod: DatePeriod | null = null;
-  /**
-   * Zuletzt angefordertes Datum. Basis fuer `reload()`: scheitert ein
-   * Fensterwechsel, zeigt `day()` noch den alten Tag, der Retry muss aber das
-   * angeforderte Fenster laden.
-   */
-  private requestedDate = todayIso();
-
   protected readonly profile = this.auth.profile;
+  /**
+   * Zuletzt angefordertes Datum. Startwert ist das Systemdatum des Servers
+   * (Entscheidung 18), nicht das Browserdatum; Basis fuer `reload()`:
+   * scheitert ein Fensterwechsel, zeigt `day()` noch den alten Tag, der
+   * Retry muss aber das angeforderte Fenster laden.
+   */
+  private requestedDate = this.profile()?.today ?? todayIso();
+
   protected readonly loader = new LoadState();
   protected readonly busy = new BusyState();
   protected readonly costObjects = signal<EnabledCostObject[]>([]);
@@ -287,7 +288,7 @@ export class TimesheetComponent {
     );
   }
 
-  /** Standardtag ist heute (Audit Nr. 16), nicht der zuletzt gespeicherte Tag. */
+  /** Standardtag ist das Server-Heute (Audit Nr. 16), nicht der zuletzt gespeicherte Tag. */
   private loadInitialData(): Promise<void> {
     return this.loadPeriod(this.requestedDate);
   }

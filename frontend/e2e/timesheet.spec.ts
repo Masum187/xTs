@@ -7,7 +7,10 @@ test("loads timesheet and submits draft", async ({ page }) => {
     page.getByRole("heading", { name: "Stundenschreibung" }),
   ).toBeVisible();
   await expect(page.getByTestId("profile")).toContainText("Stephan Schilz");
-  // Standardtag ist heute (Audit Nr. 16); der Fixture-Entwurf liegt im April.
+  // Standardtag ist das Systemdatum des Servers (Entscheidung 18), nicht das
+  // Browserdatum; der Fixture-Entwurf liegt im April.
+  await expect(page.getByLabel("Tagesdatum")).toHaveValue("2026-05-05");
+  await expect(page.getByTestId("date-locked")).toHaveCount(0);
   await page.getByLabel("Tagesdatum").fill("2026-04-13");
   await expect(page.getByTestId("day-status")).toHaveText("Entwurf");
   await page.getByTestId("submit-timesheet").click();

@@ -16,6 +16,8 @@ const profile: AuthProfile = {
   displayName: "Christian Roeper",
   company: "QualityTimes",
   roles: ["user", "approver"],
+  today: "2026-05-05",
+  timesheetWindow: { from: "2026-04-01", to: "2026-05-05" },
 };
 
 describe("auth logic", () => {

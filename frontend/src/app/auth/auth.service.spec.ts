@@ -15,7 +15,14 @@ function deferred(): Deferred {
 
 function profileResponse(extNr: string, displayName: string): Response {
   return new Response(
-    JSON.stringify({ extNr, displayName, company: "QT", roles: ["user"] }),
+    JSON.stringify({
+      extNr,
+      displayName,
+      company: "QT",
+      roles: ["user"],
+      today: "2026-05-05",
+      timesheetWindow: { from: "2026-04-01", to: "2026-05-05" },
+    }),
     { status: 200, headers: { "content-type": "application/json" } },
   );
 }
