@@ -2,11 +2,11 @@
 
 Stand: 2026-05-08 (Baseline; Umsetzungsstand siehe unten)
 
-## Umsetzungsstand (2026-09-06)
+## Umsetzungsstand (2026-09-09)
 
 - Im WebClient und in der Mock-API umgesetzt: Epics 2 bis 8, XTS-081, XTS-082 sowie Epics 10 bis 13. XTS-050 ist mit Option B umgesetzt (MSAL im WebClient, Token-Mapping in der Mock-API).
 - SAP-seitig offen: Epic 1 (XTS-001/002 Foundation), XTS-080 (Berechtigungen im OData-Service, Vorgabe in `odata-contracts.md`), Epic 14, echte BANF-/WE-Integration (XTS-032/033/061A sind simuliert).
-- Bekannte Luecken und Reihenfolge der Stabilisierung: `audit-2026-09-03.md`; offene Entscheidungen: `entscheidungen-v0.1.md`.
+- Stabilisierung (Audit-Schritte 1 bis 10) ist umgesetzt; Restbefunde und Reihenfolge: `audit-2026-09-03.md`, Abschnitt "Restbefunde nach der Stabilisierung". Neue Stories aus den Entscheidungen 18 und 19: XTS-014, XTS-056, XTS-063. Offene Entscheidungen O4 bis O7: `entscheidungen-v0.1.md`.
 
 ## Priorisierung
 
@@ -96,6 +96,22 @@ Akzeptanzkriterien:
 - Kontierungsarten `KS`, `OR`, `PR`, `FB`, `KL` sind zugelassen.
 - Gueltigkeit gegen SAP CO kann geprueft werden oder ist als Stub fuer Phase 1 verfuegbar.
 - Geloeschte Kontierungen werden nicht zur Planung oder Stundenschreibung angeboten.
+
+### XTS-014 - Genehmigerzuordnung je Kontierung pflegen
+
+Prioritaet: P0
+
+Rolle: xTS Administrator
+
+Grundlage: Entscheidung 19 (Zustaendigkeit je Kontierung, Audit Nr. 33).
+
+Akzeptanzkriterien:
+
+- Neue Tabelle analog `ZXTS_KONTGEN_T`: `COIDENT`, `EXTNR` des Genehmigers, `VERTRETER`-Kennzeichen, `GUELTIG_VON`, `GUELTIG_BIS`, Aenderungsstempel.
+- `GET`/`POST /odata/CostObjectApprovers` (Rolle `admin` fuer Schreiben; Lesen `admin`, `approver` nur eigene Zuordnungen): Upsert, logisches Loeschen, Pflichtfelder `coIdent`, `extNr`, `validFrom`, `validTo` (HTTP 400 `INVALID_COST_OBJECT_APPROVER`), Genehmiger muss aktiver Mitarbeiter mit Rolle `approver` sein (HTTP 409 `APPROVER_NOT_AVAILABLE`), Kontierung darf nicht geloescht sein.
+- Pflege in der Verwaltung mit Liste je Kontierung, Vertreter sichtbar markiert.
+- Aenderungen stehen im Audit-Log (`masterdata`).
+- Testdatenpaket: Roeper ist Genehmiger fuer alle Kontierungen des Pakets, damit UAT-Fall A und B unveraendert laufen; zusaetzlich ein zweiter Genehmiger mit nur einer Kontierung fuer den Sichtbarkeits-Test.
 
 ## Epic 3 - Ressourcenplanung
 
@@ -315,6 +331,23 @@ Akzeptanzkriterien:
 - Mitarbeiter kann Tag und Positionen korrigieren.
 - Nach erneuter Freigabe wechselt Status wieder auf `F`.
 
+### XTS-056 - Datumsregeln fuer die Stundenerfassung
+
+Prioritaet: P0
+
+Rolle: xTS User / xTS Administrator
+
+Grundlage: Entscheidung 18 (Audit Nr. 17).
+
+Akzeptanzkriterien:
+
+- Regelwerk Infotyp `3` "Monatsabschluss" mit Regelwert Kalendertag (Standard `5`), nur `admin`, ungueltige Werte HTTP 400; Aenderung im Audit-Log.
+- Erlaubter Zeitraum fuer Speichern und Freigeben: vom 1. des Vormonats bis heute, wobei der Vormonat nur bis einschliesslich Tag `Monatsabschluss` des laufenden Monats erfassbar ist; ab dem Folgetag nur noch der laufende Monat. Zukunftstage sind gesperrt, auch als Entwurf.
+- Verstoss: HTTP 400 `DATE_OUT_OF_RANGE` mit Meldung, die den erlaubten Zeitraum nennt; Payload-Validierung liefert `problems[{ field: "date", code: "DATE_OUT_OF_RANGE" }]`.
+- Genehmigen und Zurueckweisen sind von der Regel nicht betroffen.
+- WebClient: dieselbe Regel in `validateTimesheetDay` vor dem Senden; Vortag/Folgetag und Datumsfeld bleiben navigierbar, Tage ausserhalb sind schreibgeschuetzt mit Hinweis; Wochenende zeigt einen Hinweis, blockiert nicht.
+- Contract-Tests fuer Grenzen (Tag 5 des Folgemonats, Tag 6, heute, morgen) und E2E fuer die Sperre im Screen. "Heute" ist der lokale Kalendertag des Servers bzw. Clients; Abweichungen an Monatsgrenzen sind zu vereinbaren.
+
 ## Epic 7 - Genehmigung
 
 ### XTS-060 - Freigegebene Stunden anzeigen
@@ -367,6 +400,36 @@ Akzeptanzkriterien:
 - Alle Positionen des Tages wechseln auf `A`.
 - Mitarbeiter sieht den Rueckweisungsgrund im WebClient.
 - Tag wird wieder korrigierbar.
+
+### XTS-063 - Genehmigung und Reporting nach Zustaendigkeit schneiden
+
+Prioritaet: P0
+
+Rolle: Projektleiter / Controlling
+
+Grundlage: Entscheidung 19 (Audit Nr. 33), Stammdaten aus XTS-014.
+
+Akzeptanzkriterien:
+
+- `GET /odata/ApprovalTimesheets` liefert einem `approver` nur Tage mit Status `F`, die mindestens eine Position auf einer Kontierung enthalten, fuer die er zum Tagesdatum Genehmiger oder Vertreter ist; `admin` sieht alle Tage. Ohne Zuordnung: leere Liste, der WebClient zeigt einen Hinweis.
+- `POST /odata/TimesheetApprovals` prueft dieselbe Zustaendigkeit (sonst HTTP 403 `NOT_RESPONSIBLE`); das Vier-Augen-Prinzip (`SELF_APPROVAL`) bleibt vorrangig.
+- Die Genehmigungskarte zeigt alle Positionen des Tages, auch die auf fremden Kontierungen, mit Kennzeichnung "nicht in Ihrer Zustaendigkeit"; die Tagesfreigabe wirkt gesamthaft und ist so beschriftet.
+- Reporting-Endpunkte (Budget-Monitor, Kontingent-Monitor, Ressourcen-Live-Circle) erlauben `approver`, `controller` oder `admin`: `approver` sieht nur zustaendige Kontierungen, `controller` und `admin` sehen ungeschnitten alles. `controller` ist eine neue Rolle im Mitarbeiterstamm.
+- Contract-Tests fuer Sichtbarkeit, Vertretung, fremde Kontierung und Reporting-Schnitt; E2E fuer den zweiten Genehmiger aus dem Testdatenpaket.
+
+### XTS-064 - Positionsweise Genehmigung (Ausbaustufe)
+
+Prioritaet: P2
+
+Rolle: Projektleiter
+
+Grundlage: Entscheidung 19, bewusst nicht im MVP.
+
+Akzeptanzkriterien (Skizze):
+
+- Status je Leistungsposition statt je Tag; ein Tag gilt als genehmigt, wenn alle Positionen genehmigt sind.
+- Wareneingang je Position und Bestellposition (abhaengig von O4).
+- Migration des Tagesstatus und Anpassung von Kontingent, Reporting und Audit-Log.
 
 ## Epic 8 - Reporting
 

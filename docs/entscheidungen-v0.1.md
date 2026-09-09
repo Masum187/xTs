@@ -1,7 +1,8 @@
 # xTS Entscheidungen v0.1
 
-Stand: 2026-09-06 (Grundsatzentscheidungen 1 bis 10 vom 2026-05-08, Ergaenzungen aus der Stabilisierung im September 2026)  
-Quelle der Antworten: `xTS Offene Entscheidungen v0.docx`, `xTS Entwicklungskonzept v0.docx`, Reviews der Pull Requests #15 bis #23
+Stand: 2026-09-09 (Grundsatzentscheidungen 1 bis 10 vom 2026-05-08, Ergaenzungen aus der Stabilisierung im September 2026, Fachentscheidungen 18 und 19 vom 2026-09-09)
+
+Quelle der Antworten: `xTS Offene Entscheidungen v0.docx`, `xTS Entwicklungskonzept v0.docx`, Reviews der Pull Requests #15 bis #26, Entscheidungsrunde O2/O3 vom 2026-09-09
 
 Dieses Dokument enthaelt die fachlich beantworteten Entscheidungen fuer die MVP-Umsetzung. Punkte mit Umsetzungsfolgen sind in `entwicklungskonzept-v0.1.md` und `backlog-v0.1.md` uebernommen.
 
@@ -214,14 +215,42 @@ Entscheidung: Zielsystem ist SAP ECC mit klassischem SAP Gateway (SEGW), daher O
 
 Folgepunkte (mit dem ersten echten Gateway-Service): CSRF-Token-Handshake (`x-csrf-token: fetch` vor `POST`), ETag/`If-Match` fuer optimistisches Sperren, Abbildung der benannten Filterparameter (`?month=`, `?extNr=`, `?from=`/`?to=`) auf `$filter` oder Funktionsimporte; `$batch` wird nicht benoetigt. Der Zeitraum fuer `MyTimesheets` (Audit Nr. 16) ist als Schritt 9b umgesetzt: Standardtag heute, Ladefenster Vormonat bis Folgemonat, `from`/`to` im Kontrakt.
 
+### Entscheidung 18 - Datumsregeln Stundenerfassung (O2)
+
+Status: entschieden (2026-09-09, Fachbereich)
+
+Entscheidung:
+
+- Rueckwirkend erfassbar sind der laufende Monat und der Vormonat. Der Vormonat ist bis einschliesslich zum 5. Kalendertag des Folgemonats erfassbar (Monatsabschluss), danach gesperrt. Die Frist ist ein Regelwert im Regelwerk (`ZXTS_REGELN_T`, neuer Infotyp `3` "Monatsabschluss", Standard `5`), den nur der Admin aendert; Aenderungen stehen im Audit-Log.
+- Zukunft ist gesperrt, auch fuer Entwuerfe. Stunden sind Ist-Werte, die Zukunft deckt die Planung ab.
+- Wochenende und Feiertag sind erlaubt; der WebClient zeigt an Wochenenden einen Hinweis. Keine Feiertagstabelle im MVP.
+- Zeitraum und Zukunft werden serverseitig hart gesperrt: HTTP 400 `DATE_OUT_OF_RANGE` mit Meldung, fuer Speichern und Freigeben. Der WebClient prueft dieselbe Regel vor dem Senden (`validateTimesheetDay`). Wochenende ist nur eine Warnung.
+- Kein Einzel-Override je Tag oder Mitarbeiter; Sonderfaelle loest der Admin ueber eine temporaere Verlaengerung der Frist im Regelwerk. Ressourcenmanager erhalten keine Sonderrechte.
+
+Folgen: Audit Nr. 17 wird damit umsetzbar (Backlog XTS-056). Genehmigung und Rueckweisung sind von der Regel nicht betroffen; ein zurueckgewiesener Tag ausserhalb des Zeitraums kann erst nach Fristverlaengerung korrigiert werden.
+
+### Entscheidung 19 - Zustaendigkeit der Genehmiger (O3)
+
+Status: entschieden (2026-09-09, Fachbereich / Projektleitung)
+
+Entscheidung:
+
+- Grundlage ist die Kontierung, nicht das Team: eine eigene Zuordnungstabelle Kontierung zu Genehmiger (`ZXTS_KONTGEN_T`: `COIDENT`, `EXTNR` des Genehmigers, `VERTRETER`-Kennzeichen, `GUELTIG_VON`/`GUELTIG_BIS`), gepflegt vom Admin in der Verwaltung (Backlog XTS-014). Der Genehmiger braucht weiterhin die Rolle `approver`.
+- Sichtbarkeit: Ein Genehmiger sieht in der Genehmigung nur freigegebene Tage, die mindestens eine Position auf einer seiner Kontierungen enthalten. Ohne Zuordnung ist die Liste leer, mit Hinweis. `admin` sieht alles.
+- Genehmigung bleibt im MVP auf Tagesebene. Ein Genehmiger darf den ganzen Tag genehmigen oder zurueckweisen, wenn der Tag mindestens eine Position auf einer seiner Kontierungen enthaelt. Der Screen zeigt dabei alle Positionen des Tages sichtbar, damit bewusst ist, dass die Tagesfreigabe gesamthaft wirkt. Dieser MVP-Kompromiss ist als spaetere Ausbaustufe "positionsweise Genehmigung" dokumentiert und wird jetzt nicht umgesetzt. Die Alternative "Genehmiger muss fuer alle Kontierungen des Tages zustaendig sein" wurde verworfen, weil sie gemischte Arbeitstage blockiert und praktisch ein Teilfreigabe-Modell erzwingt.
+- Vertretung: Stellvertreter stehen in derselben Tabelle mit gleichen Rechten. Das Vier-Augen-Prinzip (Entscheidung 12) bleibt absolut: eigene Tage nie, auch nicht als Vertreter.
+- Reporting: Budget-Monitor, Kontingent-Monitor und Ressourcen-Live-Circle werden fuer Genehmiger auf dieselben Kontierungen geschnitten. Eine Rolle Controlling sieht alles; im Mock als neue Rolle `controller`, bis dahin `admin`. Planer bleiben unveraendert.
+
+Folgen: Audit Nr. 33 wird damit umsetzbar (Backlog XTS-014, XTS-063). Ausbaustufe "positionsweise Genehmigung" ist im Backlog als P2 vermerkt.
+
 ## Offene Entscheidungen
 
-| Nr. | Thema                                                                                     | Bezug                             | Wer                          |
-| --- | ----------------------------------------------------------------------------------------- | --------------------------------- | ---------------------------- |
-| O1  | Entschieden am 2026-09-06: SAP OData V2, Zielsystem SAP ECC (siehe Entscheidung 17)       | Audit Nr. 13, 16; Schritt 9       | erledigt                     |
-| O2  | Erfassung rueckwirkend und in die Zukunft: bis wann erlaubt, Wochenende/Feiertag          | Audit Nr. 17                      | Fachbereich                  |
-| O3  | Zustaendigkeitsschnitt der Genehmiger (Kontierung, Team, Ressourcenmanager)               | Audit Nr. 33, Konzept §4          | Fachbereich / Projektleitung |
-| O4  | Bestellpositionsbezug und Fehlerfall der WE-Buchung, Wiederholung                         | XTS-061A, Audit Nr. 34            | SAP-MM / Einkauf             |
-| O5  | Ueberplanung: Warnung (heute) oder Blockade                                               | XTS-022                           | Ressourcenmanagement         |
-| O6  | Rollen aus AD-Gruppen statt Stammdaten; Pflegeprozess `AAD_OID`/`AAD_UPN` beim Onboarding | XTS-050/080, `entra-anbindung.md` | IT / xTS-Administration      |
-| O7  | Status `L` (geloescht) fuer Stundenzettel und Planung                                     | Konzept §6                        | Fachbereich                  |
+| Nr. | Thema                                                                                                  | Bezug                             | Wer                     |
+| --- | ------------------------------------------------------------------------------------------------------ | --------------------------------- | ----------------------- |
+| O1  | Entschieden am 2026-09-06: SAP OData V2, Zielsystem SAP ECC (siehe Entscheidung 17)                    | Audit Nr. 13, 16; Schritt 9       | erledigt                |
+| O2  | Entschieden am 2026-09-09: laufender Monat plus Vormonat bis Tag 5, Zukunft gesperrt (Entscheidung 18) | Audit Nr. 17                      | erledigt                |
+| O3  | Entschieden am 2026-09-09: Zustaendigkeit je Kontierung, Tagesfreigabe gesamthaft (Entscheidung 19)    | Audit Nr. 33, Konzept §4          | erledigt                |
+| O4  | Bestellpositionsbezug und Fehlerfall der WE-Buchung, Wiederholung                                      | XTS-061A, Audit Nr. 34            | SAP-MM / Einkauf        |
+| O5  | Ueberplanung: Warnung (heute) oder Blockade                                                            | XTS-022                           | Ressourcenmanagement    |
+| O6  | Rollen aus AD-Gruppen statt Stammdaten; Pflegeprozess `AAD_OID`/`AAD_UPN` beim Onboarding              | XTS-050/080, `entra-anbindung.md` | IT / xTS-Administration |
+| O7  | Status `L` (geloescht) fuer Stundenzettel und Planung                                                  | Konzept §6                        | Fachbereich             |
