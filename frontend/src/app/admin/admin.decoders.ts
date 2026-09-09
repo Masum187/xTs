@@ -19,7 +19,7 @@ const changeStamp: Shape<ChangeStamp> = {
 };
 
 export const rule: Decoder<Rule> = D.object<Rule>({
-  infotype: D.literal(1, 2),
+  infotype: D.literal(1, 2, 3),
   value: D.string,
   active: D.boolean,
 });

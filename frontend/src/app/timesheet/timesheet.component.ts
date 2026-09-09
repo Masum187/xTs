@@ -19,6 +19,7 @@ import {
   createEmptyDay,
   dayVariance,
   isCostObjectBookable,
+  isWeekend,
   isWithinPeriod,
   periodAround,
   quotaProblems,
@@ -57,14 +58,15 @@ export class TimesheetComponent {
   /** Gespeicherte Tage des geladenen Zeitfensters (Audit Nr. 16). */
   private readonly savedDays = new Map<string, TimesheetDay>();
   private loadedPeriod: DatePeriod | null = null;
-  /**
-   * Zuletzt angefordertes Datum. Basis fuer `reload()`: scheitert ein
-   * Fensterwechsel, zeigt `day()` noch den alten Tag, der Retry muss aber das
-   * angeforderte Fenster laden.
-   */
-  private requestedDate = todayIso();
-
   protected readonly profile = this.auth.profile;
+  /**
+   * Zuletzt angefordertes Datum. Startwert ist das Systemdatum des Servers
+   * (Entscheidung 18), nicht das Browserdatum; Basis fuer `reload()`:
+   * scheitert ein Fensterwechsel, zeigt `day()` noch den alten Tag, der
+   * Retry muss aber das angeforderte Fenster laden.
+   */
+  private requestedDate = this.profile()?.today ?? todayIso();
+
   protected readonly loader = new LoadState();
   protected readonly busy = new BusyState();
   protected readonly costObjects = signal<EnabledCostObject[]>([]);
@@ -83,9 +85,19 @@ export class TimesheetComponent {
     const variance = this.variance();
     return variance === null ? "–" : `${formatSignedHours(variance)} Std.`;
   });
-  /** Bearbeitbar nur im Status E/A und solange keine Anfrage laeuft. */
+  /** Erfassbarer Zeitraum vom Server (Entscheidung 18) oder null. */
+  protected readonly window = computed(
+    () => this.profile()?.timesheetWindow ?? null,
+  );
+  /** Tag liegt ausserhalb des erfassbaren Zeitraums (nur lesen). */
+  protected readonly dateLocked = computed(() => {
+    const window = this.window();
+    return window !== null && !isWithinPeriod(window, this.day().date);
+  });
+  protected readonly weekend = computed(() => isWeekend(this.day().date));
+  /** Bearbeitbar nur im Status E/A, im Zeitraum und solange keine Anfrage laeuft. */
   protected readonly canEdit = computed(
-    () => canEditTimesheet(this.day()) && !this.busy.active(),
+    () => canEditTimesheet(this.day(), this.window()) && !this.busy.active(),
   );
   /** Kontingentprobleme gegen die zuletzt geladenen Freischaltungen. */
   protected readonly quotaIssues = computed(() =>
@@ -96,13 +108,16 @@ export class TimesheetComponent {
     ),
   );
   protected readonly canSubmit = computed(
-    () => canSubmitTimesheet(this.day()) && this.quotaIssues().length === 0,
+    () =>
+      canSubmitTimesheet(this.day(), this.window()) &&
+      this.quotaIssues().length === 0,
   );
   /** Fachliche Probleme des Tages: Entwurfsregeln immer, Freigaberegeln sobald Positionen da sind. */
   protected readonly problems = computed(() => [
     ...validateTimesheetDay(
       this.day(),
       this.day().lines.length > 0 ? "submit" : "draft",
+      this.window(),
     ),
     ...this.quotaIssues(),
   ]);
@@ -198,7 +213,7 @@ export class TimesheetComponent {
 
   protected async save(): Promise<void> {
     const problems = [
-      ...validateTimesheetDay(this.day(), "draft"),
+      ...validateTimesheetDay(this.day(), "draft", this.window()),
       ...this.quotaIssues(),
     ];
     if (problems.length > 0) {
@@ -273,7 +288,7 @@ export class TimesheetComponent {
     );
   }
 
-  /** Standardtag ist heute (Audit Nr. 16), nicht der zuletzt gespeicherte Tag. */
+  /** Standardtag ist das Server-Heute (Audit Nr. 16), nicht der zuletzt gespeicherte Tag. */
   private loadInitialData(): Promise<void> {
     return this.loadPeriod(this.requestedDate);
   }

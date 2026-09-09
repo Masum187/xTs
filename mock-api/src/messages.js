@@ -3,6 +3,8 @@
 // Tests und Frontend-Logik, die Texte gehen 1:1 an den Anwender.
 
 const MESSAGES = {
+  DATE_OUT_OF_RANGE:
+    "Das Tagesdatum liegt außerhalb des erfassbaren Zeitraums.",
   INVALID_TIMESHEET_PERIOD:
     "Der Zeitraum ist ungültig: from und to als JJJJ-MM-TT, from nicht nach to.",
   NO_EXTNR_MAPPING:
@@ -93,9 +95,17 @@ const MESSAGES = {
   ASSIGNMENT_NOT_FOUND: "Die Zuordnung wurde nicht gefunden.",
 };
 
+function formatDay(iso) {
+  const [year, month, day] = String(iso).split("-");
+  return day && month && year ? `${day}.${month}.${year}` : String(iso);
+}
+
 export function messageFor(code, payload = {}) {
   const base = MESSAGES[code];
   if (!base) return `Die Anfrage konnte nicht verarbeitet werden (${code}).`;
+  if (code === "DATE_OUT_OF_RANGE" && payload.from && payload.to) {
+    return `${base} Erfassbar sind ${formatDay(payload.from)} bis ${formatDay(payload.to)}.`;
+  }
   if (payload.status && code === "TIMESHEET_LOCKED") {
     return `${base} (Status ${payload.status})`;
   }

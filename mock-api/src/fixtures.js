@@ -146,6 +146,8 @@ export const budgetTrafficLight = {
 export const rules = [
   { infotype: 1, value: "MA_KONT", active: true },
   { infotype: 2, value: "P", active: true },
+  // Entscheidung 18: Vormonat bis einschliesslich Tag 5 des Folgemonats.
+  { infotype: 3, value: "5", active: true },
 ];
 
 // Stammdaten-Zuordnung Mitarbeiter/Kontierung mit Gueltigkeit (Planungsbasis).

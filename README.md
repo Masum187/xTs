@@ -11,7 +11,8 @@ Dieses Repository ist als Monorepo aufgebaut, damit Konzept, SAP-Artefakte, ODat
 - Audit vom 2026-09-03 (`docs/audit-2026-09-03.md`): die Stabilisierungsschritte 1 bis 10 sind umgesetzt (Statusmaschine, Payload-Validierung, Kontingentpruefung, Minutenarithmetik, Arbeitszeit/Tagesdifferenz, Lade-/Fehlerzustaende, Identitaetswechsel, rollengeschuetzte Lesepfade, OData-V2-Adapter mit Zeitfenster, Angular 22, Doku-Konsolidierung).
 - OData: Zielsystem ist SAP ECC, also OData V2 (Entscheidung 17). Der WebClient hat eine Adapterschicht mit Laufzeitpruefung jeder Antwort; die Mock-API liefert mit `XTS_ODATA=v2` die V2-Form, beide Formen laufen in CI (Audit-Schritt 9a). `MyTimesheets` wird je Zeitfenster (Vormonat bis Folgemonat) geladen, Standardtag ist heute (Schritt 9b).
 - Fachentscheidungen 18 (Datumsregeln) und 19 (Genehmigerzustaendigkeit je Kontierung) sind gefallen; die Restbefunde des Audits sind als Schritte 11 bis 15 neu sortiert (`docs/audit-2026-09-03.md`), die zugehoerigen Stories sind XTS-014, XTS-056 und XTS-063.
-- Offen: Schritte 11 bis 15, SAP-seitige Umsetzung (Epics 9 und 14), Fachentscheidungen O4 bis O7 in `docs/entscheidungen-v0.1.md`.
+- Schritt 11 (Datumsregeln, Entscheidung 18) ist umgesetzt: laufender Monat plus Vormonat bis zum Monatsabschluss (Regelwerk Infotyp 3), Zukunft gesperrt, Wochenend-Hinweis; die Mock-API nimmt fuer Tests `XTS_TODAY`.
+- Offen: Schritte 12 bis 15, SAP-seitige Umsetzung (Epics 9 und 14), Fachentscheidungen O4 bis O7 in `docs/entscheidungen-v0.1.md`.
 
 ## Struktur
 
@@ -67,6 +68,7 @@ E2E-Smoke-Tests (setzen das Testdatenpaket der laufenden Mock-API vor dem Lauf z
 ```bash
 npm run test:smoke
 npm run test:smoke:v2   # gleiche Specs gegen die SAP-OData-V2-Antwortform (laufende Mock-API muss mit XTS_ODATA=v2 gestartet sein, sonst bricht der Lauf ab)
+# Eine bereits laufende Mock-API muss mit XTS_TODAY=2026-05-05 gestartet sein (Systemdatum des Testdatenpakets), sonst bricht der Lauf ab.
 ```
 
 ## Quality Gates

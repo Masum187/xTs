@@ -190,3 +190,12 @@ button:disabled {
 .variance-reason {
   margin-top: 12px;
 }
+
+/* Hinweis: Tag ausserhalb des erfassbaren Zeitraums (Entscheidung 18). */
+.hint-panel {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  border-left: 4px solid #b26a00;
+  background: #fff7e6;
+}

@@ -39,6 +39,13 @@ import {
   validateTimesheetPayload,
   workHoursOf,
 } from "./timesheet-validation.js";
+import {
+  CLOSING_DAY_INFOTYPE,
+  currentTimesheetWindow,
+  isValidClosingDay,
+  isWithinWindow,
+  systemToday,
+} from "./timesheet-window.js";
 import { buildBudgetMonitor, buildCostObjectQuota } from "./reporting.js";
 
 const timesheetKey = (day) => `${day.extNr}|${day.date}`;
@@ -250,7 +257,7 @@ export async function routeRequest(request) {
     // Antwortform (Entscheidung 17), damit ein wiederverwendeter Server in den
     // Smoke-Tests gegen die erwartete Form geprueft werden kann.
     const odata = process.env.XTS_ODATA === "v2" ? "v2" : "mock";
-    return json({ status: "ok", odata });
+    return json({ status: "ok", odata, today: systemToday() });
   }
 
   // Stammdaten lesen (Audit Nr. 6): immer angemeldet, Umfang nach Rolle.
@@ -426,6 +433,8 @@ export async function routeRequest(request) {
     const persona = resolvePersona(request);
     if (persona.error) return persona.error;
     const { extNr, displayName, company, roles, aadUpn } = persona.employee;
+    // Datumsregeln (Entscheidung 18): der WebClient prueft denselben
+    // Zeitraum vor dem Senden und sperrt Tage ausserhalb.
     return json({
       extNr,
       displayName,
@@ -433,6 +442,8 @@ export async function routeRequest(request) {
       roles,
       aadUpn,
       mappedBy: persona.mappedBy,
+      today: systemToday(),
+      timesheetWindow: currentTimesheetWindow(rulesStore),
     });
   }
 
@@ -463,11 +474,12 @@ export async function routeRequest(request) {
     const body = await readJsonBody(request);
     const allowedValues = { 1: ["MA_KONT"], 2: ["P", "B"] };
     const allowed = allowedValues[body.infotype];
-    if (
-      !allowed ||
-      !allowed.includes(body.value) ||
-      typeof body.active !== "boolean"
-    ) {
+    // Infotyp 3 (Monatsabschluss, Entscheidung 18): Kalendertag 1 bis 28.
+    const valueOk =
+      body.infotype === CLOSING_DAY_INFOTYPE
+        ? isValidClosingDay(body.value)
+        : Boolean(allowed && allowed.includes(body.value));
+    if (!valueOk || typeof body.active !== "boolean") {
       return json({ error: "INVALID_RULE" }, 400);
     }
     const rule = rulesStore.find(
@@ -892,6 +904,23 @@ export async function routeRequest(request) {
           message: problems[0].message,
           fields: problems.map((item) => item.field),
           problems,
+        },
+        400,
+      );
+    }
+    // Datumsregeln (Entscheidung 18): laufender Monat plus Vormonat bis zum
+    // Monatsabschluss, Zukunft gesperrt; gilt fuer Entwurf und Freigabe.
+    const window = currentTimesheetWindow(rulesStore);
+    if (!isWithinWindow(saved.date, window)) {
+      const message = messageFor("DATE_OUT_OF_RANGE", window);
+      return json(
+        {
+          error: "DATE_OUT_OF_RANGE",
+          message,
+          from: window.from,
+          to: window.to,
+          fields: ["date"],
+          problems: [{ field: "date", code: "DATE_OUT_OF_RANGE", message }],
         },
         400,
       );

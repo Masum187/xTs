@@ -11,6 +11,10 @@ import {
 
 const APPROVER_UPN = "christian.roeper@qualitytimes.de";
 
+// Systemdatum der Contract-Tests (Entscheidung 18): das Testdatenpaket liegt
+// im April/Mai 2026, erfassbar ist damit 2026-04-01 bis 2026-05-05.
+process.env.XTS_TODAY = "2026-05-05";
+
 function request(method, url, body, headers = {}) {
   const stream = Readable.from(body ? [JSON.stringify(body)] : []);
   stream.method = method;
@@ -24,6 +28,7 @@ function approverRequest(method, url, body) {
 }
 
 test.beforeEach(() => {
+  process.env.XTS_TODAY = "2026-05-05";
   resetTimesheetStore();
 });
 
@@ -187,6 +192,8 @@ test("rejects timesheet lines without active enablement", async () => {
 });
 
 test("rejects timesheet lines outside the enabled period", async () => {
+  // Systemdatum passend zu den Testdaten (Entscheidung 18).
+  process.env.XTS_TODAY = "2027-03-01";
   const response = await routeRequest(
     request("POST", "/odata/TimesheetDays", {
       extNr: "SCHILZ",
@@ -420,6 +427,8 @@ test("budget monitor supports employee and day detail levels", async () => {
 });
 
 test("budget monitor traffic light turns red from customizing thresholds", async () => {
+  // Systemdatum passend zu den Testdaten (Entscheidung 18).
+  process.env.XTS_TODAY = "2026-04-05";
   // Budget 600000000009 = 80 Std.; acht Tage à 20 Std. ergeben 160 Std. (200 %).
   for (let day = 16; day <= 23; day += 1) {
     const date = `2026-03-${day}`;
@@ -1239,6 +1248,7 @@ test("rules are readable and validated for admins", async () => {
   assert.deepEqual(body.value, [
     { infotype: 1, value: "MA_KONT", active: true },
     { infotype: 2, value: "P", active: true },
+    { infotype: 3, value: "5", active: true },
   ]);
 
   const invalidValue = await routeRequest(
@@ -2344,6 +2354,8 @@ test("submitted and approved days are locked for employees, rejected days reopen
 });
 
 test("submitting requires booked hours and unknown fields are dropped", async () => {
+  // Systemdatum passend zu den Testdaten (Entscheidung 18).
+  process.env.XTS_TODAY = "2026-05-12";
   const header = {
     startTime: "08:00",
     endTime: "16:30",
@@ -2599,6 +2611,8 @@ test("invalid JSON bodies are reported as 400, not 500", async () => {
 });
 
 test("bookings cannot exceed the open quota of a cost object", async () => {
+  // Systemdatum passend zu den Testdaten (Entscheidung 18).
+  process.env.XTS_TODAY = "2026-09-03";
   // 700000000004: 320 beauftragt, 18 gebucht -> 302 offen.
   const tooMuch = await saveDay({
     date: "2026-08-03",
@@ -2710,6 +2724,8 @@ test("quota check sums the lines of a day and ignores the day's previous version
 });
 
 test("hour arithmetic works in whole minutes without floating point drift", async () => {
+  // Systemdatum passend zu den Testdaten (Entscheidung 18).
+  process.env.XTS_TODAY = "2026-05-06";
   // Planung darf beliebige Dezimalwerte tragen: 0.1 + 0.2 muss exakt 0.3 sein.
   for (const [month, hours] of [
     ["2026-04", 0.1],
@@ -2819,7 +2835,7 @@ test("work hours are derived from the day header and variances need a reason to 
   assert.equal(explained.body.varianceReason, "Reisezeit ohne Kontierung");
 
   const matching = await saveDay({
-    date: "2026-05-19",
+    date: "2026-05-01",
     status: "F",
     startTime: "08:30",
     endTime: "17:00",
@@ -2832,7 +2848,7 @@ test("work hours are derived from the day header and variances need a reason to 
   assert.equal(matching.status, 201);
 
   const tooLong = await saveDay({
-    date: "2026-05-20",
+    date: "2026-05-02",
     varianceReason: "x".repeat(256),
     lines: [{ coIdent: "700000000004", description: "a", hours: 1 }],
   });
@@ -2840,7 +2856,7 @@ test("work hours are derived from the day header and variances need a reason to 
   assert.equal(tooLong.body.problems[0].code, "VARIANCE_REASON_TOO_LONG");
 
   const clientWorkHours = await saveDay({
-    date: "2026-05-21",
+    date: "2026-05-03",
     startTime: "09:00",
     endTime: "12:00",
     breakMinutes: 0,
@@ -2988,4 +3004,132 @@ test("own timesheets can be limited to a period and reject invalid periods", asy
     assert.equal(body.error, "INVALID_TIMESHEET_PERIOD");
     assert.match(body.message, /Zeitraum/);
   }
+});
+
+async function withToday(today, work) {
+  const before = process.env.XTS_TODAY;
+  process.env.XTS_TODAY = today;
+  try {
+    return await work();
+  } finally {
+    if (before === undefined) delete process.env.XTS_TODAY;
+    else process.env.XTS_TODAY = before;
+  }
+}
+
+function dayOn(date) {
+  return {
+    extNr: "SCHILZ",
+    date,
+    startTime: "08:00",
+    endTime: "12:00",
+    breakMinutes: 0,
+    location: "remote",
+    status: "E",
+    lines: [{ coIdent: "700000000004", description: "Fenster", hours: 4 }],
+  };
+}
+
+test("timesheet dates are limited to the current and previous month until closing day", async () => {
+  await withToday("2026-05-05", async () => {
+    const profile = JSON.parse(
+      (await routeRequest(request("GET", "/odata/MyProfile"))).body,
+    );
+    assert.equal(profile.today, "2026-05-05");
+    assert.deepEqual(profile.timesheetWindow, {
+      from: "2026-04-01",
+      to: "2026-05-05",
+    });
+
+    for (const date of ["2026-04-01", "2026-04-30", "2026-05-05"]) {
+      const ok = await routeRequest(
+        request("POST", "/odata/TimesheetDays", dayOn(date)),
+      );
+      assert.equal(ok.status, 201, date);
+    }
+    for (const date of ["2026-03-31", "2026-05-06", "2027-01-01"]) {
+      const blocked = await routeRequest(
+        request("POST", "/odata/TimesheetDays", dayOn(date)),
+      );
+      assert.equal(blocked.status, 400, date);
+      const body = JSON.parse(blocked.body);
+      assert.equal(body.error, "DATE_OUT_OF_RANGE");
+      assert.deepEqual(body.fields, ["date"]);
+      assert.equal(body.problems[0].code, "DATE_OUT_OF_RANGE");
+      assert.match(body.message, /01\.04\.2026 bis 05\.05\.2026/);
+    }
+    // Freigabe unterliegt derselben Regel.
+    const submit = await routeRequest(
+      request("POST", "/odata/TimesheetDays", {
+        ...dayOn("2026-03-31"),
+        status: "F",
+      }),
+    );
+    assert.equal(JSON.parse(submit.body).error, "DATE_OUT_OF_RANGE");
+  });
+
+  // Ab dem Tag nach dem Monatsabschluss ist nur noch der laufende Monat offen.
+  await withToday("2026-05-06", async () => {
+    const profile = JSON.parse(
+      (await routeRequest(request("GET", "/odata/MyProfile"))).body,
+    );
+    assert.deepEqual(profile.timesheetWindow, {
+      from: "2026-05-01",
+      to: "2026-05-06",
+    });
+    const april = await routeRequest(
+      request("POST", "/odata/TimesheetDays", dayOn("2026-04-30")),
+    );
+    assert.equal(JSON.parse(april.body).error, "DATE_OUT_OF_RANGE");
+  });
+});
+
+test("closing day rule is maintained by admins and drives the window", async () => {
+  const invalid = await routeRequest(
+    approverRequest("POST", "/odata/Rules", {
+      infotype: 3,
+      value: "31",
+      active: true,
+    }),
+  );
+  assert.equal(invalid.status, 400);
+
+  const later = await routeRequest(
+    approverRequest("POST", "/odata/Rules", {
+      infotype: 3,
+      value: "10",
+      active: true,
+    }),
+  );
+  assert.equal(later.status, 200);
+  await withToday("2026-05-08", async () => {
+    const profile = JSON.parse(
+      (await routeRequest(request("GET", "/odata/MyProfile"))).body,
+    );
+    assert.equal(profile.timesheetWindow.from, "2026-04-01");
+  });
+
+  // Regel inaktiv: kein Monatsabschluss, der Vormonat bleibt offen.
+  await routeRequest(
+    approverRequest("POST", "/odata/Rules", {
+      infotype: 3,
+      value: "10",
+      active: false,
+    }),
+  );
+  await withToday("2026-05-31", async () => {
+    const profile = JSON.parse(
+      (await routeRequest(request("GET", "/odata/MyProfile"))).body,
+    );
+    assert.equal(profile.timesheetWindow.from, "2026-04-01");
+  });
+
+  const log = JSON.parse(
+    (
+      await routeRequest(
+        approverRequest("GET", "/odata/AuditLog?category=rule"),
+      )
+    ).body,
+  ).value;
+  assert.ok(log.some((entry) => entry.objectKey === "Infotyp 3"));
 });

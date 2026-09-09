@@ -29,6 +29,7 @@ import { AdminService } from "./admin.service";
 const INFOTYPE_LABELS: Record<number, string> = {
   1: "Aggregation Beauftragung",
   2: "Freischaltung Stundenschreibung",
+  3: "Monatsabschluss Stundenerfassung",
 };
 
 const VALUE_OPTIONS: Record<number, { value: string; label: string }[]> = {
@@ -37,6 +38,11 @@ const VALUE_OPTIONS: Record<number, { value: string; label: string }[]> = {
     { value: "P", label: "P – ab BANF vorhanden" },
     { value: "B", label: "B – ab Bestellung vorhanden" },
   ],
+  // Entscheidung 18: Vormonat erfassbar bis einschliesslich diesem Tag.
+  3: Array.from({ length: 28 }, (_item, index) => ({
+    value: String(index + 1),
+    label: `Vormonat bis zum ${index + 1}. des Folgemonats`,
+  })),
 };
 
 const CATEGORY_LABELS: Record<string, string> = {

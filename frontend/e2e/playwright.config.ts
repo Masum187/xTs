@@ -1,5 +1,13 @@
 import { defineConfig, devices } from "@playwright/test";
 
+/**
+ * Systemdatum der Mock-API fuer die Smoke-Tests (Entscheidung 18): das
+ * Testdatenpaket liegt im April/Mai 2026, der erfassbare Zeitraum ist damit
+ * 2026-04-01 bis 2026-05-05. global-setup prueft einen wiederverwendeten
+ * Server auf dieses Datum.
+ */
+export const SMOKE_TODAY = "2026-05-05";
+
 export default defineConfig({
   testDir: ".",
   globalSetup: "./global-setup.ts",
@@ -15,6 +23,7 @@ export default defineConfig({
       cwd: "../..",
       url: "http://127.0.0.1:4010/health",
       reuseExistingServer: !process.env.CI,
+      env: { XTS_TODAY: SMOKE_TODAY },
     },
     {
       command:

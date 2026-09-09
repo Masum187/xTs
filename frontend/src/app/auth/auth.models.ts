@@ -17,6 +17,10 @@ export interface AuthProfile {
   aadUpn?: string | null;
   /** Ueber welchen Token-Claim das Mapping auf EXTNR gelang (XTS-050). */
   mappedBy?: "oid" | "upn";
+  /** Systemdatum des Servers (Entscheidung 18); fachliche Basis fuer "heute". */
+  today: string;
+  /** Erfassbarer Zeitraum der Stundenerfassung, inklusive (Entscheidung 18). */
+  timesheetWindow: { from: string; to: string };
 }
 
 /** Token-Claims, die xTS fuer das EXTNR-Mapping auswertet (XTS-050). */
