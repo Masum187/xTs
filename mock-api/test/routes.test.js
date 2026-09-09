@@ -1800,10 +1800,11 @@ test("test data reset restores the documented UAT package", async () => {
   assert.equal(body.package, "uat-v0.1");
   assert.equal(body.resetBy, "ROEPER");
   assert.deepEqual(body.counts, {
-    employees: 3,
+    employees: 4,
     teams: 2,
     costObjects: 3,
     assignments: 4,
+    costObjectApprovers: 4,
     planningEntries: 4,
     orders: 4,
     timesheetDays: 6,
@@ -2906,7 +2907,7 @@ test("master data reads require a mapped identity and are scoped by role", async
   // Rolle admin (ROEPER): alle Felder, inkl. aadOid/sapAccount.
   const admin = await routeRequest(approverRequest("GET", "/odata/Employees"));
   const adminBody = JSON.parse(admin.body).value;
-  assert.equal(adminBody.length, 3);
+  assert.equal(adminBody.length, 4);
   assert.ok(adminBody[0].aadOid);
   assert.ok("sapAccount" in adminBody[0]);
 
@@ -2953,6 +2954,7 @@ test("planners and approvers do not see inactive employees, admins do", async ()
   assert.deepEqual(scopedBody.map((item) => item.extNr).sort(), [
     "ROEPER",
     "SCHILZ",
+    "WEBER",
   ]);
   assert.ok(!scopedBody.some((item) => item.extNr === "ALTMANN"));
   assert.ok(scopedBody.every((item) => item.aadOid === undefined));
@@ -3132,4 +3134,207 @@ test("closing day rule is maintained by admins and drives the window", async () 
     ).body,
   ).value;
   assert.ok(log.some((entry) => entry.objectKey === "Infotyp 3"));
+});
+
+const WEBER_UPN = "maria.weber@qualitytimes.de";
+function weberRequest(method, url, body) {
+  return request(method, url, body, { "x-mock-oauth-upn": WEBER_UPN });
+}
+
+test("cost object approvers are maintained by admins and validated", async () => {
+  const list = await routeRequest(
+    approverRequest("GET", "/odata/CostObjectApprovers"),
+  );
+  assert.equal(list.status, 200);
+  const rows = JSON.parse(list.body).value;
+  assert.equal(rows.length, 4);
+  assert.equal(rows[3].displayName, "Maria Weber");
+  assert.equal(rows[3].description, "SAP-Implementierung");
+  assert.equal(rows[3].deputy, true);
+
+  const own = JSON.parse(
+    (await routeRequest(weberRequest("GET", "/odata/CostObjectApprovers")))
+      .body,
+  ).value;
+  assert.deepEqual(
+    own.map((item) => item.id),
+    ["000004"],
+  );
+  const user = await routeRequest(request("GET", "/odata/CostObjectApprovers"));
+  assert.equal(user.status, 403);
+
+  const missing = await routeRequest(
+    approverRequest("POST", "/odata/CostObjectApprovers", {
+      coIdent: "600000000001",
+      validFrom: "2026-01-01",
+      validTo: "2026-12-31",
+    }),
+  );
+  assert.equal(missing.status, 400);
+  assert.equal(JSON.parse(missing.body).error, "INVALID_COST_OBJECT_APPROVER");
+  const notApprover = await routeRequest(
+    approverRequest("POST", "/odata/CostObjectApprovers", {
+      coIdent: "600000000001",
+      extNr: "SCHILZ",
+      validFrom: "2026-01-01",
+      validTo: "2026-12-31",
+    }),
+  );
+  assert.equal(notApprover.status, 409);
+  assert.equal(JSON.parse(notApprover.body).error, "APPROVER_NOT_AVAILABLE");
+  const overlap = await routeRequest(
+    approverRequest("POST", "/odata/CostObjectApprovers", {
+      coIdent: "700000000004",
+      extNr: "WEBER",
+      validFrom: "2026-06-01",
+      validTo: "2026-06-30",
+    }),
+  );
+  assert.equal(overlap.status, 409);
+  assert.equal(JSON.parse(overlap.body).error, "APPROVER_OVERLAP");
+  assert.equal(JSON.parse(overlap.body).conflictId, "000004");
+  const nonAdmin = await routeRequest(
+    weberRequest("POST", "/odata/CostObjectApprovers", {
+      coIdent: "600000000001",
+      extNr: "WEBER",
+      validFrom: "2026-01-01",
+      validTo: "2026-12-31",
+    }),
+  );
+  assert.equal(nonAdmin.status, 403);
+
+  const created = await routeRequest(
+    approverRequest("POST", "/odata/CostObjectApprovers", {
+      coIdent: "600000000001",
+      extNr: "WEBER",
+      validFrom: "2026-01-01",
+      validTo: "2026-12-31",
+    }),
+  );
+  assert.equal(created.status, 200);
+  assert.equal(JSON.parse(created.body).id, "000005");
+  const log = JSON.parse(
+    (
+      await routeRequest(
+        approverRequest("GET", "/odata/AuditLog?category=masterdata"),
+      )
+    ).body,
+  ).value;
+  assert.ok(log.some((entry) => entry.object === "Genehmigerzuordnung"));
+});
+
+test("approvers only see and decide days on their cost objects", async () => {
+  // Gemischter Tag: eine Position auf Webers Kontierung, eine fremde.
+  const mixed = await routeRequest(
+    request("POST", "/odata/TimesheetDays", {
+      extNr: "SCHILZ",
+      date: "2026-04-03",
+      startTime: "08:00",
+      endTime: "14:30",
+      breakMinutes: 30,
+      location: "remote",
+      status: "F",
+      lines: [
+        { coIdent: "700000000004", description: "Implementierung", hours: 4 },
+        { coIdent: "600000000001", description: "Support", hours: 2 },
+      ],
+    }),
+  );
+  assert.equal(mixed.status, 201);
+
+  const weber = JSON.parse(
+    (await routeRequest(weberRequest("GET", "/odata/ApprovalTimesheets"))).body,
+  ).value;
+  assert.deepEqual(
+    weber.map((day) => `${day.extNr}/${day.date}`),
+    ["SCHILZ/2026-04-03", "SCHILZ/2026-04-08"],
+  );
+  assert.deepEqual(weber[0].responsibleCoIdents, ["700000000004"]);
+  assert.equal(weber[0].lines.length, 2, "alle Positionen bleiben sichtbar");
+
+  const admin = JSON.parse(
+    (await routeRequest(approverRequest("GET", "/odata/ApprovalTimesheets")))
+      .body,
+  ).value;
+  assert.equal(admin.length, 4);
+  const adminMixed = admin.find((day) => day.date === "2026-04-03");
+  assert.deepEqual(adminMixed.responsibleCoIdents.sort(), [
+    "600000000001",
+    "700000000004",
+  ]);
+
+  const foreign = await routeRequest(
+    weberRequest("POST", "/odata/TimesheetApprovals", {
+      extNr: "ROEPER",
+      date: "2026-03-31",
+      action: "approve",
+    }),
+  );
+  assert.equal(foreign.status, 403);
+  assert.equal(JSON.parse(foreign.body).error, "NOT_RESPONSIBLE");
+  assert.match(JSON.parse(foreign.body).message, /zuständig/);
+
+  const approved = await routeRequest(
+    weberRequest("POST", "/odata/TimesheetApprovals", {
+      extNr: "SCHILZ",
+      date: "2026-04-03",
+      action: "approve",
+    }),
+  );
+  assert.equal(approved.status, 200);
+  assert.equal(JSON.parse(approved.body).status, "G");
+
+  // Zuordnung ausserhalb der Gueltigkeit zaehlt nicht.
+  await routeRequest(
+    approverRequest("POST", "/odata/CostObjectApprovers", {
+      id: "000004",
+      coIdent: "700000000004",
+      extNr: "WEBER",
+      deputy: true,
+      validFrom: "2026-05-01",
+      validTo: "2026-12-31",
+    }),
+  );
+  const afterChange = JSON.parse(
+    (await routeRequest(weberRequest("GET", "/odata/ApprovalTimesheets"))).body,
+  ).value;
+  assert.deepEqual(afterChange, []);
+});
+
+test("reporting is scoped for approvers and complete for controllers and admins", async () => {
+  const budget = JSON.parse(
+    (await routeRequest(weberRequest("GET", "/odata/BudgetMonitor"))).body,
+  ).value;
+  assert.deepEqual(
+    budget.map((row) => row.coIdent),
+    ["700000000004"],
+  );
+  const quota = JSON.parse(
+    (await routeRequest(weberRequest("GET", "/odata/CostObjectQuota"))).body,
+  ).value;
+  assert.ok(quota.length > 0);
+  assert.ok(quota.every((row) => row.coIdent === "700000000004"));
+  const lifecycle = JSON.parse(
+    (await routeRequest(weberRequest("GET", "/odata/ResourceLifecycle"))).body,
+  ).value;
+  assert.ok(lifecycle.length > 0);
+  assert.ok(lifecycle.every((row) => row.coIdent === "700000000004"));
+
+  const adminBudget = JSON.parse(
+    (await routeRequest(approverRequest("GET", "/odata/BudgetMonitor"))).body,
+  ).value;
+  assert.ok(adminBudget.length > 1);
+
+  // Controlling ohne Genehmigerrolle sieht alles, aber keine Genehmigungen.
+  const weber = masterData.employees.find((item) => item.extNr === "WEBER");
+  weber.roles = ["user", "controller"];
+  const controller = await routeRequest(
+    weberRequest("GET", "/odata/BudgetMonitor"),
+  );
+  assert.equal(controller.status, 200);
+  assert.equal(JSON.parse(controller.body).value.length, adminBudget.length);
+  const noApprovals = await routeRequest(
+    weberRequest("GET", "/odata/ApprovalTimesheets"),
+  );
+  assert.equal(noApprovals.status, 403);
 });

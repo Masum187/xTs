@@ -209,3 +209,39 @@ test("admin area is not reachable without admin role", async ({ page }) => {
   ).toBeVisible();
   await expect(page.getByRole("link", { name: "Verwaltung" })).toBeHidden();
 });
+
+test("admin maintains approvers per cost object", async ({ page }) => {
+  await page.goto("/");
+  await page
+    .getByTestId("persona-select")
+    .selectOption("christian.roeper@qualitytimes.de");
+  await page.getByRole("link", { name: "Verwaltung" }).click();
+  const table = page.getByTestId("approver-table");
+  await expect(table).toContainText("Maria Weber");
+  // Nur aktive Mitarbeiter mit Rolle approver sind als Genehmiger waehlbar.
+  await expect(
+    page
+      .getByLabel("Neu: Genehmiger Mitarbeiter")
+      .locator("option", { hasText: "Stephan Schilz" }),
+  ).toHaveCount(0);
+
+  await page
+    .getByLabel("Neu: Genehmiger Kontierung")
+    .selectOption("600000000009");
+  await page.getByLabel("Neu: Genehmiger Mitarbeiter").selectOption("WEBER");
+  await page.getByLabel("Neu: Genehmiger gültig von").fill("2026-01-01");
+  await page.getByLabel("Neu: Genehmiger gültig bis").fill("2026-12-31");
+  await page.getByTestId("create-approver").click();
+  await expect(page.getByTestId("admin-message")).toContainText(
+    "Genehmigerzuordnung 000005 gespeichert",
+  );
+  await expect(page.getByTestId("approver-000005")).toContainText(
+    "600000000009",
+  );
+
+  await page.getByTestId("delete-approver-000005").click();
+  await expect(page.getByTestId("admin-message")).toContainText(
+    "logisch gelöscht",
+  );
+  await expect(page.getByTestId("approver-000005")).toHaveCount(0);
+});

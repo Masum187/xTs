@@ -12,6 +12,8 @@ import { LoadStatusComponent } from "../shared/load-status.component";
 import type {
   AuditEntry,
   CostObject,
+  CostObjectApprover,
+  CostObjectApproverDraft,
   CostObjectAssignment,
   CostObjectAssignmentDraft,
   CostObjectDraft,
@@ -83,6 +85,10 @@ function emptyCostObjectAssignment(): CostObjectAssignmentDraft {
   return { extNr: "", coIdent: "", validFrom: "", validTo: "" };
 }
 
+function emptyCostObjectApprover(): CostObjectApproverDraft {
+  return { coIdent: "", extNr: "", deputy: false, validFrom: "", validTo: "" };
+}
+
 @Component({
   selector: "xts-admin",
   imports: [FormsModule, LoadStatusComponent],
@@ -104,6 +110,8 @@ export class AdminComponent {
   protected readonly teamAssignments = signal<TeamAssignment[]>([]);
   protected readonly costObjects = signal<CostObject[]>([]);
   protected readonly assignments = signal<CostObjectAssignment[]>([]);
+  /** Genehmiger je Kontierung (Entscheidung 19, XTS-014). */
+  protected readonly approvers = signal<CostObjectApprover[]>([]);
   protected readonly rules = signal<Rule[]>([]);
 
   protected readonly auditEntries = signal<AuditEntry[]>([]);
@@ -116,6 +124,7 @@ export class AdminComponent {
   protected newTeamAssignment = emptyTeamAssignment();
   protected newCostObject = emptyCostObject();
   protected newAssignment = emptyCostObjectAssignment();
+  protected newApprover = emptyCostObjectApprover();
 
   protected readonly message = signal<string>("");
   protected readonly messageKind = signal<"ok" | "error">("ok");
@@ -163,6 +172,16 @@ export class AdminComponent {
 
   protected availableCostObjects(): CostObject[] {
     return this.costObjects().filter((item) => !item.deleted);
+  }
+
+  /** Nur aktive Mitarbeiter mit Rolle approver koennen Genehmiger sein. */
+  protected approverEmployees(): Employee[] {
+    return this.employees().filter(
+      (employee) =>
+        !employee.deleted &&
+        employee.active &&
+        employee.roles.includes("approver"),
+    );
   }
 
   protected updateRule(rule: Rule, patch: Partial<Rule>): void {
@@ -302,6 +321,34 @@ export class AdminComponent {
     });
   }
 
+  protected async saveApprover(
+    approver: CostObjectApproverDraft,
+  ): Promise<void> {
+    await this.run(async () => {
+      const saved = await this.adminService.saveCostObjectApprover(approver);
+      await this.loadApprovers();
+      if (approver === this.newApprover) {
+        this.newApprover = emptyCostObjectApprover();
+      }
+      return `Genehmigerzuordnung ${saved.id} gespeichert (${saved.coIdent}: ${saved.displayName ?? saved.extNr}${saved.deputy ? ", Vertretung" : ""}, ${saved.validFrom} – ${saved.validTo}).`;
+    });
+  }
+
+  protected async deleteApprover(approver: CostObjectApprover): Promise<void> {
+    await this.run(async () => {
+      await this.adminService.saveCostObjectApprover({
+        ...approver,
+        deleted: true,
+      });
+      await this.loadApprovers();
+      return `Genehmigerzuordnung ${approver.id} logisch gelöscht.`;
+    });
+  }
+
+  private async loadApprovers(): Promise<void> {
+    this.approvers.set(await this.adminService.getCostObjectApprovers());
+  }
+
   protected async resetTestData(): Promise<void> {
     await this.run(async () => {
       const result = await this.adminService.resetTestData();
@@ -343,6 +390,7 @@ export class AdminComponent {
           this.adminService.getTeamAssignments(),
           this.adminService.getCostObjects(),
           this.adminService.getCostObjectAssignments(),
+          this.adminService.getCostObjectApprovers(),
           this.adminService.getRules(),
         ]),
       "Verwaltungsdaten konnten nicht geladen werden.",
@@ -352,6 +400,7 @@ export class AdminComponent {
         teamAssignments,
         costObjects,
         assignments,
+        approvers,
         rules,
       ]) => {
         this.employees.set(employees);
@@ -359,6 +408,7 @@ export class AdminComponent {
         this.teamAssignments.set(teamAssignments);
         this.costObjects.set(costObjects);
         this.assignments.set(assignments);
+        this.approvers.set(approvers);
         this.rules.set(rules);
       },
     );

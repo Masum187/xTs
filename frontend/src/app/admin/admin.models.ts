@@ -72,6 +72,19 @@ export interface CostObjectAssignment extends ChangeStamp {
   deleted: boolean;
 }
 
+/** Genehmiger je Kontierung analog ZXTS_KONTGEN_T (Entscheidung 19, XTS-014). */
+export interface CostObjectApprover extends ChangeStamp {
+  id: string;
+  coIdent: string;
+  description?: string;
+  extNr: string;
+  displayName?: string;
+  deputy: boolean;
+  validFrom: string;
+  validTo: string;
+  deleted: boolean;
+}
+
 export type AuditCategory = "status" | "job" | "masterdata" | "rule" | "system";
 export type AuditSeverity = "info" | "error";
 
@@ -126,4 +139,8 @@ export type CostObjectDraft = Pick<
 export type CostObjectAssignmentDraft = Pick<
   CostObjectAssignment,
   "extNr" | "coIdent" | "validFrom" | "validTo"
+>;
+export type CostObjectApproverDraft = Pick<
+  CostObjectApprover,
+  "coIdent" | "extNr" | "deputy" | "validFrom" | "validTo"
 >;

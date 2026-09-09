@@ -3,6 +3,7 @@ import type {
   AuditEntry,
   ChangeStamp,
   CostObject,
+  CostObjectApprover,
   CostObjectAssignment,
   CostObjectCheck,
   Employee,
@@ -90,6 +91,20 @@ export const costObjectAssignment: Decoder<CostObjectAssignment> =
     displayName: D.optional(D.string),
     coIdent: D.string,
     description: D.text,
+    validFrom: D.date,
+    validTo: D.date,
+    deleted: D.fallback(D.boolean, false),
+  });
+
+export const costObjectApprover: Decoder<CostObjectApprover> =
+  D.object<CostObjectApprover>({
+    ...changeStamp,
+    id: D.string,
+    coIdent: D.string,
+    description: D.optional(D.string),
+    extNr: D.string,
+    displayName: D.optional(D.string),
+    deputy: D.fallback(D.boolean, false),
     validFrom: D.date,
     validTo: D.date,
     deleted: D.fallback(D.boolean, false),

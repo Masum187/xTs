@@ -4,6 +4,7 @@ import { ODataClient } from "../shared/odata";
 import {
   auditEntry,
   costObject,
+  costObjectApprover,
   costObjectAssignment,
   costObjectCheck,
   employee,
@@ -16,6 +17,7 @@ import type {
   AuditEntry,
   AuditFilters,
   CostObject,
+  CostObjectApprover,
   CostObjectAssignment,
   CostObjectCheck,
   Employee,
@@ -94,6 +96,16 @@ export class AdminService {
       payload,
       costObjectAssignment,
     );
+  }
+
+  getCostObjectApprovers(): Promise<CostObjectApprover[]> {
+    return this.odata.list("CostObjectApprovers", costObjectApprover);
+  }
+
+  saveCostObjectApprover(
+    payload: Partial<CostObjectApprover>,
+  ): Promise<CostObjectApprover> {
+    return this.odata.post("CostObjectApprovers", payload, costObjectApprover);
   }
 
   getAuditLog(filters: AuditFilters): Promise<AuditEntry[]> {

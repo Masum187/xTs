@@ -1,5 +1,6 @@
 import {
   assignments as assignmentFixtures,
+  costObjectApprovers as approverFixtures,
   costObjects as costObjectFixtures,
   employees as employeeFixtures,
   sapCostObjectStub,
@@ -24,7 +25,13 @@ export const store = {
   teamAssignments: [],
   costObjects: [],
   assignments: [],
-  counters: { teamAssignment: 0, costObject: 0, assignment: 0 },
+  costObjectApprovers: [],
+  counters: {
+    teamAssignment: 0,
+    costObject: 0,
+    assignment: 0,
+    costObjectApprover: 0,
+  },
 };
 
 export function resetMasterData() {
@@ -33,10 +40,12 @@ export function resetMasterData() {
   store.teamAssignments = structuredClone(teamAssignmentFixtures);
   store.costObjects = structuredClone(costObjectFixtures);
   store.assignments = structuredClone(assignmentFixtures);
+  store.costObjectApprovers = structuredClone(approverFixtures);
   store.counters = {
     teamAssignment: store.teamAssignments.length,
     costObject: store.costObjects.length,
     assignment: store.assignments.length,
+    costObjectApprover: store.costObjectApprovers.length,
   };
 }
 resetMasterData();
@@ -157,6 +166,109 @@ export function availableAssignments() {
 
 export function listAssignments({ includeDeleted = false } = {}) {
   return store.assignments.filter((item) => includeDeleted || !isDeleted(item));
+}
+
+// --- Genehmiger je Kontierung (XTS-014, Entscheidung 19) ------------------
+
+export function listCostObjectApprovers({ includeDeleted = false } = {}) {
+  return store.costObjectApprovers.filter(
+    (item) => includeDeleted || !isDeleted(item),
+  );
+}
+
+/** Kontierungen, fuer die `extNr` am Tag `date` Genehmiger oder Vertreter ist. */
+export function responsibleCoIdentsFor(extNr, date) {
+  return new Set(
+    listCostObjectApprovers()
+      .filter(
+        (item) =>
+          item.extNr === extNr &&
+          item.validFrom <= date &&
+          date <= item.validTo &&
+          findCostObject(item.coIdent),
+      )
+      .map((item) => item.coIdent),
+  );
+}
+
+export function upsertCostObjectApprover(payload, changedBy) {
+  const coIdent = trimmed(payload.coIdent);
+  const extNr = trimmed(payload.extNr).toUpperCase();
+  if (!coIdent || !extNr) {
+    return {
+      error: {
+        status: 400,
+        code: "INVALID_COST_OBJECT_APPROVER",
+        fields: [!coIdent && "KONTIERUNG", !extNr && "EXTNR"].filter(Boolean),
+      },
+    };
+  }
+  const validityError = validateValidity(
+    payload,
+    "INVALID_COST_OBJECT_APPROVER",
+  );
+  if (validityError) return { error: validityError };
+  if (payload.deputy !== undefined && typeof payload.deputy !== "boolean") {
+    return {
+      error: {
+        status: 400,
+        code: "INVALID_COST_OBJECT_APPROVER",
+        fields: ["VERTRETER"],
+      },
+    };
+  }
+  const costObject = findCostObject(coIdent);
+  if (!costObject) {
+    return { error: { status: 409, code: "COST_OBJECT_NOT_AVAILABLE" } };
+  }
+  const employee = findEmployee(extNr);
+  if (!employee || !employee.active || !employee.roles.includes("approver")) {
+    return { error: { status: 409, code: "APPROVER_NOT_AVAILABLE", extNr } };
+  }
+  const existing = payload.id
+    ? store.costObjectApprovers.find((item) => item.id === payload.id)
+    : null;
+  if (payload.id && !existing) {
+    return { error: { status: 404, code: "COST_OBJECT_APPROVER_NOT_FOUND" } };
+  }
+  const deleted = payload.deleted === true;
+  const candidate = { validFrom: payload.validFrom, validTo: payload.validTo };
+  const conflict =
+    !deleted &&
+    listCostObjectApprovers().find(
+      (item) =>
+        item !== existing &&
+        item.coIdent === coIdent &&
+        item.extNr === extNr &&
+        overlaps(item, candidate),
+    );
+  if (conflict) {
+    return {
+      error: {
+        status: 409,
+        code: "APPROVER_OVERLAP",
+        conflictId: conflict.id,
+      },
+    };
+  }
+  let approver = existing;
+  if (!approver) {
+    store.counters.costObjectApprover += 1;
+    approver = {
+      id: String(store.counters.costObjectApprover).padStart(6, "0"),
+    };
+    store.costObjectApprovers.push(approver);
+  }
+  Object.assign(approver, {
+    coIdent,
+    extNr,
+    deputy: payload.deputy === true,
+    validFrom: payload.validFrom,
+    validTo: payload.validTo,
+    deleted,
+  });
+  stamp(approver, changedBy);
+  return { approver: { ...approver } };
 }
 
 // --- Mitarbeiter (XTS-010) -------------------------------------------------
