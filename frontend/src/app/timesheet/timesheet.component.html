@@ -47,6 +47,24 @@
     }}</span>
   </section>
 
+  @if (dateLocked(); as locked) {
+    <section class="panel hint-panel" data-testid="date-locked">
+      <strong>Nicht erfassbar:</strong>
+      <span>
+        Dieser Tag liegt außerhalb des erfassbaren Zeitraums ({{
+          window()?.from | date: "dd.MM.yyyy"
+        }}
+        bis {{ window()?.to | date: "dd.MM.yyyy" }}). Erfassbar sind der
+        laufende Monat und der Vormonat bis zum Monatsabschluss; Zukunftstage
+        sind gesperrt.
+      </span>
+    </section>
+  } @else if (weekend()) {
+    <p class="hint" data-testid="weekend-hint">
+      Wochenende: Erfassung ist erlaubt, bitte prüfen, ob der Tag stimmt.
+    </p>
+  }
+
   @if (day().status === "A" && day().rejectionReason) {
     <section class="panel rejection" data-testid="rejection-banner">
       <strong>Zurückgewiesen:</strong>

@@ -12,16 +12,26 @@ export function sumLineHours(lines: TimesheetDay["lines"]): number {
   return sumHours(lines.map((line) => line.hours));
 }
 
-export function canEditTimesheet(day: TimesheetDay): boolean {
-  return day.status === "E" || day.status === "A";
+/** Bearbeitbar im Status E/A und, falls bekannt, nur im erfassbaren Zeitraum. */
+export function canEditTimesheet(
+  day: TimesheetDay,
+  window: DatePeriod | null = null,
+): boolean {
+  return (
+    (day.status === "E" || day.status === "A") &&
+    (window === null || isWithinPeriod(window, day.date))
+  );
 }
 
-export function canSubmitTimesheet(day: TimesheetDay): boolean {
+export function canSubmitTimesheet(
+  day: TimesheetDay,
+  window: DatePeriod | null = null,
+): boolean {
   return (
-    canEditTimesheet(day) &&
+    canEditTimesheet(day, window) &&
     day.lines.length > 0 &&
     sumLineHours(day.lines) > 0 &&
-    validateTimesheetDay(day, "submit").length === 0
+    validateTimesheetDay(day, "submit", window).length === 0
   );
 }
 
@@ -81,11 +91,17 @@ export function isQuarterStep(hours: number): boolean {
 export function validateTimesheetDay(
   day: TimesheetDay,
   mode: TimesheetValidationMode,
+  window: DatePeriod | null = null,
 ): TimesheetProblem[] {
   const problems: TimesheetProblem[] = [];
   const submitting = mode === "submit";
   const push = (field: string, code: string, message: string) =>
     problems.push({ field, code, message });
+
+  // Datumsregeln (Entscheidung 18): dieselbe Sperre wie der Server.
+  if (window !== null && !isWithinPeriod(window, day.date)) {
+    push("date", "DATE_OUT_OF_RANGE", dateOutOfRangeMessage(window));
+  }
 
   if (!isValidTime(day.startTime)) {
     push(
@@ -272,6 +288,21 @@ export function shiftDate(date: string, days: number): string {
   const parsed = new Date(`${date}T00:00:00Z`);
   parsed.setUTCDate(parsed.getUTCDate() + days);
   return parsed.toISOString().slice(0, 10);
+}
+
+export function formatDateDe(iso: string): string {
+  const [year, month, day] = iso.split("-");
+  return day && month && year ? `${day}.${month}.${year}` : iso;
+}
+
+export function dateOutOfRangeMessage(window: DatePeriod): string {
+  return `Das Tagesdatum liegt außerhalb des erfassbaren Zeitraums. Erfassbar sind ${formatDateDe(window.from)} bis ${formatDateDe(window.to)}.`;
+}
+
+/** Samstag oder Sonntag (Entscheidung 18: erlaubt, aber mit Hinweis). */
+export function isWeekend(date: string): boolean {
+  const weekday = new Date(`${date}T00:00:00Z`).getUTCDay();
+  return weekday === 0 || weekday === 6;
 }
 
 /** Heutiger Kalendertag in lokaler Zeit als `JJJJ-MM-TT`. */

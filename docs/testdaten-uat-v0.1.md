@@ -40,7 +40,7 @@ Mitarbeiter-Kontierungen (Planungsbasis):
 | SCHILZ      | `600000000009` | 2026-01-01  | 2026-03-31  |
 | ROEPER      | `600000000001` | 2026-02-01  | 2026-04-30  |
 
-Regelwerk (`ZXTS_REGELN_T`): Infotyp 1 = `MA_KONT` aktiv (Beauftragung je Mitarbeiter und Kontierung), Infotyp 2 = `P` aktiv (Freischaltung ab BANF).
+Regelwerk (`ZXTS_REGELN_T`): Infotyp 1 = `MA_KONT` aktiv (Beauftragung je Mitarbeiter und Kontierung), Infotyp 2 = `P` aktiv (Freischaltung ab BANF), Infotyp 3 = `5` aktiv (Monatsabschluss: Vormonat erfassbar bis zum 5. des Folgemonats). Die Smoke-Tests laufen mit Systemdatum `XTS_TODAY=2026-05-05`, der erfassbare Zeitraum ist damit 2026-04-01 bis 2026-05-05; ohne dieses Datum sind die Tage des Pakets nach dem 5. Juni 2026 nicht mehr erfassbar.
 
 Werkkalender: 2026-03 = 176 Std., 2026-04 = 168 Std., 2026-05 = 160 Std., sonst 160 Std. Budget-Ampel: gelb ab 80 %, rot ab 95 %.
 

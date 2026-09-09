@@ -1,5 +1,5 @@
 import { expect, test } from "@playwright/test";
-import { itemsOf, numberOf } from "./odata";
+import { errorMessageOf, itemsOf, numberOf } from "./odata";
 
 test("loads timesheet and submits draft", async ({ page }) => {
   await page.goto("/");
@@ -204,4 +204,48 @@ test("blocks bookings beyond the open quota before sending", async ({
         .locator(".line-row", { hasText: "600000000001" }),
     ).toContainText(/ 0 von \d+ Std\. offen/);
   }
+});
+
+test("days outside the recording window are read-only, weekends only warn", async ({
+  page,
+  request,
+}) => {
+  await page.goto("/");
+  await expect(page.getByTestId("profile")).toContainText("Stephan Schilz");
+
+  // Vor dem Fenster (Systemdatum 2026-05-05, Monatsabschluss 5): gesperrt.
+  await page.getByLabel("Tagesdatum").fill("2026-03-31");
+  await expect(page.getByTestId("date-locked")).toContainText(
+    "01.04.2026 bis 05.05.2026",
+  );
+  await expect(page.getByLabel("Kontierung")).toBeDisabled();
+  await expect(page.getByTestId("save-draft")).toBeDisabled();
+  await expect(page.getByTestId("submit-timesheet")).toBeDisabled();
+
+  // Wochenende im Fenster: Hinweis, aber bearbeitbar.
+  await page.getByLabel("Tagesdatum").fill("2026-04-11");
+  await expect(page.getByTestId("weekend-hint")).toBeVisible();
+  await expect(page.getByTestId("date-locked")).toHaveCount(0);
+  await expect(page.getByLabel("Kontierung")).toBeEnabled();
+
+  // Der Server sperrt ebenfalls, auch fuer Entwuerfe in der Zukunft.
+  const future = await request.post(
+    "http://127.0.0.1:4010/odata/TimesheetDays",
+    {
+      data: {
+        extNr: "SCHILZ",
+        date: "2026-05-06",
+        startTime: "08:00",
+        endTime: "12:00",
+        breakMinutes: 0,
+        location: "remote",
+        status: "E",
+        lines: [{ coIdent: "700000000004", description: "Zukunft", hours: 4 }],
+      },
+    },
+  );
+  expect(future.status()).toBe(400);
+  expect(errorMessageOf(await future.json())).toContain(
+    "erfassbaren Zeitraums",
+  );
 });

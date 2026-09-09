@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  formatDateDe,
+  isWeekend,
   isWithinPeriod,
   periodAround,
   todayIso,
@@ -267,5 +269,34 @@ describe("timesheet logic", () => {
   it("formats today in local time", () => {
     expect(todayIso(new Date(2026, 8, 8, 0, 30))).toBe("2026-09-08");
     expect(todayIso(new Date(2026, 0, 1, 23, 59))).toBe("2026-01-01");
+  });
+
+  it("locks days outside the recording window and names the window", () => {
+    const window = { from: "2026-04-01", to: "2026-05-05" };
+    expect(canEditTimesheet(baseDay, window)).toBe(
+      isWithinPeriod(window, baseDay.date),
+    );
+    const outside = { ...baseDay, date: "2026-03-31" };
+    expect(canEditTimesheet(outside, window)).toBe(false);
+    expect(canEditTimesheet(outside)).toBe(true);
+    const codes = validateTimesheetDay(outside, "draft", window).map(
+      (problem) => problem.code,
+    );
+    expect(codes).toContain("DATE_OUT_OF_RANGE");
+    expect(validateTimesheetDay(outside, "draft", window)[0].message).toContain(
+      "01.04.2026 bis 05.05.2026",
+    );
+    expect(
+      validateTimesheetDay({ ...baseDay, date: "2026-05-05" }, "draft", window)
+        .map((problem) => problem.code)
+        .includes("DATE_OUT_OF_RANGE"),
+    ).toBe(false);
+  });
+
+  it("recognises weekends and formats German dates", () => {
+    expect(isWeekend("2026-04-11")).toBe(true);
+    expect(isWeekend("2026-04-12")).toBe(true);
+    expect(isWeekend("2026-04-13")).toBe(false);
+    expect(formatDateDe("2026-04-05")).toBe("05.04.2026");
   });
 });

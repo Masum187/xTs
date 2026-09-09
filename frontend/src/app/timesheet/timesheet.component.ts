@@ -19,6 +19,7 @@ import {
   createEmptyDay,
   dayVariance,
   isCostObjectBookable,
+  isWeekend,
   isWithinPeriod,
   periodAround,
   quotaProblems,
@@ -83,9 +84,19 @@ export class TimesheetComponent {
     const variance = this.variance();
     return variance === null ? "–" : `${formatSignedHours(variance)} Std.`;
   });
-  /** Bearbeitbar nur im Status E/A und solange keine Anfrage laeuft. */
+  /** Erfassbarer Zeitraum vom Server (Entscheidung 18) oder null. */
+  protected readonly window = computed(
+    () => this.profile()?.timesheetWindow ?? null,
+  );
+  /** Tag liegt ausserhalb des erfassbaren Zeitraums (nur lesen). */
+  protected readonly dateLocked = computed(() => {
+    const window = this.window();
+    return window !== null && !isWithinPeriod(window, this.day().date);
+  });
+  protected readonly weekend = computed(() => isWeekend(this.day().date));
+  /** Bearbeitbar nur im Status E/A, im Zeitraum und solange keine Anfrage laeuft. */
   protected readonly canEdit = computed(
-    () => canEditTimesheet(this.day()) && !this.busy.active(),
+    () => canEditTimesheet(this.day(), this.window()) && !this.busy.active(),
   );
   /** Kontingentprobleme gegen die zuletzt geladenen Freischaltungen. */
   protected readonly quotaIssues = computed(() =>
@@ -96,13 +107,16 @@ export class TimesheetComponent {
     ),
   );
   protected readonly canSubmit = computed(
-    () => canSubmitTimesheet(this.day()) && this.quotaIssues().length === 0,
+    () =>
+      canSubmitTimesheet(this.day(), this.window()) &&
+      this.quotaIssues().length === 0,
   );
   /** Fachliche Probleme des Tages: Entwurfsregeln immer, Freigaberegeln sobald Positionen da sind. */
   protected readonly problems = computed(() => [
     ...validateTimesheetDay(
       this.day(),
       this.day().lines.length > 0 ? "submit" : "draft",
+      this.window(),
     ),
     ...this.quotaIssues(),
   ]);
@@ -198,7 +212,7 @@ export class TimesheetComponent {
 
   protected async save(): Promise<void> {
     const problems = [
-      ...validateTimesheetDay(this.day(), "draft"),
+      ...validateTimesheetDay(this.day(), "draft", this.window()),
       ...this.quotaIssues(),
     ];
     if (problems.length > 0) {

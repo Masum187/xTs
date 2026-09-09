@@ -1,6 +1,8 @@
 // Setzt das Testdatenpaket vor jedem Lauf zurueck, damit ein lokal
 // wiederverwendeter, zustandsbehafteter Mock (reuseExistingServer) keine
 // Reste aus frueheren Laeufen in die Specs traegt (Audit Nr. 30).
+import { SMOKE_TODAY } from "./playwright.config";
+
 export default async function globalSetup(): Promise<void> {
   await assertResponseShape();
   try {
@@ -26,17 +28,24 @@ export default async function globalSetup(): Promise<void> {
  */
 async function assertResponseShape(): Promise<void> {
   const expected = process.env.XTS_ODATA === "v2" ? "v2" : "mock";
-  let actual: string | undefined;
+  let health: { odata?: string; today?: string };
   try {
     const response = await fetch("http://127.0.0.1:4010/health");
-    actual = ((await response.json()) as { odata?: string }).odata;
+    health = (await response.json()) as { odata?: string; today?: string };
   } catch {
     return; // Kein Server: Playwright startet ihn selbst mit der Umgebung.
   }
-  if (actual !== expected) {
+  if (health.odata !== expected) {
     throw new Error(
-      `Mock-API auf Port 4010 laeuft in Antwortform "${actual ?? "unbekannt"}", ` +
+      `Mock-API auf Port 4010 laeuft in Antwortform "${health.odata ?? "unbekannt"}", ` +
         `der Lauf erwartet "${expected}". Server mit XTS_ODATA=${expected === "v2" ? "v2" : ""} neu starten ` +
+        "oder beenden, damit Playwright ihn startet.",
+    );
+  }
+  if (health.today !== SMOKE_TODAY) {
+    throw new Error(
+      `Mock-API auf Port 4010 laeuft mit Systemdatum "${health.today ?? "unbekannt"}", ` +
+        `die Smoke-Tests erwarten XTS_TODAY=${SMOKE_TODAY}. Server mit XTS_TODAY=${SMOKE_TODAY} neu starten ` +
         "oder beenden, damit Playwright ihn startet.",
     );
   }
