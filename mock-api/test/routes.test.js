@@ -1800,7 +1800,7 @@ test("test data reset restores the documented UAT package", async () => {
   assert.equal(body.package, "uat-v0.1");
   assert.equal(body.resetBy, "ROEPER");
   assert.deepEqual(body.counts, {
-    employees: 4,
+    employees: 5,
     teams: 2,
     costObjects: 3,
     assignments: 4,
@@ -2907,7 +2907,7 @@ test("master data reads require a mapped identity and are scoped by role", async
   // Rolle admin (ROEPER): alle Felder, inkl. aadOid/sapAccount.
   const admin = await routeRequest(approverRequest("GET", "/odata/Employees"));
   const adminBody = JSON.parse(admin.body).value;
-  assert.equal(adminBody.length, 4);
+  assert.equal(adminBody.length, 5);
   assert.ok(adminBody[0].aadOid);
   assert.ok("sapAccount" in adminBody[0]);
 
@@ -2952,6 +2952,7 @@ test("planners and approvers do not see inactive employees, admins do", async ()
   const scopedBody = JSON.parse(scoped.body).value;
   assert.equal(scoped.status, 200);
   assert.deepEqual(scopedBody.map((item) => item.extNr).sort(), [
+    "KRAUSE",
     "ROEPER",
     "SCHILZ",
     "WEBER",
@@ -3337,4 +3338,95 @@ test("reporting is scoped for approvers and complete for controllers and admins"
     weberRequest("GET", "/odata/ApprovalTimesheets"),
   );
   assert.equal(noApprovals.status, 403);
+});
+
+test("approver assignments reject invalid calendar days and stay deletable", async () => {
+  for (const validFrom of ["2026-02-30", "2027-02-29", "2026-13-01"]) {
+    const invalid = await routeRequest(
+      approverRequest("POST", "/odata/CostObjectApprovers", {
+        coIdent: "600000000001",
+        extNr: "WEBER",
+        validFrom,
+        validTo: "2026-12-31",
+      }),
+    );
+    assert.equal(invalid.status, 400, validFrom);
+    assert.equal(
+      JSON.parse(invalid.body).error,
+      "INVALID_COST_OBJECT_APPROVER",
+    );
+  }
+  const leap = await routeRequest(
+    approverRequest("POST", "/odata/CostObjectApprovers", {
+      coIdent: "600000000001",
+      extNr: "WEBER",
+      validFrom: "2028-02-29",
+      validTo: "2028-12-31",
+    }),
+  );
+  assert.equal(leap.status, 200);
+  const invalidAssignment = await routeRequest(
+    approverRequest("POST", "/odata/CostObjectAssignments", {
+      extNr: "SCHILZ",
+      coIdent: "600000000001",
+      validFrom: "2027-02-29",
+      validTo: "2027-12-31",
+    }),
+  );
+  assert.equal(invalidAssignment.status, 400);
+
+  // Genehmigerin deaktivieren: bestehende Zuordnung bleibt loeschbar.
+  const weber = masterData.employees.find((item) => item.extNr === "WEBER");
+  weber.active = false;
+  const change = await routeRequest(
+    approverRequest("POST", "/odata/CostObjectApprovers", {
+      id: "000004",
+      coIdent: "700000000004",
+      extNr: "WEBER",
+      deputy: true,
+      validFrom: "2026-01-01",
+      validTo: "2026-06-30",
+    }),
+  );
+  assert.equal(change.status, 409);
+  assert.equal(JSON.parse(change.body).error, "APPROVER_NOT_AVAILABLE");
+  const removed = await routeRequest(
+    approverRequest("POST", "/odata/CostObjectApprovers", {
+      id: "000004",
+      coIdent: "700000000004",
+      extNr: "WEBER",
+      validFrom: "2026-01-01",
+      validTo: "2026-12-31",
+      deleted: true,
+    }),
+  );
+  assert.equal(removed.status, 200);
+  assert.equal(JSON.parse(removed.body).deleted, true);
+
+  // Kontierung geloescht: Zuordnung bleibt loeschbar.
+  await routeRequest(
+    approverRequest("POST", "/odata/CostObjects", {
+      coIdent: "600000000009",
+      type: "PR",
+      description: "Altprojekt Migration",
+      active: true,
+      deleted: true,
+    }),
+  );
+  const removedCo = await routeRequest(
+    approverRequest("POST", "/odata/CostObjectApprovers", {
+      id: "000003",
+      coIdent: "600000000009",
+      extNr: "ROEPER",
+      validFrom: "2026-01-01",
+      validTo: "2026-12-31",
+      deleted: true,
+    }),
+  );
+  assert.equal(removedCo.status, 200);
+  const remaining = JSON.parse(
+    (await routeRequest(approverRequest("GET", "/odata/CostObjectApprovers")))
+      .body,
+  ).value.map((item) => item.id);
+  assert.ok(!remaining.includes("000003") && !remaining.includes("000004"));
 });

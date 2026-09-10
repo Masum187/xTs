@@ -37,6 +37,8 @@ import { AuthService } from "./auth/auth.service";
         </a>
         @if (isApprover()) {
           <a routerLink="/approvals" routerLinkActive="active">Genehmigung</a>
+        }
+        @if (canReport()) {
           <a routerLink="/reports" routerLinkActive="active">Reporting</a>
         }
         @if (isPlanner()) {
@@ -187,6 +189,11 @@ export class AppComponent {
   );
   protected readonly isAdmin = computed(
     () => this.auth.profile()?.roles.includes("admin") ?? false,
+  );
+  /** Reporting wie die Route: approver (geschnitten), controller und admin. */
+  protected readonly canReport = computed(
+    () =>
+      this.isApprover() || this.auth.hasRole("controller") || this.isAdmin(),
   );
 
   constructor() {

@@ -139,3 +139,19 @@ test("approvers see only their cost objects in reporting", async ({ page }) => {
     0,
   );
 });
+
+test("controllers reach the unscoped reporting via navigation without approvals", async ({
+  page,
+}) => {
+  await page.goto("/");
+  await page
+    .getByTestId("persona-select")
+    .selectOption("jonas.krause@qualitytimes.de");
+  await expect(page.getByTestId("profile")).toContainText("Jonas Krause");
+  await expect(page.getByRole("link", { name: "Genehmigung" })).toHaveCount(0);
+  await page.getByRole("link", { name: "Reporting" }).click();
+  await expect(page.getByRole("heading", { name: "Reporting" })).toBeVisible();
+  await expect(page.getByTestId("budget-700000000004")).toBeVisible();
+  await expect(page.getByTestId("budget-600000000001")).toBeVisible();
+  await expect(page.getByTestId("quota-ROEPER-600000000001")).toBeVisible();
+});

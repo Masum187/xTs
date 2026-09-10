@@ -52,6 +52,11 @@ export const MOCK_PERSONAS: MockPersona[] = [
     label: "Maria Weber (PL, nur 700000000004)",
   },
   {
+    oid: "4d5e6f70-8192-4a3b-9c0d-1e2f3a4b5c6d",
+    upn: "jonas.krause@qualitytimes.de",
+    label: "Jonas Krause (Controlling)",
+  },
+  {
     oid: "c2d4e6f8-1a3b-4c5d-8e9f-0a1b2c3d4e5f",
     upn: "petra.altmann@qualitytimes.de",
     label: "Petra Altmann (inaktiv)",

@@ -56,6 +56,20 @@ export const employees = [
     resourceManager: null,
     roles: ["user", "approver"],
   },
+  {
+    extNr: "KRAUSE",
+    displayName: "Jonas Krause",
+    firstName: "Jonas",
+    lastName: "Krause",
+    company: "QualityTimes",
+    sapAccount: "JKRAUSE",
+    aadOid: "4d5e6f70-8192-4a3b-9c0d-1e2f3a4b5c6d",
+    aadUpn: "jonas.krause@qualitytimes.de",
+    active: true,
+    deleted: false,
+    resourceManager: null,
+    roles: ["user", "controller"],
+  },
 ];
 
 // Genehmiger je Kontierung analog ZXTS_KONTGEN_T (Entscheidung 19, XTS-014):

@@ -11,6 +11,7 @@ Stichtag der Daten: Fruehjahr 2026. Datumsangaben im Drehbuch beziehen sich dara
 | Stephan Schilz (User)         | `stephan.schilz@qualitytimes.de`   | `3f1c2a7e-5b3d-4c8e-9a1f-0d2e4b6c8a10` | `SCHILZ`  | user                           | Externer Mitarbeiter, schreibt Stunden                                |
 | Christian Roeper (PL, RM & A) | `christian.roeper@qualitytimes.de` | `7a9e4d21-6c1b-4f3a-8e2d-5b7c9d1e3f42` | `ROEPER`  | user, approver, planner, admin | Planer, Projektleiter/Genehmiger, Verwaltung                          |
 | Maria Weber (PL)              | `maria.weber@qualitytimes.de`      | `9b8c7d6e-5f4a-4b3c-8d2e-1f0a9b8c7d6e` | `WEBER`   | user, approver                 | Genehmigerin nur fuer `700000000004` (Vertretung), Sichtbarkeits-Test |
+| Jonas Krause (Controlling)    | `jonas.krause@qualitytimes.de`     | `4d5e6f70-8192-4a3b-9c0d-1e2f3a4b5c6d` | `KRAUSE`  | user, controller               | Reporting ungeschnitten ohne Genehmigungsrechte                       |
 | Petra Altmann (inaktiv)       | `petra.altmann@qualitytimes.de`    | `c2d4e6f8-1a3b-4c5d-8e9f-0a1b2c3d4e5f` | `ALTMANN` | user                           | Fehlerfall: inaktiver Mitarbeiter (Zugang gesperrt)                   |
 | Neuer Externer (ohne Mapping) | `neu.extern@qualitytimes.de`       | `00000000-0000-4000-8000-000000000099` | –         | –                              | Fehlerfall: OAuth-User ohne EXTNR-Mapping                             |
 

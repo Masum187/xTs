@@ -7,6 +7,7 @@ import {
   teamAssignments as teamAssignmentFixtures,
   teams as teamFixtures,
 } from "./fixtures.js";
+import { isValidDate } from "./timesheet-validation.js";
 
 // Stammdaten (Epic 2) analog ZXTS_WIW_T (Mitarbeiter), ZXTS_TEAM_T (Teams),
 // ZXTS_MATEAM_T (zeitliche Teamzuordnung), ZXTS_KONT_T (Kontierungen) sowie
@@ -51,11 +52,9 @@ export function resetMasterData() {
 resetMasterData();
 
 const isDeleted = (item) => item.deleted === true;
-const DATE_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
-
-function isValidDate(value) {
-  return typeof value === "string" && DATE_PATTERN.test(value);
-}
+// Gueltigkeitsdaten steuern Berechtigungen und Planung, daher echte
+// Kalendertage (inkl. Schaltjahr) statt nur Textformat: `isValidDate` aus
+// timesheet-validation.js.
 
 function overlaps(a, b) {
   return a.validFrom <= b.validTo && b.validFrom <= a.validTo;
@@ -217,14 +216,6 @@ export function upsertCostObjectApprover(payload, changedBy) {
       },
     };
   }
-  const costObject = findCostObject(coIdent);
-  if (!costObject) {
-    return { error: { status: 409, code: "COST_OBJECT_NOT_AVAILABLE" } };
-  }
-  const employee = findEmployee(extNr);
-  if (!employee || !employee.active || !employee.roles.includes("approver")) {
-    return { error: { status: 409, code: "APPROVER_NOT_AVAILABLE", extNr } };
-  }
   const existing = payload.id
     ? store.costObjectApprovers.find((item) => item.id === payload.id)
     : null;
@@ -232,6 +223,18 @@ export function upsertCostObjectApprover(payload, changedBy) {
     return { error: { status: 404, code: "COST_OBJECT_APPROVER_NOT_FOUND" } };
   }
   const deleted = payload.deleted === true;
+  // Logisches Loeschen bleibt moeglich, auch wenn Kontierung oder Genehmiger
+  // inzwischen geloescht bzw. deaktiviert sind; nur Anlage und Aenderung
+  // verlangen verfuegbare Stammdaten.
+  if (!(deleted && existing)) {
+    if (!findCostObject(coIdent)) {
+      return { error: { status: 409, code: "COST_OBJECT_NOT_AVAILABLE" } };
+    }
+    const employee = findEmployee(extNr);
+    if (!employee || !employee.active || !employee.roles.includes("approver")) {
+      return { error: { status: 409, code: "APPROVER_NOT_AVAILABLE", extNr } };
+    }
+  }
   const candidate = { validFrom: payload.validFrom, validTo: payload.validTo };
   const conflict =
     !deleted &&
