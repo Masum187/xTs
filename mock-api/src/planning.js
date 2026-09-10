@@ -238,6 +238,13 @@ export function releasePlanningEntry(entries, payload) {
   if (existing.status !== "V" || existing.hours <= 0) {
     return { error: { status: 409, code: "PLANNING_ENTRY_NOT_RELEASABLE" } };
   }
+  // Konzept §10 gilt auch fuer die Freigabe: die Teamzuordnung kann seit dem
+  // Speichern entfallen sein.
+  if (!hasTeamForMonth(extNr, month)) {
+    return {
+      error: { status: 409, code: "TEAM_ASSIGNMENT_REQUIRED", extNr, month },
+    };
+  }
   existing.status = "F";
   return { entry: { ...existing } };
 }

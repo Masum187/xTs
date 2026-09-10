@@ -198,3 +198,43 @@ test("unsaved timesheet changes ask before navigation and persona switch", async
   await page.getByRole("link", { name: "Stundenschreibung" }).click();
   await expect(page.getByTestId("unsaved-hint")).toHaveCount(0);
 });
+
+test("unsaved timesheet changes ask before changing the day", async ({
+  page,
+}) => {
+  await page.goto("/");
+  await page
+    .getByTestId("persona-select")
+    .selectOption("christian.roeper@qualitytimes.de");
+  await expect(page.getByTestId("profile")).toContainText("Christian Roeper");
+  const dateInput = page.getByLabel("Tagesdatum");
+  const breakInput = page.locator("label:has-text('Pause') input");
+  await dateInput.fill("2026-04-14");
+  await breakInput.fill("45");
+  await expect(page.getByTestId("unsaved-hint")).toBeVisible();
+
+  // Datumsfeld: Abbruch behaelt Datum und Eingabe.
+  page.once("dialog", (dialog) => dialog.dismiss());
+  await dateInput.fill("2026-04-15");
+  await expect(dateInput).toHaveValue("2026-04-14");
+  await expect(breakInput).toHaveValue("45");
+  await expect(page.getByTestId("unsaved-hint")).toBeVisible();
+
+  // Folgetag: Abbruch behaelt Datum und Eingabe.
+  page.once("dialog", (dialog) => dialog.dismiss());
+  await page.getByTestId("next-day").click();
+  await expect(dateInput).toHaveValue("2026-04-14");
+  await expect(breakInput).toHaveValue("45");
+
+  // Fensterwechsel (August liegt ausserhalb April bis Juni): Abbruch ebenso.
+  page.once("dialog", (dialog) => dialog.dismiss());
+  await dateInput.fill("2026-08-03");
+  await expect(dateInput).toHaveValue("2026-04-14");
+  await expect(breakInput).toHaveValue("45");
+
+  // Verwerfen bestaetigen: Folgetag oeffnet ohne Aenderungen.
+  page.once("dialog", (dialog) => dialog.accept());
+  await page.getByTestId("next-day").click();
+  await expect(dateInput).toHaveValue("2026-04-15");
+  await expect(page.getByTestId("unsaved-hint")).toHaveCount(0);
+});

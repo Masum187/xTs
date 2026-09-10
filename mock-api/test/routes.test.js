@@ -3511,3 +3511,47 @@ test("plan hours are limited to 0 to 744 in whole minutes and need a team assign
   );
   assert.equal(withTeam.status, 201);
 });
+
+test("releasing plan hours re-checks the team assignment", async () => {
+  const saved = await routeRequest(
+    approverRequest("POST", "/odata/PlanningEntries", {
+      extNr: "SCHILZ",
+      coIdent: "700000000004",
+      month: "2026-09",
+      hours: 8,
+    }),
+  );
+  assert.equal(saved.status, 201);
+  const removedTeam = await routeRequest(
+    approverRequest("POST", "/odata/TeamAssignments", {
+      id: "MT-000001",
+      extNr: "SCHILZ",
+      teamId: "TRANSFORMATION_MC",
+      validFrom: "2026-01-01",
+      validTo: "2026-12-31",
+      deleted: true,
+    }),
+  );
+  assert.equal(removedTeam.status, 200);
+  const release = await routeRequest(
+    approverRequest("POST", "/odata/PlanningReleases", {
+      extNr: "SCHILZ",
+      coIdent: "700000000004",
+      month: "2026-09",
+    }),
+  );
+  assert.equal(release.status, 409);
+  assert.equal(JSON.parse(release.body).error, "TEAM_ASSIGNMENT_REQUIRED");
+  const overview = JSON.parse(
+    (
+      await routeRequest(
+        approverRequest("GET", "/odata/PlanningOverview?start=2026-09"),
+      )
+    ).body,
+  );
+  const row = overview.rows.find(
+    (item) => item.extNr === "SCHILZ" && item.coIdent === "700000000004",
+  );
+  assert.equal(row.cells[0].status, "V");
+  assert.equal(row.cells[0].teamMissing, true);
+});

@@ -28,11 +28,12 @@
       ‹ Vortag
     </button>
     <input
+      #dateInput
       type="date"
       aria-label="Tagesdatum"
       [disabled]="busy.active()"
       [ngModel]="day().date"
-      (ngModelChange)="openDate($event)"
+      (ngModelChange)="openDate($event, dateInput)"
     />
     <button
       type="button"

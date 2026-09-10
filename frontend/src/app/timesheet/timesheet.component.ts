@@ -157,9 +157,17 @@ export class TimesheetComponent {
     return isCostObjectBookable(costObject, this.day().date);
   }
 
-  /** Oeffnet einen Tag; ausserhalb des geladenen Fensters wird nachgeladen. */
-  protected openDate(date: string): void {
-    if (!date) return;
+  /**
+   * Oeffnet einen Tag; ausserhalb des geladenen Fensters wird nachgeladen.
+   * Ungespeicherte Aenderungen (Audit Nr. 19) werden nur nach Rueckfrage
+   * verworfen; bei Abbruch bleiben Datum und Eingaben erhalten.
+   */
+  protected openDate(date: string, input?: HTMLInputElement): void {
+    if (!date || date === this.day().date) return;
+    if (!this.unsaved.confirmDiscard()) {
+      if (input) input.value = this.day().date;
+      return;
+    }
     this.message.set("");
     this.requestedDate = date;
     if (!isWithinPeriod(this.loadedPeriod, date)) {
