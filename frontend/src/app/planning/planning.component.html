@@ -111,7 +111,11 @@
                 >
                   @if (!cell.valid) {
                     <span class="locked-badge" data-status="invalid">
-                      nicht gültig
+                      {{
+                        cell.teamMissing
+                          ? "keine Teamzuordnung"
+                          : "nicht gültig"
+                      }}
                     </span>
                   } @else if (cell.locked) {
                     <span class="locked-badge" [attr.data-status]="cell.status">

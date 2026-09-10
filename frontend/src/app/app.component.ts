@@ -1,8 +1,9 @@
 import {
+  ChangeDetectionStrategy,
   Component,
+  HostListener,
   computed,
   inject,
-  ChangeDetectionStrategy,
 } from "@angular/core";
 import { takeUntilDestroyed } from "@angular/core/rxjs-interop";
 import { FormsModule } from "@angular/forms";
@@ -16,6 +17,7 @@ import {
 import { filter } from "rxjs";
 
 import { MOCK_PERSONAS } from "./auth/auth.models";
+import { UnsavedChangesService } from "./shared/unsaved-changes.service";
 import { AuthService } from "./auth/auth.service";
 
 @Component({
@@ -69,10 +71,11 @@ import { AuthService } from "./auth/auth.service";
         <label class="persona">
           Dev-Persona
           <select
+            #personaSelect
             aria-label="Dev-Persona"
             data-testid="persona-select"
             [ngModel]="auth.personaUpn()"
-            (ngModelChange)="switchPersona($event)"
+            (ngModelChange)="switchPersona($event, personaSelect)"
           >
             @for (persona of personas; track persona.upn) {
               <option [value]="persona.upn">{{ persona.label }}</option>
@@ -179,6 +182,7 @@ import { AuthService } from "./auth/auth.service";
 export class AppComponent {
   protected readonly auth = inject(AuthService);
   private readonly router = inject(Router);
+  private readonly unsaved = inject(UnsavedChangesService);
 
   protected readonly personas = MOCK_PERSONAS;
   protected readonly isApprover = computed(
@@ -215,9 +219,26 @@ export class AppComponent {
    * Startseite navigieren, dann das Profil laden. Der Screen entsteht erst
    * wieder im Zustand "ready" und laedt nur mit der neuen Identitaet.
    */
-  protected async switchPersona(upn: string): Promise<void> {
+  protected async switchPersona(
+    upn: string,
+    select: HTMLSelectElement,
+  ): Promise<void> {
+    // Datenverlust-Schutz (Audit Nr. 19): der Wechsel zerstoert den Screen.
+    if (!this.unsaved.confirmDiscard()) {
+      select.value = this.auth.personaUpn();
+      return;
+    }
     const profileLoaded = this.auth.switchPersona(upn);
     await this.router.navigateByUrl("/");
     await profileLoaded;
+  }
+
+  /** Reload oder Schliessen mit ungespeicherten Aenderungen fragt nach. */
+  @HostListener("window:beforeunload", ["$event"])
+  protected onBeforeUnload(event: BeforeUnloadEvent): void {
+    if (!this.unsaved.dirty()) return;
+    event.preventDefault();
+    // Aeltere Browser verlangen returnValue fuer den Dialog.
+    event.returnValue = "";
   }
 }

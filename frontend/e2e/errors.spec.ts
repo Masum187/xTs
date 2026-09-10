@@ -159,3 +159,42 @@ test("a failed window change retries the requested day, not the old one", async 
   await expect(page.getByLabel("Tagesdatum")).toHaveValue("2026-08-03");
   await expect(page.getByTestId("day-status")).toHaveText("Entwurf");
 });
+
+test("unsaved timesheet changes ask before navigation and persona switch", async ({
+  page,
+}) => {
+  await page.goto("/");
+  await page
+    .getByTestId("persona-select")
+    .selectOption("christian.roeper@qualitytimes.de");
+  await expect(page.getByTestId("profile")).toContainText("Christian Roeper");
+  await page.getByLabel("Tagesdatum").fill("2026-04-14");
+  await expect(page.getByTestId("unsaved-hint")).toHaveCount(0);
+  await page.locator("label:has-text('Pause') input").fill("45");
+  await expect(page.getByTestId("unsaved-hint")).toBeVisible();
+
+  // Navigation abbrechen: Screen und Eingabe bleiben.
+  page.once("dialog", (dialog) => dialog.dismiss());
+  await page.getByRole("link", { name: "Planung" }).click();
+  await expect(
+    page.getByRole("heading", { name: "Stundenschreibung" }),
+  ).toBeVisible();
+  await expect(page.locator("label:has-text('Pause') input")).toHaveValue("45");
+
+  // Persona-Wechsel abbrechen: Persona bleibt.
+  page.once("dialog", (dialog) => dialog.dismiss());
+  await page
+    .getByTestId("persona-select")
+    .selectOption("stephan.schilz@qualitytimes.de");
+  await expect(page.getByTestId("profile")).toContainText("Christian Roeper");
+  await expect(page.getByTestId("persona-select")).toHaveValue(
+    "christian.roeper@qualitytimes.de",
+  );
+
+  // Verwerfen bestaetigen: Navigation laeuft.
+  page.once("dialog", (dialog) => dialog.accept());
+  await page.getByRole("link", { name: "Planung" }).click();
+  await expect(page.getByRole("heading", { name: "Planung" })).toBeVisible();
+  await page.getByRole("link", { name: "Stundenschreibung" }).click();
+  await expect(page.getByTestId("unsaved-hint")).toHaveCount(0);
+});

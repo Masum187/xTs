@@ -10,6 +10,8 @@ export interface PlanningCell {
   hours: number;
   status: PlanningStatus | null;
   valid: boolean;
+  /** Keine gueltige Teamzuordnung im Planmonat (Konzept §10, Audit Nr. 22). */
+  teamMissing?: boolean;
   locked: boolean;
   overbooked: boolean;
 }

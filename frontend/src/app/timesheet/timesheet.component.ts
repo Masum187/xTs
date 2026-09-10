@@ -1,7 +1,9 @@
 import { DatePipe, DecimalPipe } from "@angular/common";
 import {
   Component,
+  DestroyRef,
   computed,
+  effect,
   inject,
   signal,
   ChangeDetectionStrategy,
@@ -12,6 +14,7 @@ import { describeApiError } from "../shared/api-error";
 import { BusyState, LoadState } from "../shared/async-state";
 import { LoadStatusComponent } from "../shared/load-status.component";
 import { formatSignedHours } from "../shared/hours";
+import { UnsavedChangesService } from "../shared/unsaved-changes.service";
 
 import {
   canEditTimesheet,
@@ -19,6 +22,7 @@ import {
   createEmptyDay,
   dayVariance,
   isCostObjectBookable,
+  isSameTimesheet,
   isWeekend,
   isWithinPeriod,
   periodAround,
@@ -55,6 +59,9 @@ const STATUS_LABELS: Record<TimesheetStatus, string> = {
 export class TimesheetComponent {
   private readonly timesheetService = inject(TimesheetService);
   private readonly auth = inject(AuthService);
+  private readonly unsaved = inject(UnsavedChangesService);
+  /** Version des Tages-Caches, damit `isDirty` nach dem Laden neu rechnet. */
+  private readonly cacheVersion = signal(0);
   /** Gespeicherte Tage des geladenen Zeitfensters (Audit Nr. 16). */
   private readonly savedDays = new Map<string, TimesheetDay>();
   private loadedPeriod: DatePeriod | null = null;
@@ -95,6 +102,15 @@ export class TimesheetComponent {
     return window !== null && !isWithinPeriod(window, this.day().date);
   });
   protected readonly weekend = computed(() => isWeekend(this.day().date));
+  /** Ungespeicherte Aenderungen gegenueber dem gespeicherten bzw. leeren Tag (Audit Nr. 19). */
+  protected readonly isDirty = computed(() => {
+    this.cacheVersion();
+    const day = this.day();
+    if (!day.date || !this.loader.ready()) return false;
+    const baseline =
+      this.savedDays.get(day.date) ?? createEmptyDay(day.extNr, day.date);
+    return !isSameTimesheet(day, baseline);
+  });
   /** Bearbeitbar nur im Status E/A, im Zeitraum und solange keine Anfrage laeuft. */
   protected readonly canEdit = computed(
     () => canEditTimesheet(this.day(), this.window()) && !this.busy.active(),
@@ -131,6 +147,9 @@ export class TimesheetComponent {
   );
 
   constructor() {
+    // Guard, Persona-Wechsel und beforeunload lesen den Zustand zentral.
+    effect(() => this.unsaved.dirty.set(this.isDirty()));
+    inject(DestroyRef).onDestroy(() => this.unsaved.dirty.set(false));
     void this.loadInitialData();
   }
 
@@ -261,6 +280,7 @@ export class TimesheetComponent {
   private async persist(day: TimesheetDay): Promise<TimesheetDay> {
     const saved = await this.timesheetService.saveTimesheet(day);
     this.savedDays.set(saved.date, saved);
+    this.cacheVersion.update((version) => version + 1);
     // Reststunden neu laden, sonst zeigt das Kontingent-Panel alte Werte
     // (Audit Nr. 21) und die Kontingentpruefung rechnet mit ihnen.
     this.costObjects.set(await this.timesheetService.getEnabledCostObjects());
@@ -310,6 +330,7 @@ export class TimesheetComponent {
           this.savedDays.set(day.date, day);
         }
         this.loadedPeriod = period;
+        this.cacheVersion.update((version) => version + 1);
         this.showDay(date);
         const extNr = this.currentExtNr();
         this.day.update((day) => ({ ...day, extNr }));

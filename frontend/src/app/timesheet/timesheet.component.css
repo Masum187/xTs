@@ -199,3 +199,10 @@ button:disabled {
   border-left: 4px solid #b26a00;
   background: #fff7e6;
 }
+
+/* Ungespeicherte Aenderungen (Audit Nr. 19). */
+.unsaved-hint {
+  color: #b26a00;
+  font-style: normal;
+  font-weight: 600;
+}
