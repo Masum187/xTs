@@ -88,3 +88,28 @@ test("planning is not reachable without planner role", async ({ page }) => {
   ).toBeVisible();
   await expect(page.getByRole("link", { name: "Planung" })).toBeHidden();
 });
+
+test("plan hours are validated before sending and need a team assignment", async ({
+  page,
+}) => {
+  await openPlanningAsPlanner(page);
+
+  const input = page.getByTestId("input-SCHILZ-700000000004-2026-09");
+  await input.fill("0.333");
+  await input.press("Tab");
+  await expect(page.getByTestId("planning-message")).toContainText(
+    "ganzen Minuten",
+  );
+  await input.fill("1000");
+  await input.press("Tab");
+  await expect(page.getByTestId("planning-message")).toContainText(
+    "zwischen 0 und 744",
+  );
+  // Schilz hat 2027 keine Teamzuordnung: Zelle ist gesperrt.
+  await expect(
+    page.getByTestId("cell-SCHILZ-700000000004-2027-01"),
+  ).toContainText("keine Teamzuordnung");
+  await expect(
+    page.getByTestId("input-SCHILZ-700000000004-2027-01"),
+  ).toBeHidden();
+});

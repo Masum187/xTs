@@ -11,6 +11,31 @@ const LOCKED_STATUSES = ["F", "P", "B"];
 export const planningKey = (entry) =>
   `${entry.extNr}|${entry.coIdent}|${entry.month}`;
 
+// Planstunden (Audit Nr. 22): Obergrenze und ganze Minuten (Kontrakt
+// "Stundenwerte": Planung erlaubt beliebige Dezimalwerte, aber
+// minutenpraezise), damit keine Werte wie 1e9 oder 0.333333 in Planung und
+// Beauftragung laufen.
+export const MAX_PLANNING_HOURS = 744;
+
+export function isWholeMinutes(hours) {
+  const minutes = hours * 60;
+  return Math.abs(minutes - Math.round(minutes)) < 1e-6;
+}
+
+export function isValidPlanningHours(hours) {
+  return (
+    Number.isFinite(hours) &&
+    hours >= 0 &&
+    hours <= MAX_PLANNING_HOURS &&
+    isWholeMinutes(hours)
+  );
+}
+
+/** Konzept §10: Planung nur mit gueltiger Teamzuordnung im Planmonat. */
+export function hasTeamForMonth(extNr, month) {
+  return teamIdsFor(extNr, `${month}-01`, lastDayOfMonth(month)).length > 0;
+}
+
 export function isLockedStatus(status) {
   return LOCKED_STATUSES.includes(status);
 }
@@ -120,12 +145,15 @@ export function buildPlanningOverview(entries, filters) {
         const plannedTotal = roundHours(
           plannedPerEmployeeMonth.get(`${combo.extNr}|${month}`) ?? 0,
         );
-        const valid = isMonthInRange(month, combo.validFrom, combo.validTo);
+        const teamMissing = !hasTeamForMonth(combo.extNr, month);
+        const valid =
+          isMonthInRange(month, combo.validFrom, combo.validTo) && !teamMissing;
         return {
           month,
           hours: entry?.hours ?? 0,
           status: entry?.status ?? null,
           valid,
+          teamMissing,
           locked: !valid || (entry ? isLockedStatus(entry.status) : false),
           overbooked: plannedTotal > availableHoursFor(month),
         };
@@ -140,14 +168,26 @@ export function upsertPlanningEntry(entries, payload) {
   if (!extNr || !coIdent || !isValidMonth(month) || Number.isNaN(hours)) {
     return { error: { status: 400, code: "INVALID_PLANNING_ENTRY" } };
   }
-  if (hours < 0) {
-    return { error: { status: 400, code: "INVALID_PLANNING_ENTRY" } };
+  if (!isValidPlanningHours(hours)) {
+    return {
+      error: {
+        status: 400,
+        code: "INVALID_PLANNING_HOURS",
+        hours,
+        max: MAX_PLANNING_HOURS,
+      },
+    };
   }
   const combination = planningCombinations([month]).find(
     (combo) => combo.extNr === extNr && combo.coIdent === coIdent,
   );
   if (!combination) {
     return { error: { status: 404, code: "UNKNOWN_PLANNING_COMBINATION" } };
+  }
+  if (!hasTeamForMonth(extNr, month)) {
+    return {
+      error: { status: 409, code: "TEAM_ASSIGNMENT_REQUIRED", extNr, month },
+    };
   }
   const existing = entries.find(
     (candidate) =>
@@ -197,6 +237,13 @@ export function releasePlanningEntry(entries, payload) {
   }
   if (existing.status !== "V" || existing.hours <= 0) {
     return { error: { status: 409, code: "PLANNING_ENTRY_NOT_RELEASABLE" } };
+  }
+  // Konzept §10 gilt auch fuer die Freigabe: die Teamzuordnung kann seit dem
+  // Speichern entfallen sein.
+  if (!hasTeamForMonth(extNr, month)) {
+    return {
+      error: { status: 409, code: "TEAM_ASSIGNMENT_REQUIRED", extNr, month },
+    };
   }
   existing.status = "F";
   return { entry: { ...existing } };

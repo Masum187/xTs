@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import {
   formatDateDe,
+  isSameTimesheet,
   isWeekend,
   isWithinPeriod,
   periodAround,
@@ -298,5 +299,26 @@ describe("timesheet logic", () => {
     expect(isWeekend("2026-04-12")).toBe(true);
     expect(isWeekend("2026-04-13")).toBe(false);
     expect(formatDateDe("2026-04-05")).toBe("05.04.2026");
+  });
+
+  it("detects unsaved changes independent of server fields and order", () => {
+    const saved: TimesheetDay = {
+      ...baseDay,
+      approvedBy: "ROEPER",
+      weDocument: "WE-000001",
+    };
+    expect(isSameTimesheet(baseDay, saved)).toBe(true);
+    expect(isSameTimesheet(baseDay, { ...baseDay, varianceReason: "" })).toBe(
+      true,
+    );
+    expect(isSameTimesheet(baseDay, { ...baseDay, breakMinutes: 45 })).toBe(
+      false,
+    );
+    expect(
+      isSameTimesheet(baseDay, {
+        ...baseDay,
+        lines: [...baseDay.lines, { coIdent: "X", description: "", hours: 0 }],
+      }),
+    ).toBe(false);
   });
 });

@@ -3,6 +3,10 @@
 // Tests und Frontend-Logik, die Texte gehen 1:1 an den Anwender.
 
 const MESSAGES = {
+  INVALID_PLANNING_HOURS:
+    "Planstunden müssen zwischen 0 und 744 liegen und ganzen Minuten entsprechen.",
+  TEAM_ASSIGNMENT_REQUIRED:
+    "Für den Planmonat fehlt eine gültige Teamzuordnung des Mitarbeiters.",
   NOT_RESPONSIBLE:
     "Sie sind für keine Kontierung dieses Tages als Genehmiger zuständig.",
   INVALID_COST_OBJECT_APPROVER:

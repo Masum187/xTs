@@ -13,7 +13,8 @@ Dieses Repository ist als Monorepo aufgebaut, damit Konzept, SAP-Artefakte, ODat
 - Fachentscheidungen 18 (Datumsregeln) und 19 (Genehmigerzustaendigkeit je Kontierung) sind gefallen; die Restbefunde des Audits sind als Schritte 11 bis 15 neu sortiert (`docs/audit-2026-09-03.md`), die zugehoerigen Stories sind XTS-014, XTS-056 und XTS-063.
 - Schritt 11 (Datumsregeln, Entscheidung 18) ist umgesetzt: laufender Monat plus Vormonat bis zum Monatsabschluss (Regelwerk Infotyp 3), Zukunft gesperrt, Wochenend-Hinweis; die Mock-API nimmt fuer Tests `XTS_TODAY`.
 - Schritt 12 (Genehmigerzustaendigkeit, Entscheidung 19) ist umgesetzt: Genehmiger je Kontierung mit Vertretung in der Verwaltung, Genehmigung und Reporting fuer `approver` auf die eigenen Kontierungen geschnitten, Rolle `controller` sieht das Reporting ungeschnitten; Tagesfreigabe wirkt gesamthaft mit sichtbaren Positionen.
-- Offen: Schritte 13 bis 15, SAP-seitige Umsetzung (Epics 9 und 14), Fachentscheidungen O4 bis O7 in `docs/entscheidungen-v0.1.md`.
+- Schritt 13 ist umgesetzt: ungespeicherte Aenderungen der Stundenschreibung fragen vor Navigation, Persona-Wechsel und Reload nach; Planstunden sind auf 0 bis 744 in ganzen Minuten begrenzt und brauchen eine gueltige Teamzuordnung im Planmonat.
+- Offen: Schritte 14 und 15, SAP-seitige Umsetzung (Epics 9 und 14), Fachentscheidungen O4 bis O7 in `docs/entscheidungen-v0.1.md`.
 
 ## Struktur
 

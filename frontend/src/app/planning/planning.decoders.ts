@@ -19,6 +19,7 @@ export const planningCell: Decoder<PlanningCell> = D.object<PlanningCell>({
   hours: D.number,
   status: D.nullable(planningStatus),
   valid: D.boolean,
+  teamMissing: D.optional(D.boolean),
   locked: D.boolean,
   overbooked: D.boolean,
 });

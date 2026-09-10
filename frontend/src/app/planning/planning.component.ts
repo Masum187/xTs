@@ -15,7 +15,11 @@ import { formatHours } from "../shared/hours";
 
 import type { Team } from "../reporting/reporting.models";
 import { ReportingService } from "../reporting/reporting.service";
-import { formatMonthLabel, parseStartMonth } from "./planning.logic";
+import {
+  formatMonthLabel,
+  parseStartMonth,
+  planningHoursProblem,
+} from "./planning.logic";
 import type {
   PlanningCell,
   PlanningOverview,
@@ -95,8 +99,12 @@ export class PlanningComponent {
     cell: PlanningCell,
     rawValue: string,
   ): Promise<void> {
+    const problem = planningHoursProblem(rawValue);
+    if (problem !== null) {
+      this.message.set(problem);
+      return;
+    }
     const hours = Number(rawValue);
-    if (Number.isNaN(hours) || hours < 0) return;
     await this.busy.guard(async () => {
       try {
         const result = await this.planningService.saveEntry(

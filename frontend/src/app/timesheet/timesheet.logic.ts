@@ -338,6 +338,30 @@ export function isWithinPeriod(
   return period !== null && date >= period.from && date <= period.to;
 }
 
+/**
+ * Vergleicht die vom Mitarbeiter gefuehrten Felder zweier Tage (Audit Nr. 19):
+ * servergefuehrte Felder und Feldreihenfolge spielen keine Rolle.
+ */
+export function isSameTimesheet(a: TimesheetDay, b: TimesheetDay): boolean {
+  const normalize = (day: TimesheetDay) =>
+    JSON.stringify({
+      extNr: day.extNr,
+      date: day.date,
+      startTime: day.startTime,
+      endTime: day.endTime,
+      breakMinutes: day.breakMinutes,
+      location: day.location,
+      status: day.status,
+      varianceReason: day.varianceReason ?? "",
+      lines: day.lines.map((line) => ({
+        coIdent: line.coIdent,
+        description: line.description,
+        hours: line.hours,
+      })),
+    });
+  return normalize(a) === normalize(b);
+}
+
 export function createEmptyDay(extNr: string, date: string): TimesheetDay {
   // Standard 08:30–17:00 mit 30 Min. Pause = 8 Std. Arbeitszeit.
   return {

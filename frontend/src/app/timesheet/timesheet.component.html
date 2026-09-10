@@ -28,11 +28,12 @@
       ‹ Vortag
     </button>
     <input
+      #dateInput
       type="date"
       aria-label="Tagesdatum"
       [disabled]="busy.active()"
       [ngModel]="day().date"
-      (ngModelChange)="openDate($event)"
+      (ngModelChange)="openDate($event, dateInput)"
     />
     <button
       type="button"
@@ -253,7 +254,14 @@
     }
 
     <footer class="summary">
-      <span>Status: {{ statusLabel() }}</span>
+      <span>
+        Status: {{ statusLabel() }}
+        @if (isDirty()) {
+          <em class="unsaved-hint" data-testid="unsaved-hint">
+            · ungespeicherte Änderungen
+          </em>
+        }
+      </span>
       <strong>{{ totalHours() | number: "1.0-2" }} Std.</strong>
     </footer>
   </section>

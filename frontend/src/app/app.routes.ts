@@ -1,5 +1,5 @@
 import { inject } from "@angular/core";
-import type { CanActivateFn, Routes } from "@angular/router";
+import type { CanActivateFn, CanDeactivateFn, Routes } from "@angular/router";
 import { Router } from "@angular/router";
 
 import { AdminComponent } from "./admin/admin.component";
@@ -11,6 +11,7 @@ import { NotFoundComponent } from "./not-found.component";
 import { OrdersComponent } from "./orders/orders.component";
 import { PlanningComponent } from "./planning/planning.component";
 import { ReportingComponent } from "./reporting/reporting.component";
+import { UnsavedChangesService } from "./shared/unsaved-changes.service";
 import { TimesheetComponent } from "./timesheet/timesheet.component";
 
 /** Zugang, wenn das Konto mindestens eine der Rollen hat. */
@@ -32,11 +33,16 @@ const roleGuard =
     return router.parseUrl("/");
   };
 
+/** Schutz vor Datenverlust (Audit Nr. 19): Verlassen nur nach Rueckfrage. */
+const unsavedChangesGuard: CanDeactivateFn<unknown> = () =>
+  inject(UnsavedChangesService).confirmDiscard();
+
 export const routes: Routes = [
   {
     path: "",
     component: TimesheetComponent,
     title: "xTS TimeSheet",
+    canDeactivate: [unsavedChangesGuard],
   },
   {
     path: "approvals",
