@@ -1,4 +1,4 @@
-export type AuthRole = "user" | "approver" | "planner" | "admin";
+export type AuthRole = "user" | "approver" | "planner" | "admin" | "controller";
 
 export type AuthState =
   | "loading"
@@ -45,6 +45,16 @@ export const MOCK_PERSONAS: MockPersona[] = [
     oid: "7a9e4d21-6c1b-4f3a-8e2d-5b7c9d1e3f42",
     upn: "christian.roeper@qualitytimes.de",
     label: "Christian Roeper (PL, RM & Admin)",
+  },
+  {
+    oid: "9b8c7d6e-5f4a-4b3c-8d2e-1f0a9b8c7d6e",
+    upn: "maria.weber@qualitytimes.de",
+    label: "Maria Weber (PL, nur 700000000004)",
+  },
+  {
+    oid: "4d5e6f70-8192-4a3b-9c0d-1e2f3a4b5c6d",
+    upn: "jonas.krause@qualitytimes.de",
+    label: "Jonas Krause (Controlling)",
   },
   {
     oid: "c2d4e6f8-1a3b-4c5d-8e9f-0a1b2c3d4e5f",

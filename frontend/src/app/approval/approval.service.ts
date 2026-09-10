@@ -1,5 +1,7 @@
 import { Injectable, inject } from "@angular/core";
 
+import { costObjectApprover } from "../admin/admin.decoders";
+import type { CostObjectApprover } from "../admin/admin.models";
 import { ODataClient } from "../shared/odata";
 import { approvalDay, timesheetDay } from "../timesheet/timesheet.decoders";
 import type { ApprovalDay, TimesheetDay } from "../timesheet/timesheet.models";
@@ -12,6 +14,11 @@ export class ApprovalService {
 
   getApprovalTimesheets(): Promise<ApprovalDay[]> {
     return this.odata.list("ApprovalTimesheets", approvalDay);
+  }
+
+  /** Eigene Genehmigerzuordnungen (admin: alle), fuer den Hinweis ohne Zuordnung. */
+  getMyResponsibilities(): Promise<CostObjectApprover[]> {
+    return this.odata.list("CostObjectApprovers", costObjectApprover);
   }
 
   approveDay(extNr: string, date: string): Promise<TimesheetDay> {

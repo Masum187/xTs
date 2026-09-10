@@ -3,6 +3,15 @@
 // Tests und Frontend-Logik, die Texte gehen 1:1 an den Anwender.
 
 const MESSAGES = {
+  NOT_RESPONSIBLE:
+    "Sie sind für keine Kontierung dieses Tages als Genehmiger zuständig.",
+  INVALID_COST_OBJECT_APPROVER:
+    "Die Genehmigerzuordnung ist unvollständig oder ungültig.",
+  APPROVER_NOT_AVAILABLE:
+    "Der Mitarbeiter ist kein aktiver Genehmiger (Rolle approver).",
+  APPROVER_OVERLAP:
+    "Für diese Kontierung und diesen Genehmiger gibt es bereits eine überlappende Zuordnung.",
+  COST_OBJECT_APPROVER_NOT_FOUND: "Die Genehmigerzuordnung existiert nicht.",
   DATE_OUT_OF_RANGE:
     "Das Tagesdatum liegt außerhalb des erfassbaren Zeitraums.",
   INVALID_TIMESHEET_PERIOD:

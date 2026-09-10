@@ -15,7 +15,7 @@ import { LoadStatusComponent } from "../shared/load-status.component";
 
 import { formatSignedHours } from "../shared/hours";
 import { dayVariance, sumLineHours } from "../timesheet/timesheet.logic";
-import type { ApprovalDay } from "../timesheet/timesheet.models";
+import type { ApprovalDay, TimesheetLine } from "../timesheet/timesheet.models";
 import {
   filterApprovals,
   uniqueEmployees,
@@ -42,6 +42,12 @@ export class ApprovalComponent {
   protected readonly message = signal<string>("");
   protected readonly rejectingKey = signal<string>("");
   protected readonly rejectReason = signal<string>("");
+  /** Anzahl eigener Genehmigerzuordnungen (Entscheidung 19). */
+  protected readonly responsibilityCount = signal<number>(0);
+  /** admin sieht alles; approver braucht mindestens eine Zuordnung. */
+  protected readonly hasResponsibility = computed(
+    () => this.auth.hasRole("admin") || this.responsibilityCount() > 0,
+  );
 
   protected readonly months = computed(() => uniqueMonths(this.days()));
   protected readonly employees = computed(() => uniqueEmployees(this.days()));
@@ -67,6 +73,16 @@ export class ApprovalComponent {
     return variance === null || variance === 0
       ? null
       : formatSignedHours(variance);
+  }
+
+  /** Position auf einer Kontierung ausserhalb der eigenen Zustaendigkeit. */
+  protected isForeign(day: ApprovalDay, line: TimesheetLine): boolean {
+    return !day.responsibleCoIdents.includes(line.coIdent);
+  }
+
+  /** Tag enthaelt Positionen ausserhalb der Zustaendigkeit (Tagesfreigabe wirkt gesamthaft). */
+  protected hasForeignLines(day: ApprovalDay): boolean {
+    return day.lines.some((line) => this.isForeign(day, line));
   }
 
   /** Vier-Augen-Prinzip: eigene Tage genehmigt eine andere Person. */
@@ -134,9 +150,16 @@ export class ApprovalComponent {
 
   private async load(): Promise<void> {
     await this.loader.track(
-      () => this.approvalService.getApprovalTimesheets(),
+      () =>
+        Promise.all([
+          this.approvalService.getApprovalTimesheets(),
+          this.approvalService.getMyResponsibilities(),
+        ]),
       "Freigegebene Arbeitstage konnten nicht geladen werden.",
-      (days) => this.days.set(days),
+      ([days, responsibilities]) => {
+        this.days.set(days);
+        this.responsibilityCount.set(responsibilities.length);
+      },
     );
   }
 }

@@ -3,17 +3,21 @@ import { buildEnablements, validateTimesheetEnablement } from "./enablement.js";
 import { planningEntries, rules, seedOrders, timesheets } from "./fixtures.js";
 import {
   checkCostObject,
+  costObjectDescription,
   displayNameFor,
   findEmployeeByClaims,
   listAssignments,
+  listCostObjectApprovers,
   listCostObjects,
   listEmployees,
   listTeamAssignments,
   listTeams,
   resetMasterData,
+  responsibleCoIdentsFor,
   store as masterData,
   upsertAssignment,
   upsertCostObject,
+  upsertCostObjectApprover,
   upsertEmployee,
   upsertTeam,
   upsertTeamAssignment,
@@ -225,6 +229,36 @@ function requireApprover(persona) {
   return requireRole(persona, "approver");
 }
 
+// Genehmigerzustaendigkeit (Entscheidung 19, XTS-063): admin sieht und
+// genehmigt alles; approver nur Tage mit mindestens einer Position auf einer
+// Kontierung, fuer die er am Tagesdatum Genehmiger oder Vertreter ist.
+function responsibleCoIdentsOf(persona, day) {
+  const coIdents = [...new Set(day.lines.map((line) => line.coIdent))];
+  if (persona.employee.roles.includes("admin")) return coIdents;
+  const responsible = responsibleCoIdentsFor(persona.employee.extNr, day.date);
+  return coIdents.filter((coIdent) => responsible.has(coIdent));
+}
+
+/** Reporting-Schnitt: approver nur zustaendige Kontierungen, controller/admin alles. */
+function reportingScope(persona) {
+  if (
+    persona.employee.roles.some((role) =>
+      ["controller", "admin"].includes(role),
+    )
+  ) {
+    return null;
+  }
+  return responsibleCoIdentsFor(persona.employee.extNr, systemToday());
+}
+
+function scopeRows(rows, scope) {
+  return scope === null ? rows : rows.filter((row) => scope.has(row.coIdent));
+}
+
+function requireReportingRole(persona) {
+  return requireAnyRole(persona, ["approver", "controller", "admin"]);
+}
+
 function hasRole(persona, role) {
   return persona.employee.roles.includes(role);
 }
@@ -327,6 +361,24 @@ export async function routeRequest(request) {
     });
   }
 
+  if (request.method === "GET" && path === "/odata/CostObjectApprovers") {
+    const persona = resolvePersona(request);
+    if (persona.error) return persona.error;
+    const roleError = requireAnyRole(persona, ["admin", "approver"]);
+    if (roleError) return roleError;
+    const isAdmin = hasRole(persona, "admin");
+    const includeDeleted =
+      isAdmin && url.searchParams.get("includeDeleted") === "true";
+    const value = listCostObjectApprovers({ includeDeleted })
+      .filter((item) => isAdmin || item.extNr === persona.employee.extNr)
+      .map((item) => ({
+        ...item,
+        displayName: displayNameFor(item.extNr),
+        description: costObjectDescription(item.coIdent).split(",")[0],
+      }));
+    return json({ value });
+  }
+
   // Testdatenpaket (XTS-082): setzt Stamm- und Bewegungsdaten auf den
   // dokumentierten UAT-Ausgangsstand zurueck (docs/testdaten-uat-v0.1.md).
   if (request.method === "POST" && path === "/odata/TestDataResets") {
@@ -351,6 +403,7 @@ export async function routeRequest(request) {
         teams: masterData.teams.length,
         costObjects: masterData.costObjects.length,
         assignments: masterData.assignments.length,
+        costObjectApprovers: masterData.costObjectApprovers.length,
         planningEntries: planningStore.length,
         orders: ordersState.orders.length,
         timesheetDays: timesheetStore.size,
@@ -403,6 +456,12 @@ export async function routeRequest(request) {
       upsertAssignment,
       "assignment",
       "Mitarbeiter-Kontierung",
+      "id",
+    ],
+    "/odata/CostObjectApprovers": [
+      upsertCostObjectApprover,
+      "approver",
+      "Genehmigerzuordnung",
       "id",
     ],
   };
@@ -534,11 +593,16 @@ export async function routeRequest(request) {
       .filter((day) => day.status === "F")
       .filter((day) => !month || day.date.startsWith(month))
       .filter((day) => !extNr || day.extNr === extNr)
+      .map((day) => ({
+        ...day,
+        displayName: displayNameFor(day.extNr),
+        responsibleCoIdents: responsibleCoIdentsOf(persona, day),
+      }))
+      .filter((day) => day.responsibleCoIdents.length > 0)
       .sort(
         (a, b) =>
           a.date.localeCompare(b.date) || a.extNr.localeCompare(b.extNr),
-      )
-      .map((day) => ({ ...day, displayName: displayNameFor(day.extNr) }));
+      );
     return json({ value });
   }
 
@@ -734,14 +798,17 @@ export async function routeRequest(request) {
   if (request.method === "GET" && path === "/odata/BudgetMonitor") {
     const persona = resolvePersona(request);
     if (persona.error) return persona.error;
-    const roleError = requireApprover(persona);
+    const roleError = requireReportingRole(persona);
     if (roleError) return roleError;
     const detail = url.searchParams.get("detail") ?? "none";
-    const value = buildBudgetMonitor(
-      [...timesheetStore.values()],
-      detail,
-      ordersState.orders,
-      rulesStore,
+    const value = scopeRows(
+      buildBudgetMonitor(
+        [...timesheetStore.values()],
+        detail,
+        ordersState.orders,
+        rulesStore,
+      ),
+      reportingScope(persona),
     );
     return json({ value });
   }
@@ -749,19 +816,22 @@ export async function routeRequest(request) {
   if (request.method === "GET" && path === "/odata/CostObjectQuota") {
     const persona = resolvePersona(request);
     if (persona.error) return persona.error;
-    const roleError = requireApprover(persona);
+    const roleError = requireReportingRole(persona);
     if (roleError) return roleError;
-    const value = buildCostObjectQuota(
-      [...timesheetStore.values()],
-      {
-        lastName: url.searchParams.get("lastName") ?? "",
-        team: url.searchParams.get("team") ?? "",
-        from: url.searchParams.get("from") ?? "",
-        to: url.searchParams.get("to") ?? "",
-        detail: url.searchParams.get("detail") ?? "none",
-      },
-      ordersState.orders,
-      rulesStore,
+    const value = scopeRows(
+      buildCostObjectQuota(
+        [...timesheetStore.values()],
+        {
+          lastName: url.searchParams.get("lastName") ?? "",
+          team: url.searchParams.get("team") ?? "",
+          from: url.searchParams.get("from") ?? "",
+          to: url.searchParams.get("to") ?? "",
+          detail: url.searchParams.get("detail") ?? "none",
+        },
+        ordersState.orders,
+        rulesStore,
+      ),
+      reportingScope(persona),
     );
     return json({ value });
   }
@@ -769,7 +839,7 @@ export async function routeRequest(request) {
   if (request.method === "GET" && path === "/odata/ResourceLifecycle") {
     const persona = resolvePersona(request);
     if (persona.error) return persona.error;
-    const roleError = requireApprover(persona);
+    const roleError = requireReportingRole(persona);
     if (roleError) return roleError;
     const from = url.searchParams.get("from") ?? "";
     const to = url.searchParams.get("to") ?? "";
@@ -779,16 +849,19 @@ export async function routeRequest(request) {
     if (from && to && from > to) {
       return json({ error: "INVALID_LIFECYCLE_PERIOD", from, to }, 400);
     }
-    const value = buildResourceLifecycle(
-      planningStore,
-      ordersState.orders,
-      [...timesheetStore.values()],
-      {
-        from,
-        to,
-        ebeln: url.searchParams.get("ebeln") ?? "",
-        ebelp: url.searchParams.get("ebelp") ?? "",
-      },
+    const value = scopeRows(
+      buildResourceLifecycle(
+        planningStore,
+        ordersState.orders,
+        [...timesheetStore.values()],
+        {
+          from,
+          to,
+          ebeln: url.searchParams.get("ebeln") ?? "",
+          ebelp: url.searchParams.get("ebelp") ?? "",
+        },
+      ),
+      reportingScope(persona),
     );
     return json({ value });
   }
@@ -818,6 +891,11 @@ export async function routeRequest(request) {
     // Vier-Augen-Prinzip (Audit Nr. 7): niemand genehmigt eigene Tage.
     if (day.extNr === persona.employee.extNr) {
       return json({ error: "SELF_APPROVAL" }, 403);
+    }
+    // Zustaendigkeit (Entscheidung 19): mindestens eine Position auf einer
+    // eigenen Kontierung; die Tagesfreigabe wirkt dann fuer den ganzen Tag.
+    if (responsibleCoIdentsOf(persona, day).length === 0) {
+      return json({ error: "NOT_RESPONSIBLE" }, 403);
     }
     if (body.action === "approve") {
       if (!hasBookedHours(day)) {

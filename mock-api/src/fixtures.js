@@ -42,6 +42,77 @@ export const employees = [
     resourceManager: "ROEPER",
     roles: ["user"],
   },
+  {
+    extNr: "WEBER",
+    displayName: "Maria Weber",
+    firstName: "Maria",
+    lastName: "Weber",
+    company: "QualityTimes",
+    sapAccount: "MWEBER",
+    aadOid: "9b8c7d6e-5f4a-4b3c-8d2e-1f0a9b8c7d6e",
+    aadUpn: "maria.weber@qualitytimes.de",
+    active: true,
+    deleted: false,
+    resourceManager: null,
+    roles: ["user", "approver"],
+  },
+  {
+    extNr: "KRAUSE",
+    displayName: "Jonas Krause",
+    firstName: "Jonas",
+    lastName: "Krause",
+    company: "QualityTimes",
+    sapAccount: "JKRAUSE",
+    aadOid: "4d5e6f70-8192-4a3b-9c0d-1e2f3a4b5c6d",
+    aadUpn: "jonas.krause@qualitytimes.de",
+    active: true,
+    deleted: false,
+    resourceManager: null,
+    roles: ["user", "controller"],
+  },
+];
+
+// Genehmiger je Kontierung analog ZXTS_KONTGEN_T (Entscheidung 19, XTS-014):
+// Roeper ist fuer alle Kontierungen des Pakets zustaendig (UAT-Faelle A/B
+// unveraendert), Weber nur als Vertreterin fuer 700000000004 (Sichtbarkeits-
+// Test der Genehmigung und des Reportings).
+export const costObjectApprovers = [
+  {
+    id: "000001",
+    coIdent: "700000000004",
+    extNr: "ROEPER",
+    deputy: false,
+    validFrom: "2026-01-01",
+    validTo: "2026-12-31",
+    deleted: false,
+  },
+  {
+    id: "000002",
+    coIdent: "600000000001",
+    extNr: "ROEPER",
+    deputy: false,
+    validFrom: "2026-01-01",
+    validTo: "2026-12-31",
+    deleted: false,
+  },
+  {
+    id: "000003",
+    coIdent: "600000000009",
+    extNr: "ROEPER",
+    deputy: false,
+    validFrom: "2026-01-01",
+    validTo: "2026-12-31",
+    deleted: false,
+  },
+  {
+    id: "000004",
+    coIdent: "700000000004",
+    extNr: "WEBER",
+    deputy: true,
+    validFrom: "2026-01-01",
+    validTo: "2026-12-31",
+    deleted: false,
+  },
 ];
 
 // AD/OAuth-Mapping (XTS-050, Entscheidungsvorlage Option B, technisch

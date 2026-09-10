@@ -6,12 +6,14 @@ Stichtag der Daten: Fruehjahr 2026. Datumsangaben im Drehbuch beziehen sich dara
 
 ## 1. Personas (Dev-Persona-Umschalter oben rechts)
 
-| Persona                       | UPN                                | Entra OID (Claim `oid`)                | EXTNR     | Rollen                         | Zweck                                               |
-| ----------------------------- | ---------------------------------- | -------------------------------------- | --------- | ------------------------------ | --------------------------------------------------- |
-| Stephan Schilz (User)         | `stephan.schilz@qualitytimes.de`   | `3f1c2a7e-5b3d-4c8e-9a1f-0d2e4b6c8a10` | `SCHILZ`  | user                           | Externer Mitarbeiter, schreibt Stunden              |
-| Christian Roeper (PL, RM & A) | `christian.roeper@qualitytimes.de` | `7a9e4d21-6c1b-4f3a-8e2d-5b7c9d1e3f42` | `ROEPER`  | user, approver, planner, admin | Planer, Projektleiter/Genehmiger, Verwaltung        |
-| Petra Altmann (inaktiv)       | `petra.altmann@qualitytimes.de`    | `c2d4e6f8-1a3b-4c5d-8e9f-0a1b2c3d4e5f` | `ALTMANN` | user                           | Fehlerfall: inaktiver Mitarbeiter (Zugang gesperrt) |
-| Neuer Externer (ohne Mapping) | `neu.extern@qualitytimes.de`       | `00000000-0000-4000-8000-000000000099` | –         | –                              | Fehlerfall: OAuth-User ohne EXTNR-Mapping           |
+| Persona                       | UPN                                | Entra OID (Claim `oid`)                | EXTNR     | Rollen                         | Zweck                                                                 |
+| ----------------------------- | ---------------------------------- | -------------------------------------- | --------- | ------------------------------ | --------------------------------------------------------------------- |
+| Stephan Schilz (User)         | `stephan.schilz@qualitytimes.de`   | `3f1c2a7e-5b3d-4c8e-9a1f-0d2e4b6c8a10` | `SCHILZ`  | user                           | Externer Mitarbeiter, schreibt Stunden                                |
+| Christian Roeper (PL, RM & A) | `christian.roeper@qualitytimes.de` | `7a9e4d21-6c1b-4f3a-8e2d-5b7c9d1e3f42` | `ROEPER`  | user, approver, planner, admin | Planer, Projektleiter/Genehmiger, Verwaltung                          |
+| Maria Weber (PL)              | `maria.weber@qualitytimes.de`      | `9b8c7d6e-5f4a-4b3c-8d2e-1f0a9b8c7d6e` | `WEBER`   | user, approver                 | Genehmigerin nur fuer `700000000004` (Vertretung), Sichtbarkeits-Test |
+| Jonas Krause (Controlling)    | `jonas.krause@qualitytimes.de`     | `4d5e6f70-8192-4a3b-9c0d-1e2f3a4b5c6d` | `KRAUSE`  | user, controller               | Reporting ungeschnitten ohne Genehmigungsrechte                       |
+| Petra Altmann (inaktiv)       | `petra.altmann@qualitytimes.de`    | `c2d4e6f8-1a3b-4c5d-8e9f-0a1b2c3d4e5f` | `ALTMANN` | user                           | Fehlerfall: inaktiver Mitarbeiter (Zugang gesperrt)                   |
+| Neuer Externer (ohne Mapping) | `neu.extern@qualitytimes.de`       | `00000000-0000-4000-8000-000000000099` | –         | –                              | Fehlerfall: OAuth-User ohne EXTNR-Mapping                             |
 
 Das Mapping laeuft ueber die Entra OID (Option B der Entscheidungsvorlage), der UPN ist Fallback. Fall C2 kann in der Verwaltung aufgeloest werden: Mitarbeiter mit der OID des "Neuen Externen" anlegen, danach ist die Persona angemeldet.
 
@@ -39,6 +41,8 @@ Mitarbeiter-Kontierungen (Planungsbasis):
 | SCHILZ      | `600000000001` | 2026-02-01  | 2026-04-30  |
 | SCHILZ      | `600000000009` | 2026-01-01  | 2026-03-31  |
 | ROEPER      | `600000000001` | 2026-02-01  | 2026-04-30  |
+
+Genehmiger je Kontierung (`ZXTS_KONTGEN_T`, Entscheidung 19): ROEPER fuer `700000000004`, `600000000001` und `600000000009` (2026-01-01 bis 2026-12-31); WEBER als Vertreterin nur fuer `700000000004`. ROEPER ist zusaetzlich `admin` und sieht damit alle Tage; WEBER sieht in Genehmigung und Reporting nur `700000000004`.
 
 Regelwerk (`ZXTS_REGELN_T`): Infotyp 1 = `MA_KONT` aktiv (Beauftragung je Mitarbeiter und Kontierung), Infotyp 2 = `P` aktiv (Freischaltung ab BANF), Infotyp 3 = `5` aktiv (Monatsabschluss: Vormonat erfassbar bis zum 5. des Folgemonats). Die Smoke-Tests laufen mit Systemdatum `XTS_TODAY=2026-05-05`, der erfassbare Zeitraum ist damit 2026-04-01 bis 2026-05-05; ohne dieses Datum sind die Tage des Pakets nach dem 5. Juni 2026 nicht mehr erfassbar.
 

@@ -55,11 +55,17 @@ const ROLE_LABELS: Record<AuthRole, string> = {
   approver: "Projektleiter (Genehmigung)",
   planner: "Ressourcenmanager (Planung/Beauftragung)",
   admin: "xTS Administrator",
+  controller: "Controlling",
 };
 
 /** Meldung, wenn eine Route mangels Rolle nicht geoeffnet werden kann (Audit Nr. 25). */
-export function accessDeniedMessage(role: AuthRole, path: string): string {
-  return `Für ${path} fehlt Ihrem Konto die Rolle „${ROLE_LABELS[role]}". Sie wurden zur Stundenschreibung geleitet.`;
+export function accessDeniedMessage(
+  role: AuthRole | AuthRole[],
+  path: string,
+): string {
+  const roles = Array.isArray(role) ? role : [role];
+  const labels = roles.map((item) => `„${ROLE_LABELS[item]}"`).join(" oder ");
+  return `Für ${path} fehlt Ihrem Konto die Rolle ${labels}. Sie wurden zur Stundenschreibung geleitet.`;
 }
 
 export function hasRole(profile: AuthProfile | null, role: AuthRole): boolean {

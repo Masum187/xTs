@@ -1,4 +1,5 @@
 import { expect, test } from "@playwright/test";
+import { errorMessageOf } from "./odata";
 
 test("filters, approves and rejects submitted days", async ({
   page,
@@ -95,4 +96,81 @@ test("approved day is locked in the timesheet view", async ({
   await page.getByLabel("Tagesdatum").fill(date);
   await expect(page.getByTestId("day-status")).toHaveText("Genehmigt");
   await expect(page.getByTestId("submit-timesheet")).toBeDisabled();
+});
+
+test("approvers see only days on their cost objects, with all lines of the day", async ({
+  page,
+  request,
+}) => {
+  const API = "http://127.0.0.1:4010/odata";
+  const WEBER = { "x-mock-oauth-upn": "maria.weber@qualitytimes.de" };
+  // Gemischter Tag (Sonntag, sonst ungenutzt): Implementierung (Webers
+  // Kontierung) und Support (fremd).
+  await request.post(`${API}/TimesheetDays`, {
+    data: {
+      extNr: "SCHILZ",
+      date: "2026-04-12",
+      startTime: "08:00",
+      endTime: "14:30",
+      breakMinutes: 30,
+      location: "remote",
+      status: "F",
+      lines: [
+        { coIdent: "700000000004", description: "Implementierung", hours: 4 },
+        { coIdent: "600000000001", description: "Support", hours: 2 },
+      ],
+    },
+  });
+
+  await page.goto("/");
+  await page
+    .getByTestId("persona-select")
+    .selectOption("maria.weber@qualitytimes.de");
+  await page.getByRole("link", { name: "Genehmigung" }).click();
+  const card = page.getByTestId("approval-SCHILZ-2026-04-12");
+  await expect(card).toBeVisible();
+  await expect(page.getByTestId("approval-ROEPER-2026-03-31")).toHaveCount(0);
+  await expect(page.getByTestId("approval-ROEPER-2026-04-08")).toHaveCount(0);
+  // Alle Positionen bleiben sichtbar, fremde sind markiert.
+  await expect(card).toContainText("Support");
+  await expect(card).toContainText("nicht in Ihrer Zuständigkeit");
+  await expect(page.getByTestId("scope-note-SCHILZ-2026-04-12")).toBeVisible();
+
+  // Fremder Tag: der Server lehnt ab.
+  const foreign = await request.post(`${API}/TimesheetApprovals`, {
+    headers: WEBER,
+    data: { extNr: "ROEPER", date: "2026-03-31", action: "approve" },
+  });
+  expect(foreign.status()).toBe(403);
+  expect(errorMessageOf(await foreign.json())).toContain("zuständig");
+
+  // Tagesfreigabe wirkt gesamthaft.
+  await page.getByTestId("approve-SCHILZ-2026-04-12").click();
+  await expect(page.getByTestId("approval-message")).toContainText(
+    "Wareneingang WE-",
+  );
+  await expect(card).toBeHidden();
+
+  // Ohne Zuordnung: Hinweis statt leerer Liste.
+  const assignment = {
+    id: "000004",
+    coIdent: "700000000004",
+    extNr: "WEBER",
+    deputy: true,
+    validFrom: "2026-01-01",
+    validTo: "2026-12-31",
+  };
+  const ADMIN = { "x-mock-oauth-upn": "christian.roeper@qualitytimes.de" };
+  await request.post(`${API}/CostObjectApprovers`, {
+    headers: ADMIN,
+    data: { ...assignment, deleted: true },
+  });
+  // Kein Reload: im Mock-Modus faellt die Persona dabei auf Schilz zurueck.
+  await page.getByRole("link", { name: "Stundenschreibung" }).click();
+  await page.getByRole("link", { name: "Genehmigung" }).click();
+  await expect(page.getByTestId("approval-no-responsibility")).toBeVisible();
+  await request.post(`${API}/CostObjectApprovers`, {
+    headers: ADMIN,
+    data: assignment,
+  });
 });

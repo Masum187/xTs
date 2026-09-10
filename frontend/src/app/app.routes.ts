@@ -13,13 +13,15 @@ import { PlanningComponent } from "./planning/planning.component";
 import { ReportingComponent } from "./reporting/reporting.component";
 import { TimesheetComponent } from "./timesheet/timesheet.component";
 
+/** Zugang, wenn das Konto mindestens eine der Rollen hat. */
 const roleGuard =
-  (role: AuthRole): CanActivateFn =>
+  (role: AuthRole | AuthRole[]): CanActivateFn =>
   async (_route, state) => {
     const auth = inject(AuthService);
     const router = inject(Router);
     await auth.ensureLoaded();
-    if (auth.hasRole(role)) return true;
+    const roles = Array.isArray(role) ? role : [role];
+    if (roles.some((item) => auth.hasRole(item))) return true;
     // Kein stilles Umleiten: der Grund wird in der Kopfzeile angezeigt.
     if (auth.state() === "ready") {
       auth.showAccessNotice(
@@ -46,7 +48,8 @@ export const routes: Routes = [
     path: "reports",
     component: ReportingComponent,
     title: "xTS Reporting",
-    canActivate: [roleGuard("approver")],
+    // Entscheidung 19: approver geschnitten, controller/admin ungeschnitten.
+    canActivate: [roleGuard(["approver", "controller", "admin"])],
   },
   {
     path: "planning",

@@ -38,4 +38,9 @@ export interface TimesheetDay {
 
 export interface ApprovalDay extends TimesheetDay {
   displayName: string;
+  /**
+   * Kontierungen des Tages, fuer die die angemeldete Person zustaendig ist
+   * (Entscheidung 19); admin: alle Kontierungen des Tages.
+   */
+  responsibleCoIdents: string[];
 }

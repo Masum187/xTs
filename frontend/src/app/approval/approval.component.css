@@ -161,3 +161,20 @@ button.ghost {
 .variance-line {
   color: #8a5a12;
 }
+
+/* Positionen ausserhalb der eigenen Zustaendigkeit (Entscheidung 19). */
+.approval-line.foreign > span {
+  color: #60718f;
+}
+
+.foreign-hint {
+  margin-left: 0.4rem;
+  font-size: 0.85em;
+  color: #b26a00;
+}
+
+.scope-note {
+  margin: 0.5rem 0 0;
+  font-size: 0.9em;
+  color: #b26a00;
+}

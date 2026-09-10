@@ -35,6 +35,7 @@ export const timesheetDay: Decoder<TimesheetDay> =
 export const approvalDay: Decoder<ApprovalDay> = D.object<ApprovalDay>({
   ...timesheetDayShape,
   displayName: D.string,
+  responsibleCoIdents: D.array(D.string),
 });
 
 export const enabledCostObject: Decoder<EnabledCostObject> =
