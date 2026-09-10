@@ -90,3 +90,35 @@ test("approver reaches approvals via navigation", async ({ page }) => {
     page.getByRole("heading", { name: "Genehmigung" }),
   ).toBeVisible();
 });
+
+test("expected auth failures produce no application errors in the console", async ({
+  page,
+}) => {
+  // Audit Nr. 41: der Browser meldet 403/404 als "Failed to load resource";
+  // das ist HTTP-Semantik und bleibt. Die App selbst darf nichts loggen.
+  const appErrors: string[] = [];
+  page.on("pageerror", (error) =>
+    appErrors.push(`pageerror: ${error.message}`),
+  );
+  page.on("console", (message) => {
+    if (message.type() !== "error") return;
+    if (/Failed to load resource/.test(message.text())) return;
+    appErrors.push(message.text());
+  });
+
+  await page.goto("/");
+  await expect(page.getByTestId("profile")).toContainText("Stephan Schilz");
+  await page
+    .getByTestId("persona-select")
+    .selectOption("petra.altmann@qualitytimes.de");
+  await expect(page.getByTestId("auth-inactive")).toBeVisible();
+  await page
+    .getByTestId("persona-select")
+    .selectOption("neu.extern@qualitytimes.de");
+  await expect(page.getByTestId("auth-not-mapped")).toBeVisible();
+  await page
+    .getByTestId("persona-select")
+    .selectOption("stephan.schilz@qualitytimes.de");
+  await expect(page.getByTestId("profile")).toContainText("Stephan Schilz");
+  expect(appErrors).toEqual([]);
+});

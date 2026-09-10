@@ -153,6 +153,23 @@ export class TimesheetComponent {
     void this.loadInitialData();
   }
 
+  /** Eindeutige ID einer Problemzeile fuer `aria-describedby` (Audit Nr. 36). */
+  protected problemId(problem: { field: string; code: string }): string {
+    return `problem-${problem.field}-${problem.code}`.replace(
+      /[^A-Za-z0-9_-]+/g,
+      "-",
+    );
+  }
+
+  /** IDs der Problemzeilen zu einem Feld, sonst null (Feld ist dann gueltig). */
+  protected describedBy(field: string): string | null {
+    if (!this.canEdit()) return null;
+    const ids = this.problems()
+      .filter((problem) => problem.field === field)
+      .map((problem) => this.problemId(problem));
+    return ids.length > 0 ? ids.join(" ") : null;
+  }
+
   protected isBookable(costObject: EnabledCostObject): boolean {
     return isCostObjectBookable(costObject, this.day().date);
   }
