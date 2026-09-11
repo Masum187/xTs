@@ -1,6 +1,8 @@
 .page-header {
   align-items: flex-end;
   display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
   justify-content: space-between;
   margin-bottom: 20px;
 }
@@ -151,7 +153,8 @@ th {
 }
 
 .empty {
-  color: #9aa8bd;
+  /* 5,4:1 auf Weiss (Audit Nr. 35), vorher #9aa8bd mit 2,4:1 */
+  color: #5b6b85;
 }
 
 table.lifecycle td {
@@ -162,4 +165,25 @@ table.lifecycle td {
   color: #60718f;
   font-size: 12px;
   margin: 12px 0 0;
+}
+
+/* Schmale Breiten (Audit Nr. 26). */
+@media (max-width: 640px) {
+  .section-title {
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+}
+
+/* Filterfelder duerfen die Seite nicht verbreitern (Audit Nr. 26). */
+.filters > label {
+  flex: 0 1 auto;
+  /* Grid-Label: die Spalte darf unter die Breite des Auswahlfelds schrumpfen. */
+  grid-template-columns: minmax(0, 1fr);
+  min-width: 0;
+}
+
+.filters select,
+.filters input {
+  max-width: 100%;
 }

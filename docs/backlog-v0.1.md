@@ -176,8 +176,8 @@ Jira: XTS-103 (Label `redesign`); Grundlage: `ui-redesign-bewertung.md`.
 Akzeptanzkriterien:
 
 - Lesender Endpunkt fuer den Werkkalender (Monat, Arbeitstage, verfuegbare Stunden), Quelle wie `availableHoursFor`.
-- Anzeige in den Einstellungen; keine Pflege im MVP, Werte kommen aus SAP bzw. Fixture.
-- Planungsuebersicht verlinkt die Kapazitaet je Monat auf diese Sicht.
+- Lesende Ansicht direkt in der Planung fuer `planner` (Monatskopf mit Arbeitstagen und verfuegbaren Stunden, aufklappbar), damit kein Zugriff auf die Einstellungen noetig ist; zusaetzlich als Unterseite der Einstellungen fuer `admin`. Keine Pflege im MVP, Werte kommen aus SAP bzw. Fixture.
+- Rollenpruefung des Endpunkts: `planner`, `admin` und `controller` (lesend).
 
 ## Epic 4 - Beauftragung
 
@@ -572,7 +572,8 @@ Jira: XTS-102 (Label `redesign`); Grundlage: `ui-redesign-bewertung.md`.
 
 Akzeptanzkriterien:
 
-- Endpunkt `Jobs` liefert den Bestelldaten-Job (XTS-033) mit Zeitplan, letztem Lauf, Ergebnis und Fehlerzahl aus dem Audit-Log; "Jetzt ausfuehren" nutzt `PurchaseOrderSyncRuns`.
+- Endpunkt `Jobs` (lesend fuer `admin` und `planner`) liefert den Bestelldaten-Job (XTS-033) mit Zeitplan, letztem Lauf, Ergebnis und Fehlerzahl aus dem Audit-Log.
+- "Jetzt ausfuehren" bleibt eine Planer-Aktion: der Button nutzt `PurchaseOrderSyncRuns`, dessen Rollenpruefung (`planner`, XTS-033) unveraendert bleibt; er ist nur sichtbar und aktiv, wenn die angemeldete Person die Rolle `planner` hat. Eine reine Admin-Persona sieht den Status ohne Startknopf. Soll `admin` das Recht zusaetzlich bekommen, ist das eine Kontraktaenderung an XTS-033, nicht Teil dieser Story.
 - Keine automatische BANF-Anlage: die BANF bleibt eine bewusste Aktion des Planers (XTS-032), solange O9 offen ist.
 - Anzeige in den Einstellungen unter "Integrationen".
 
@@ -804,7 +805,7 @@ Jira: XTS-90 (Label `redesign`); Grundlage: `ui-redesign-bewertung.md`. Abhaengi
 
 Akzeptanzkriterien:
 
-- Tokens (Farben, Neutral- und Akzent-Ramp, Typografie, Abstaende, Radius 0, Fokusring) als CSS-Variablen in `frontend/src/styles.css`; Archivo lokal gehostet (O11).
+- Tokens (Farben, Neutral- und Akzent-Ramp, Typografie, Abstaende, Radius 0, Fokusring) als CSS-Variablen in `frontend/src/styles.css`; Schriftbereitstellung Archivo gemaess O11 (Empfehlung: lokal gehostet, vorbehaltlich der Entscheidung).
 - Gemeinsame Klassen fuer Buttons (primary, secondary, ghost), Tags, Felder/Inputs, Tabellen, Rasterzellen; keine komponenteneigenen Farbwerte mehr.
 - Kontrastpruefung aller Tokenkombinationen gegen WCAG AA, insbesondere gedaempfte Texte und Tags; Fokus sichtbar per Tastatur.
 - Bestehende Screens laufen mit den Tokens unveraendert (E2E gruen), bevor ein Screen umgebaut wird.

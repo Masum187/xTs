@@ -84,6 +84,8 @@
         <input
           type="time"
           step="60"
+          [attr.aria-describedby]="describedBy('startTime')"
+          [attr.aria-invalid]="describedBy('startTime') ? true : null"
           [disabled]="!canEdit()"
           [ngModel]="day().startTime"
           (ngModelChange)="updateDay({ startTime: $event })"
@@ -94,6 +96,8 @@
         <input
           type="time"
           step="60"
+          [attr.aria-describedby]="describedBy('endTime')"
+          [attr.aria-invalid]="describedBy('endTime') ? true : null"
           [disabled]="!canEdit()"
           [ngModel]="day().endTime"
           (ngModelChange)="updateDay({ endTime: $event })"
@@ -105,6 +109,8 @@
           type="number"
           min="0"
           step="1"
+          [attr.aria-describedby]="describedBy('breakMinutes')"
+          [attr.aria-invalid]="describedBy('breakMinutes') ? true : null"
           [disabled]="!canEdit()"
           [ngModel]="day().breakMinutes"
           (ngModelChange)="updateDay({ breakMinutes: +$event })"
@@ -113,6 +119,8 @@
       <label>
         Leistungsort
         <select
+          [attr.aria-describedby]="describedBy('location')"
+          [attr.aria-invalid]="describedBy('location') ? true : null"
           [disabled]="!canEdit()"
           [ngModel]="day().location"
           (ngModelChange)="updateDay({ location: $event })"
@@ -149,6 +157,8 @@
           aria-label="Abweichungsbegründung"
           placeholder="z. B. Reisezeit ohne Kontierung"
           maxlength="255"
+          [attr.aria-describedby]="describedBy('varianceReason')"
+          [attr.aria-invalid]="describedBy('varianceReason') ? true : null"
           [disabled]="!canEdit()"
           [ngModel]="day().varianceReason ?? ''"
           (ngModelChange)="updateDay({ varianceReason: $event })"
@@ -217,6 +227,12 @@
           <span>{{ line.coIdent }}</span>
           <input
             aria-label="Leistungsbeschreibung"
+            [attr.aria-describedby]="
+              describedByLine($index, 'description', line.coIdent)
+            "
+            [attr.aria-invalid]="
+              describedByLine($index, 'description', line.coIdent) ? true : null
+            "
             [disabled]="!canEdit()"
             [ngModel]="line.description"
             (ngModelChange)="updateLine($index, { description: $event })"
@@ -227,6 +243,12 @@
             min="0"
             max="24"
             step="0.25"
+            [attr.aria-describedby]="
+              describedByLine($index, 'hours', line.coIdent)
+            "
+            [attr.aria-invalid]="
+              describedByLine($index, 'hours', line.coIdent) ? true : null
+            "
             [disabled]="!canEdit()"
             [ngModel]="line.hours"
             (ngModelChange)="updateLine($index, { hours: +$event })"
@@ -248,7 +270,7 @@
     @if (canEdit() && problems().length > 0) {
       <ul class="problems" data-testid="timesheet-problems">
         @for (problem of problems(); track problem.field + problem.code) {
-          <li>{{ problem.message }}</li>
+          <li [id]="problemId(problem)">{{ problem.message }}</li>
         }
       </ul>
     }

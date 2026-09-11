@@ -1,6 +1,8 @@
 .page-header {
   align-items: flex-end;
   display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
   justify-content: space-between;
   margin-bottom: 20px;
 }
@@ -193,7 +195,8 @@ tr.deleted td {
 .tag {
   background: #eef2f8;
   border-radius: 999px;
-  color: #60718f;
+  /* 6,2:1 auf #eef2f8 (Audit Nr. 35), vorher #60718f mit 4,4:1 */
+  color: #4a5a75;
   font-size: 11px;
   font-weight: 700;
   margin-left: 6px;
@@ -262,4 +265,17 @@ fieldset.plain {
   margin: 0;
   min-width: 0;
   padding: 0;
+}
+
+/* Schmale Breiten (Audit Nr. 26). */
+@media (max-width: 640px) {
+  .section-title,
+  .rule header {
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .actions {
+    white-space: normal;
+  }
 }

@@ -1,6 +1,8 @@
 .page-header {
   align-items: flex-end;
   display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
   justify-content: space-between;
   margin-bottom: 20px;
 }
@@ -205,4 +207,38 @@ button:disabled {
   color: #b26a00;
   font-style: normal;
   font-weight: 600;
+}
+
+/* Schmale Breiten (Audit Nr. 26): Positionen und Kopfzeilen stapeln. */
+@media (max-width: 640px) {
+  .day-nav,
+  .worktime,
+  .section-title,
+  .actions,
+  .summary {
+    flex-wrap: wrap;
+  }
+
+  .line-row {
+    grid-template-columns: 1fr;
+  }
+
+  .line-row input,
+  .line-row select {
+    min-width: 0;
+    width: 100%;
+  }
+}
+
+.section-title > div {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  max-width: 100%;
+  min-width: 0;
+}
+
+.section-title > div select {
+  flex: 1 1 200px;
+  min-width: 0;
 }
