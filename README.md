@@ -15,7 +15,8 @@ Dieses Repository ist als Monorepo aufgebaut, damit Konzept, SAP-Artefakte, ODat
 - Schritt 12 (Genehmigerzustaendigkeit, Entscheidung 19) ist umgesetzt: Genehmiger je Kontierung mit Vertretung in der Verwaltung, Genehmigung und Reporting fuer `approver` auf die eigenen Kontierungen geschnitten, Rolle `controller` sieht das Reporting ungeschnitten; Tagesfreigabe wirkt gesamthaft mit sichtbaren Positionen.
 - Schritt 13 ist umgesetzt: ungespeicherte Aenderungen der Stundenschreibung fragen vor Navigation, Persona-Wechsel und Reload nach; Planstunden sind auf 0 bis 744 in ganzen Minuten begrenzt und brauchen eine gueltige Teamzuordnung im Planmonat.
 - Schritt 14 (Bedienbarkeit) ist umgesetzt: alle Screens passen ab 375 px ohne seitenweites Scrollen (breite Tabellen scrollen im Panel), Kontraste erfuellen WCAG AA, Problemmeldungen der Stundenschreibung sind per `aria-describedby` mit den Feldern verknuepft; erwartete 403/404 beim Identitaetswechsel bleiben reine Browser-Netzwerkmeldungen, die App loggt nichts (E2E-Regressionstest).
-- Offen: Schritt 15, SAP-seitige Umsetzung (Epics 9 und 14), Fachentscheidungen O4 bis O7 in `docs/entscheidungen-v0.1.md`.
+- UI-Redesign: Der Handoff "Modernist" ist bewertet (`docs/ui-redesign-bewertung.md`): schrittweise Migration der Oberflaeche unter Erhalt von Fachlogik, Kontrakten und Tests; Epics 15 und 16 sind als Vorschlag im Backlog und in Jira (XTS-87 bis XTS-103) angelegt, nicht beauftragt (O8).
+- Offen: Schritt 15, SAP-seitige Umsetzung (Epics 9 und 14), Fachentscheidungen O4 bis O12 in `docs/entscheidungen-v0.1.md`.
 
 ## Struktur
 

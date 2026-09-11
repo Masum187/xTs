@@ -6,6 +6,7 @@ Stand: 2026-05-08 (Baseline; Umsetzungsstand siehe unten)
 
 - Im WebClient und in der Mock-API umgesetzt: Epics 2 bis 8, XTS-081, XTS-082 sowie Epics 10 bis 13. XTS-050 ist mit Option B umgesetzt (MSAL im WebClient, Token-Mapping in der Mock-API).
 - SAP-seitig offen: Epic 1 (XTS-001/002 Foundation), XTS-080 (Berechtigungen im OData-Service, Vorgabe in `odata-contracts.md`), Epic 14, echte BANF-/WE-Integration (XTS-032/033/061A sind simuliert).
+- UI-Redesign (Handoff "Modernist" vom 2026-09-11): Bewertung in `ui-redesign-bewertung.md`; Epics 15 und 16 sowie XTS-024/073/074/083/084 sind als Vorschlag angelegt (Jira XTS-87 bis XTS-103), nicht beauftragt (O8).
 - Stabilisierung (Audit-Schritte 1 bis 10) ist umgesetzt; Restbefunde und Reihenfolge: `audit-2026-09-03.md`, Abschnitt "Restbefunde nach der Stabilisierung". Neue Stories aus den Entscheidungen 18 und 19: XTS-056 (umgesetzt im Mock und WebClient, PR #28), XTS-014 und XTS-063 (umgesetzt, PR #29); XTS-064 bleibt Ausbaustufe. Offene Entscheidungen O4 bis O7: `entscheidungen-v0.1.md`.
 
 ## Priorisierung
@@ -163,6 +164,20 @@ Akzeptanzkriterien:
 - Markierte Planzeilen mit Status `V` koennen auf `F` gesetzt werden.
 - Status `F` sperrt die Planstunden fuer normale Bearbeitung.
 - Freigegebene Zeilen erscheinen als Kandidaten fuer Beauftragung.
+
+### XTS-024 - Werkkalender transparent anzeigen (optional)
+
+Prioritaet: P2
+
+Rolle: Ressourcenmanager
+
+Jira: XTS-103 (Label `redesign`); Grundlage: `ui-redesign-bewertung.md`.
+
+Akzeptanzkriterien:
+
+- Lesender Endpunkt fuer den Werkkalender (Monat, Arbeitstage, verfuegbare Stunden), Quelle wie `availableHoursFor`.
+- Lesende Ansicht direkt in der Planung fuer `planner` (Monatskopf mit Arbeitstagen und verfuegbaren Stunden, aufklappbar), damit kein Zugriff auf die Einstellungen noetig ist; zusaetzlich als Unterseite der Einstellungen fuer `admin`. Keine Pflege im MVP, Werte kommen aus SAP bzw. Fixture.
+- Rollenpruefung des Endpunkts: `planner`, `admin` und `controller` (lesend).
 
 ## Epic 4 - Beauftragung
 
@@ -468,6 +483,35 @@ Akzeptanzkriterien:
 - Tagesdetail kann optional eingeblendet werden.
 - Selektion nach Nachname, Team und Buchungsdatum ist moeglich.
 
+### XTS-073 - KPI-Uebersicht (Reporting-Kacheln)
+
+Prioritaet: P1 nach Kennzahldefinition
+
+Rolle: Projektleiter / Controlling
+
+Jira: XTS-99 (Label `redesign`); Grundlage: `ui-redesign-bewertung.md`.
+
+Akzeptanzkriterien:
+
+- Kennzahlen Plan, Beauftragt, Ist erfasst, Genehmigt, Wareneingang mit abgestimmter Definition (Zaehler, Nenner, Deduplizierung, Zeitraum); "Beauftragt" und "bestellt" getrennt.
+- Aggregation serverseitig aus den Lifecycle-Daten oder als eigener Endpunkt; Rollenschnitt fuer `approver` wie im uebrigen Reporting (Entscheidung 19).
+- Stufenleiste Planung bis Rechnung nur aus realen Daten; Rechnung bleibt leer, solange nicht Teil des MVP.
+- Contract-Tests fuer die Kennzahlen gegen das Testdatenpaket; keine Demozahlen.
+
+### XTS-074 - Pivot- und Diagrammansicht (optional)
+
+Prioritaet: P2
+
+Rolle: Projektleiter / Controlling
+
+Jira: XTS-100 (Label `redesign`); Grundlage: `ui-redesign-bewertung.md`.
+
+Akzeptanzkriterien:
+
+- Darstellung "Pivot je Kontierung" und "Balkendiagramm" als zusaetzliche Ansichten des Budget-Monitors, umschaltbar; Standard bleibt Tabelle.
+- Werte in Stunden oder Prozent mit denselben Definitionen wie XTS-073.
+- Barrierefreie Alternative (Tabelle) bleibt immer erreichbar.
+
 ## Epic 9 - Berechtigung, Audit und Betrieb
 
 ### XTS-080 - Berechtigungsrollen technisch umsetzen
@@ -503,6 +547,35 @@ Akzeptanzkriterien:
 - Mindestens zwei Kontierungen sind angelegt: SAP-Support und SAP-Implementierung.
 - Ein durchgehender Fall von Planung bis Genehmigung ist testbar.
 - Ein Rueckweisungsfall ist testbar.
+
+### XTS-083 - Integrationsstatus und Verbindungstest (SAP ECC/V2, Entra)
+
+Prioritaet: P2, SAP/IT-abhaengig
+
+Rolle: xTS Administrator
+
+Jira: XTS-101 (Label `redesign`); Grundlage: `ui-redesign-bewertung.md`.
+
+Akzeptanzkriterien:
+
+- Endpunkt `SystemStatus` liefert je Integration (SAP ECC OData V2, Microsoft Entra ID, Mock-API/Testdaten) Status, Endpunkt und letzte Synchronisation aus realen Betriebsdaten; keine Beispielwerte im WebClient.
+- "Verbindung testen" loest einen serverseitigen Test aus und schreibt das Ergebnis ins Audit-Log (`system`).
+- Anzeige in den Einstellungen unter "Integrationen"; ohne Backend-Daten wird "nicht verfuegbar" gezeigt.
+
+### XTS-084 - Jobstatus und Zeitplaene (ohne BANF-Automatisierung)
+
+Prioritaet: P2, SAP-Betrieb-abhaengig
+
+Rolle: xTS Administrator
+
+Jira: XTS-102 (Label `redesign`); Grundlage: `ui-redesign-bewertung.md`.
+
+Akzeptanzkriterien:
+
+- Endpunkt `Jobs` (lesend fuer `admin` und `planner`) liefert den Bestelldaten-Job (XTS-033) mit Zeitplan, letztem Lauf, Ergebnis und Fehlerzahl aus dem Audit-Log.
+- "Jetzt ausfuehren" bleibt eine Planer-Aktion: der Button nutzt `PurchaseOrderSyncRuns`, dessen Rollenpruefung (`planner`, XTS-033) unveraendert bleibt; er ist nur sichtbar und aktiv, wenn die angemeldete Person die Rolle `planner` hat. Eine reine Admin-Persona sieht den Status ohne Startknopf. Soll `admin` das Recht zusaetzlich bekommen, ist das eine Kontraktaenderung an XTS-033, nicht Teil dieser Story.
+- Keine automatische BANF-Anlage: die BANF bleibt eine bewusste Aktion des Planers (XTS-032), solange O9 offen ist.
+- Anzeige in den Einstellungen unter "Integrationen".
 
 ## Epic 10 - Repository & Developer Experience
 
@@ -702,6 +775,159 @@ Akzeptanzkriterien:
 - BANF-Anlage mit Feldmapping ist gegen SAP-DDIC validiert.
 - Bestellung-Nachlesen per Job ist mit Testbelegen pruefbar.
 - Synchrone WE-Buchung hat Positiv- und Fehlerfall.
+
+## Epic 15 - Design-System und responsive App-Shell
+
+Jira: XTS-87. Grundlage: `ui-redesign-bewertung.md` (Handoff "Modernist", 2026-09-11). Status: Vorschlag, nicht beauftragt (O8).
+
+### XTS-140 - Design-Baseline und Funktionsabgleich festlegen
+
+Prioritaet: P0
+
+Rolle: Entwicklerteam / PO
+
+Jira: XTS-89 (Label `redesign`); Grundlage: `ui-redesign-bewertung.md`.
+
+Akzeptanzkriterien:
+
+- Erhaltungsliste und Konflikte K1 bis K8 aus `ui-redesign-bewertung.md` sind je Screen in eine Checkliste ueberfuehrt; jede Story in Epic 16 nennt, welche Zustaende und Filter sie erhalten muss.
+- Test-IDs der bestehenden E2E-Tests sind als stabile Schnittstelle festgelegt; Text- und Label-Selektoren werden je Screen migriert.
+- Regeln fuer schmale Breiten (O10), Schriftbereitstellung (O11) und Kontrast (WCAG AA) sind festgelegt; die Regressionstests aus Audit-Schritt 14 (375/768/1024 px, Konsolenfehler, `aria-describedby`) bleiben Pflicht.
+- Abstimmung mit Audit-Schritt 15: Komponentenzerlegung und Testisolation werden mit der Verwaltungsaufteilung (XTS-154) zusammen geplant, nicht vorab doppelt gemacht.
+
+### XTS-141 - Design-Tokens und gemeinsame UI-Bausteine
+
+Prioritaet: P1
+
+Rolle: Entwicklerteam
+
+Jira: XTS-90 (Label `redesign`); Grundlage: `ui-redesign-bewertung.md`. Abhaengig von XTS-140.
+
+Akzeptanzkriterien:
+
+- Tokens (Farben, Neutral- und Akzent-Ramp, Typografie, Abstaende, Radius 0, Fokusring) als CSS-Variablen in `frontend/src/styles.css`; Schriftbereitstellung Archivo gemaess O11 (Empfehlung: lokal gehostet, vorbehaltlich der Entscheidung).
+- Gemeinsame Klassen fuer Buttons (primary, secondary, ghost), Tags, Felder/Inputs, Tabellen, Rasterzellen; keine komponenteneigenen Farbwerte mehr.
+- Kontrastpruefung aller Tokenkombinationen gegen WCAG AA, insbesondere gedaempfte Texte und Tags; Fokus sichtbar per Tastatur.
+- Bestehende Screens laufen mit den Tokens unveraendert (E2E gruen), bevor ein Screen umgebaut wird.
+
+### XTS-142 - Responsive, rollenbasierte Navigation
+
+Prioritaet: P1
+
+Rolle: Alle Rollen
+
+Jira: XTS-91 (Label `redesign`); Grundlage: `ui-redesign-bewertung.md`. Abhaengig von XTS-141.
+
+Akzeptanzkriterien:
+
+- Seitenleiste mit Marke, Navigation nach Rollen (Genehmigung fuer `approver`, Reporting fuer `approver`/`controller`/`admin`, Planung/Beauftragung fuer `planner`, Einstellungen fuer `admin`), Persona-Block und Zaehler offener Genehmigungen.
+- Unter einer festgelegten Breite einklappbar (O10): Tastaturbedienung, Fokus-Rueckgabe, kein seitenweites Scrollen bei 375/768/1024 px.
+- Auth-Zustaende (laden, abgemeldet, nicht konfiguriert, nicht gemappt, inaktiv, Fehler), Rollenhinweis des Guards und Nicht-gefunden-Seite sind im neuen Layout gestaltet.
+- Route `admin` wird `einstellungen` mit Kindrouten und Redirect; bestehende Guards und der Datenverlust-Schutz bleiben.
+
+## Epic 16 - WebClient-Ansichten modernisieren
+
+Jira: XTS-88. Blockiert durch XTS-140 (Baseline). Jede Story: eigener kleiner PR, bestehende Unit-, Contract- und E2E-Tests bleiben gruen, XTS-156 wird je Screen angewendet.
+
+### XTS-150 - Stundenschreibung im neuen Raster
+
+Prioritaet: P1
+
+Rolle: xTS User
+
+Jira: XTS-92 (Label `redesign`); Grundlage: `ui-redesign-bewertung.md`.
+
+Akzeptanzkriterien:
+
+- Tageskopf im Rasterlayout mit Vortag/Folgetag, Datumsfeld, Statustag und Summenzeile (Arbeitszeit, Positionen, Differenz mit Abweichungsbegruendung).
+- Erhalten: Sperrhinweis ausserhalb des Zeitraums und Wochenend-Hinweis (Entscheidung 18), Hinweis auf ungespeicherte Aenderungen mit Rueckfrage, Lade-/Fehlerzustand mit erneutem Versuch, Problemliste mit `aria-describedby`/`aria-invalid`, Kontingentpruefung vor dem Senden, Kontingentliste mit Gueltigkeit und "nicht buchbar".
+- E2E `timesheet.spec.ts`, `errors.spec.ts`, `responsive.spec.ts` gruen.
+
+### XTS-151 - Genehmigung als Liste und Detailansicht
+
+Prioritaet: P1
+
+Rolle: Projektleiter
+
+Jira: XTS-93 (Label `redesign`); Grundlage: `ui-redesign-bewertung.md`.
+
+Akzeptanzkriterien:
+
+- Liste der freigegebenen Tage links, Detail rechts; Auswahl springt nach Genehmigen/Zurueckweisen weiter; Zaehler "N offen" live.
+- Erhalten: Filter Leistungsmonat und Mitarbeiter (XTS-060), Vier-Augen-Prinzip, Pflichtgrund bei Rueckweisung, Markierung fremder Positionen und Hinweis zur gesamthaften Tagesfreigabe (Entscheidung 19), Hinweis ohne Zuordnung, Arbeitszeit/Abweichung/Begruendung je Tag, Fehlermeldungen des Servers (WE-Buchung).
+- E2E `approval.spec.ts` und `uat.spec.ts` gruen.
+
+### XTS-152 - Planungsmatrix mit Zelleneditor
+
+Prioritaet: P1
+
+Rolle: Ressourcenmanager
+
+Jira: XTS-94 (Label `redesign`); Grundlage: `ui-redesign-bewertung.md`.
+
+Akzeptanzkriterien:
+
+- Kachel-Matrix als Ausschnitt (z. B. 4 Monate) ueber den 12 Monaten aus XTS-020 mit Pager; Zellen-Editor rechts fuer Stunden und Freigabe.
+- Erhalten: Filter Mitarbeiter/Team/Kontierung, Zustaende "nicht gueltig" und "keine Teamzuordnung", Sperre von F/P/B, Ueberplanungswarnung gegen den Werkkalender, Planstunden 0 bis 744 in ganzen Minuten mit Meldung vor dem Senden.
+- Kein Zuruecksetzen auf V, solange O12 offen ist (K1).
+- E2E `planning.spec.ts` gruen.
+
+### XTS-153 - Beauftragungsboard mit vollstaendigem Statusmodell
+
+Prioritaet: P1
+
+Rolle: Ressourcenmanager / Order Manager
+
+Jira: XTS-95 (Label `redesign`); Grundlage: `ui-redesign-bewertung.md`.
+
+Akzeptanzkriterien:
+
+- Drei Spalten Vorschlag, Beauftragung angelegt/BANF, Bestellung vorhanden; Karten mit Belegkette.
+- Erhalten: Zwischenzustand `created` mit editierbarem BANF-Positionstext, expliziter BANF-Aufruf (XTS-032), Fehlerprotokoll und Bestelldaten-Job (XTS-033), keine Automatik (O9).
+- E2E `orders.spec.ts` und `uat.spec.ts` gruen.
+
+### XTS-154 - Einstellungen in Unterseiten zerlegen
+
+Prioritaet: P1
+
+Rolle: xTS Administrator
+
+Jira: XTS-96 (Label `redesign`); Grundlage: `ui-redesign-bewertung.md`.
+
+Akzeptanzkriterien:
+
+- Baumnavigation mit Gruppen Organisation, Regelwerk, Integrationen, System; Kindrouten unter `einstellungen`.
+- Alle bestehenden Pflegeseiten bleiben auffindbar: Mitarbeiter inkl. Entra-Mapping, Teams, Teamzuordnungen, Kontierungen, Mitarbeiter-Kontierungen, Genehmigerzuordnungen (XTS-014), Regelwerk inkl. Infotyp 3, Aenderungs- und Fehlerprotokoll, Testdaten mit Rueckfrage.
+- Seiten ohne Backend (Rollen und Berechtigungen, Werkkalender, Connectoren, Jobs) erscheinen erst mit XTS-024, XTS-083, XTS-084 bzw. nach O6.
+- Strukturarbeit aus Audit-Schritt 15 (grosse Dateien, Logik aus Komponenten) wird hier mit erledigt; E2E `admin.spec.ts` gruen.
+
+### XTS-155 - Reporting gestalterisch angleichen
+
+Prioritaet: P1
+
+Rolle: Projektleiter / Controlling
+
+Jira: XTS-97 (Label `redesign`); Grundlage: `ui-redesign-bewertung.md`.
+
+Akzeptanzkriterien:
+
+- Drei Reports (Live-Circle, Budget-Monitor, Kontingent-Monitor) im neuen Tabellen- und Filterlayout; Darstellung "KPI + Tabelle" erst mit XTS-073.
+- Erhalten: alle Filter (Zeitraum, Einkaufsbeleg, Bestellposition, Nachname, Team, Detailstufe), Ampelschwellen, Rollenschnitt fuer `approver` und volle Sicht fuer `controller`/`admin`.
+- E2E `reporting.spec.ts` gruen.
+
+### XTS-156 - Visuelle und funktionale Abnahme (fortlaufend je Screen)
+
+Prioritaet: P1
+
+Rolle: PO / UX
+
+Jira: XTS-98 (Label `redesign`); Grundlage: `ui-redesign-bewertung.md`.
+
+Akzeptanzkriterien:
+
+- Je Screen: Abgleich mit dem Handoff, Kontrast- und Tastaturpruefung, Breitenpruefung 375/768/1024 px, Konsolenfehler-Regression.
+- Abweichungen vom Handoff werden begruendet dokumentiert (Fachregel schlaegt Design).
+- Abnahme ist Teil der Definition of Done jeder Story in Epic 16, nicht ein Schritt am Ende.
 
 ## Empfohlener erster Sprint
 
