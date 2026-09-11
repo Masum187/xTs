@@ -1,6 +1,6 @@
 # xTS UI-Redesign (Modernist): Bewertung und Einordnung
 
-Stand: 2026-09-11. Status: Vorschlag zur Freigabe, keine beauftragte Umsetzung. Grundlage: Handoff-Paket `UI-Redesign für localhost.zip` (README, `styles.css`, klickbarer Prototyp, Explorations-Canvas), abgeglichen mit dem Repo-Stand nach PR #30 und dem offenen PR #31. Die konsolidierte Fassung mit Jira-Verlinkung liegt in Confluence ("xTS - UI-Redesign, Konsolidierte Bewertung"); dieses Dokument ist die Repo-Referenz dazu.
+Stand: 2026-09-11. Status: Vorschlag zur Freigabe, keine beauftragte Umsetzung. Grundlage: Handoff-Paket `UI-Redesign für localhost.zip` (README, `styles.css`, klickbarer Prototyp, Explorations-Canvas), abgeglichen mit dem Repo-Stand nach PR #31 (Audit-Schritte 1 bis 14 gemergt, Review-Findings behoben, Regressionstests fuer Breiten, Konsolenfehler und Feldbezug erhalten). Die konsolidierte Fassung mit Jira-Verlinkung liegt in Confluence ("xTS - UI-Redesign, Konsolidierte Bewertung"); dieses Dokument ist die Repo-Referenz dazu.
 
 ## Entscheidung in einem Satz
 
@@ -68,7 +68,7 @@ Abhaengigkeiten: XTS-91 wartet auf XTS-90 (Shell braucht Tokens); Epic 16 wartet
 
 ## Empfohlene Reihenfolge
 
-1. XTS-140 Funktionsabgleich abschliessen; die Findings zu PR #31 nicht fallen lassen.
+1. XTS-140 Funktionsabgleich abschliessen; die Regressionstests aus PR #31 (375/768/1024 px, Konsolenfehler, `aria-describedby`) bleiben Pflicht.
 2. XTS-141, XTS-142, XTS-150: Tokens, responsive Shell und Stundenschreibung als erster vertikaler Umbau.
 3. XTS-151 und XTS-154: Genehmigung und Einstellungen; die Strukturarbeit aus Audit-Schritt 15 (Komponentenzerlegung, Testisolation) mit der Verwaltungsaufteilung abstimmen statt sie vorab doppelt zu machen.
 4. XTS-152 und XTS-153: Planung und Beauftragung mit den bestehenden Statusregeln.
