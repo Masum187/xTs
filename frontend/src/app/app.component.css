@@ -3,9 +3,13 @@
   background: #10233f;
   color: #ffffff;
   display: flex;
+  /* Bedarfsgerechter Umbruch bei allen Breiten (Audit Nr. 26): Navigation
+     und Persona-Auswahl ragen nie ueber den Viewport hinaus. */
+  flex-wrap: wrap;
+  gap: 8px 16px;
   justify-content: space-between;
   min-height: 56px;
-  padding: 0 24px;
+  padding: 8px 24px;
 }
 
 .topbar strong {
@@ -20,6 +24,7 @@
 
 .topbar nav {
   display: flex;
+  flex-wrap: wrap;
   gap: 6px;
 }
 
@@ -47,8 +52,10 @@ main {
   align-items: center;
   color: #b7c6dd;
   display: flex;
+  flex-wrap: wrap;
   font-size: 13px;
   gap: 8px;
+  max-width: 100%;
 }
 
 .persona select {

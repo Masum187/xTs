@@ -228,10 +228,10 @@
           <input
             aria-label="Leistungsbeschreibung"
             [attr.aria-describedby]="
-              describedBy('lines[' + $index + '].description')
+              describedByLine($index, 'description', line.coIdent)
             "
             [attr.aria-invalid]="
-              describedBy('lines[' + $index + '].description') ? true : null
+              describedByLine($index, 'description', line.coIdent) ? true : null
             "
             [disabled]="!canEdit()"
             [ngModel]="line.description"
@@ -243,9 +243,11 @@
             min="0"
             max="24"
             step="0.25"
-            [attr.aria-describedby]="describedBy('lines[' + $index + '].hours')"
+            [attr.aria-describedby]="
+              describedByLine($index, 'hours', line.coIdent)
+            "
             [attr.aria-invalid]="
-              describedBy('lines[' + $index + '].hours') ? true : null
+              describedByLine($index, 'hours', line.coIdent) ? true : null
             "
             [disabled]="!canEdit()"
             [ngModel]="line.hours"

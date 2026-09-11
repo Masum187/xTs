@@ -154,11 +154,38 @@ export class TimesheetComponent {
   }
 
   /** Eindeutige ID einer Problemzeile fuer `aria-describedby` (Audit Nr. 36). */
-  protected problemId(problem: { field: string; code: string }): string {
-    return `problem-${problem.field}-${problem.code}`.replace(
-      /[^A-Za-z0-9_-]+/g,
-      "-",
-    );
+  protected problemId(problem: {
+    field: string;
+    code: string;
+    coIdent?: string;
+  }): string {
+    return `problem-${problem.field}-${problem.code}-${problem.coIdent ?? ""}`
+      .replace(/[^A-Za-z0-9_-]+/g, "-")
+      .replace(/-+$/, "");
+  }
+
+  /**
+   * IDs fuer ein Positionsfeld: eigene Probleme plus Gruppenfehler der
+   * Positionen (`field: "lines"`, z. B. Tagessumme, Kontingent je Kontierung),
+   * die am Stundenfeld haengen.
+   */
+  protected describedByLine(
+    index: number,
+    kind: "description" | "hours",
+    coIdent: string,
+  ): string | null {
+    if (!this.canEdit()) return null;
+    const own = `lines[${index}].${kind}`;
+    const ids = this.problems()
+      .filter(
+        (problem) =>
+          problem.field === own ||
+          (kind === "hours" &&
+            problem.field === "lines" &&
+            (!problem.coIdent || problem.coIdent === coIdent)),
+      )
+      .map((problem) => this.problemId(problem));
+    return ids.length > 0 ? ids.join(" ") : null;
   }
 
   /** IDs der Problemzeilen zu einem Feld, sonst null (Feld ist dann gueltig). */

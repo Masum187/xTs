@@ -252,3 +252,35 @@ test("days outside the recording window are read-only, weekends only warn", asyn
     "erfassbaren Zeitraums",
   );
 });
+
+test("group problems are linked to every affected hours field", async ({
+  page,
+}) => {
+  await page.goto("/");
+  await expect(page.getByTestId("profile")).toContainText("Stephan Schilz");
+  // 2026-04-30: von keinem anderen Test belegt (Kontingent-Schleife endet frueher).
+  await page.getByLabel("Tagesdatum").fill("2026-04-30");
+  await page.getByLabel("Kontierung").selectOption("700000000004");
+  await page.getByTestId("add-line").click();
+  await page.getByTestId("add-line").click();
+  const hours = page.getByLabel("Stunden");
+  await hours.nth(0).fill("12.5");
+  await hours.nth(1).fill("12.5");
+  await expect(page.getByTestId("timesheet-problems")).toContainText(
+    "24 Stunden nicht überschreiten",
+  );
+  for (const index of [0, 1]) {
+    await expect(hours.nth(index)).toHaveAttribute("aria-invalid", "true");
+    const describedBy = await hours.nth(index).getAttribute("aria-describedby");
+    expect(describedBy).toContain("DAY_HOURS_EXCEEDED");
+    for (const id of describedBy!.split(" ")) {
+      await expect(page.locator(`#${id}`)).toBeVisible();
+    }
+  }
+  // Einzelfehler bleibt am eigenen Feld: Geht vor Kommt.
+  await page.locator("label:has-text('Kommt') input").fill("08:30");
+  const endTime = page.locator("label:has-text('Geht') input");
+  await endTime.fill("07:00");
+  await expect(endTime).toHaveAttribute("aria-invalid", "true");
+  await expect(hours.nth(0)).toHaveAttribute("aria-invalid", "true");
+});
