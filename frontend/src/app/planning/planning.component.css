@@ -1,6 +1,8 @@
 .page-header {
   align-items: flex-end;
   display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
   justify-content: space-between;
   margin-bottom: 20px;
 }
@@ -164,4 +166,26 @@ button.release {
 .empty-hint {
   color: #60718f;
   font-size: 13px;
+}
+
+/* Schmale Breiten (Audit Nr. 26): das 12-Monats-Raster scrollt innerhalb
+   des Panels, die Seite selbst nicht. */
+@media (max-width: 640px) {
+  .section-title {
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+}
+
+/* Filterfelder duerfen die Seite nicht verbreitern (Audit Nr. 26). */
+.filters > label {
+  flex: 0 1 auto;
+  /* Grid-Label: die Spalte darf unter die Breite des Auswahlfelds schrumpfen. */
+  grid-template-columns: minmax(0, 1fr);
+  min-width: 0;
+}
+
+.filters select,
+.filters input {
+  max-width: 100%;
 }

@@ -1,6 +1,8 @@
 .page-header {
   align-items: flex-end;
   display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
   justify-content: space-between;
   margin-bottom: 20px;
 }
@@ -177,4 +179,36 @@ button.ghost {
   margin: 0.5rem 0 0;
   font-size: 0.9em;
   color: #b26a00;
+}
+
+/* Schmale Breiten (Audit Nr. 26). */
+@media (max-width: 640px) {
+  .approval-card header,
+  .approval-card footer,
+  .section-title {
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .approval-line {
+    grid-template-columns: 1fr;
+    gap: 2px;
+  }
+
+  .approval-card footer input {
+    flex-basis: 100%;
+  }
+}
+
+/* Filterfelder duerfen die Seite nicht verbreitern (Audit Nr. 26). */
+.filters > label {
+  flex: 0 1 auto;
+  /* Grid-Label: die Spalte darf unter die Breite des Auswahlfelds schrumpfen. */
+  grid-template-columns: minmax(0, 1fr);
+  min-width: 0;
+}
+
+.filters select,
+.filters input {
+  max-width: 100%;
 }

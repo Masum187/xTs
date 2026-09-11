@@ -66,6 +66,8 @@ export interface TimesheetProblem {
   field: string;
   code: string;
   message: string;
+  /** Betroffene Kontierung bei Gruppenfehlern je Kontierung (Kontingent). */
+  coIdent?: string;
 }
 
 const TIME_PATTERN = /^([01]\d|2[0-3]):[0-5]\d$/;
@@ -277,6 +279,7 @@ export function quotaProblems(
       problems.push({
         field: "lines",
         code: "QUOTA_EXCEEDED",
+        coIdent,
         message: `Kontierung ${coIdent}: ${formatHours(hours)} Std. angefragt, aber nur ${formatHours(available)} Std. offen.`,
       });
     }
