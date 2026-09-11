@@ -1,4 +1,4 @@
-import { expect, test } from "@playwright/test";
+import { expect, test } from "./fixtures";
 
 test("unmapped OAuth user gets a clear error message", async ({ page }) => {
   await page.goto("/");

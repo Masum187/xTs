@@ -13,6 +13,9 @@ export default defineConfig({
   globalSetup: "./global-setup.ts",
   timeout: 30_000,
   workers: 1,
+  // Jeder Test setzt die Testdaten zurueck (fixtures.ts); ein Wiederholungs-
+  // versuch in CI faengt daher nur Timing, keine Reihenfolgeeffekte ab.
+  retries: process.env.CI ? 1 : 0,
   use: {
     baseURL: "http://127.0.0.1:4200",
     trace: "on-first-retry",

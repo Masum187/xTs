@@ -1,4 +1,4 @@
-import { expect, test } from "@playwright/test";
+import { expect, test } from "./fixtures";
 import { errorMessageOf } from "./odata";
 
 test("admin maintains the enablement rule and sees the effect", async ({

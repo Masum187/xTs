@@ -1,5 +1,5 @@
 import type { APIRequestContext, Page } from "@playwright/test";
-import { expect, test } from "@playwright/test";
+import { expect, test } from "./fixtures";
 
 const PLANNER_HEADERS = {
   "x-mock-oauth-upn": "christian.roeper@qualitytimes.de",

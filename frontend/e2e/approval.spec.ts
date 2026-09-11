@@ -1,4 +1,4 @@
-import { expect, test } from "@playwright/test";
+import { expect, test } from "./fixtures";
 import { errorMessageOf } from "./odata";
 
 test("filters, approves and rejects submitted days", async ({
