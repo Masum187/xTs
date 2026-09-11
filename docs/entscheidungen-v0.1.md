@@ -1,6 +1,6 @@
 # xTS Entscheidungen v0.1
 
-Stand: 2026-09-09 (Grundsatzentscheidungen 1 bis 10 vom 2026-05-08, Ergaenzungen aus der Stabilisierung im September 2026, Fachentscheidungen 18 und 19 vom 2026-09-09)
+Stand: 2026-09-11 (Grundsatzentscheidungen 1 bis 10 vom 2026-05-08, Ergaenzungen aus der Stabilisierung im September 2026, Fachentscheidungen 18 und 19 vom 2026-09-09, offene Entscheidungen O8 bis O12 aus der UI-Redesign-Bewertung vom 2026-09-11)
 
 Quelle der Antworten: `xTS Offene Entscheidungen v0.docx`, `xTS Entwicklungskonzept v0.docx`, Reviews der Pull Requests #15 bis #26, Entscheidungsrunde O2/O3 vom 2026-09-09
 
@@ -245,12 +245,17 @@ Folgen: Audit Nr. 33 wird damit umsetzbar (Backlog XTS-014, XTS-063). Ausbaustuf
 
 ## Offene Entscheidungen
 
-| Nr. | Thema                                                                                                  | Bezug                             | Wer                     |
-| --- | ------------------------------------------------------------------------------------------------------ | --------------------------------- | ----------------------- |
-| O1  | Entschieden am 2026-09-06: SAP OData V2, Zielsystem SAP ECC (siehe Entscheidung 17)                    | Audit Nr. 13, 16; Schritt 9       | erledigt                |
-| O2  | Entschieden am 2026-09-09: laufender Monat plus Vormonat bis Tag 5, Zukunft gesperrt (Entscheidung 18) | Audit Nr. 17                      | erledigt                |
-| O3  | Entschieden am 2026-09-09: Zustaendigkeit je Kontierung, Tagesfreigabe gesamthaft (Entscheidung 19)    | Audit Nr. 33, Konzept §4          | erledigt                |
-| O4  | Bestellpositionsbezug und Fehlerfall der WE-Buchung, Wiederholung                                      | XTS-061A, Audit Nr. 34            | SAP-MM / Einkauf        |
-| O5  | Ueberplanung: Warnung (heute) oder Blockade                                                            | XTS-022                           | Ressourcenmanagement    |
-| O6  | Rollen aus AD-Gruppen statt Stammdaten; Pflegeprozess `AAD_OID`/`AAD_UPN` beim Onboarding              | XTS-050/080, `entra-anbindung.md` | IT / xTS-Administration |
-| O7  | Status `L` (geloescht) fuer Stundenzettel und Planung                                                  | Konzept §6                        | Fachbereich             |
+| Nr. | Thema                                                                                                         | Bezug                                  | Wer                                   |
+| --- | ------------------------------------------------------------------------------------------------------------- | -------------------------------------- | ------------------------------------- |
+| O1  | Entschieden am 2026-09-06: SAP OData V2, Zielsystem SAP ECC (siehe Entscheidung 17)                           | Audit Nr. 13, 16; Schritt 9            | erledigt                              |
+| O2  | Entschieden am 2026-09-09: laufender Monat plus Vormonat bis Tag 5, Zukunft gesperrt (Entscheidung 18)        | Audit Nr. 17                           | erledigt                              |
+| O3  | Entschieden am 2026-09-09: Zustaendigkeit je Kontierung, Tagesfreigabe gesamthaft (Entscheidung 19)           | Audit Nr. 33, Konzept §4               | erledigt                              |
+| O4  | Bestellpositionsbezug und Fehlerfall der WE-Buchung, Wiederholung                                             | XTS-061A, Audit Nr. 34                 | SAP-MM / Einkauf                      |
+| O5  | Ueberplanung: Warnung (heute) oder Blockade                                                                   | XTS-022                                | Ressourcenmanagement                  |
+| O6  | Rollen aus AD-Gruppen statt Stammdaten; Pflegeprozess `AAD_OID`/`AAD_UPN` beim Onboarding                     | XTS-050/080, `entra-anbindung.md`      | IT / xTS-Administration               |
+| O7  | Status `L` (geloescht) fuer Stundenzettel und Planung                                                         | Konzept §6                             | Fachbereich                           |
+| O8  | UI-Redesign: Umfang und Zeitpunkt (Migration zuerst, Zusatzfunktionen separat; Reihenfolge zur SAP-Anbindung) | `ui-redesign-bewertung.md`, Epic 15/16 | PO, Entwicklung, SAP                  |
+| O9  | BANF-Ausloesung: manuelle Anlage (heute) oder Automatik-Job                                                   | XTS-032, Epic 4                        | Ressourcenmanagement, Einkauf, SAP-MM |
+| O10 | Schmale Navigation: Verhalten der Seitenleiste auf Tablet und Mobil (einklappbar, Tastatur, Fokus-Rueckgabe)  | XTS-140, XTS-142, Audit Nr. 26         | UX, Frontend                          |
+| O11 | Schriftbereitstellung Archivo: lokal gehostet (Empfehlung) statt externer Abruf                               | XTS-141                                | Frontend, IT                          |
+| O12 | Planungsruecknahme F/P/B nach V: ob und unter welchen Bedingungen (Belegbezug, Rechte, Audit, SAP-Folgen)     | XTS-021, XTS-023, Epic 3/4             | Fachbereich, Einkauf, SAP             |

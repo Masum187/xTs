@@ -15,6 +15,7 @@ Dieser Ordner enthaelt die Konzept-Baseline (v0.1, Stand 2026-05-08) und die sei
 | `testdaten-uat-v0.1.md`                 | Testdatenpaket und UAT-Drehbuch: Ausgangsstand, durchgehender Fall, Rueckweisung, Fehlerfaelle.                                     |
 | `entra-anbindung.md`                    | Anmeldung ueber Microsoft Entra ID (MSAL): App-Registrierung, Konfiguration, Ablauf, SAP-Punkte.                                    |
 | `audit-2026-09-03.md`                   | Audit des Stunden-Tools: Befunde mit Fundstellen, Luecken, priorisierte Stabilisierungsschritte.                                    |
+| `ui-redesign-bewertung.md`              | Bewertung des UI-Redesign-Handoffs (Modernist): Erhaltungsliste, Konflikte K1 bis K8, Backlog- und Jira-Zuordnung, Reihenfolge.     |
 
 ## Empfohlene Reihenfolge fuer neue Beteiligte
 
