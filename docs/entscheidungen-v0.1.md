@@ -1,6 +1,6 @@
 # xTS Entscheidungen v0.1
 
-Stand: 2026-09-11 (Grundsatzentscheidungen 1 bis 10 vom 2026-05-08, Ergaenzungen aus der Stabilisierung im September 2026, Fachentscheidungen 18 und 19 vom 2026-09-09, offene Entscheidungen O8 bis O12 aus der UI-Redesign-Bewertung vom 2026-09-11)
+Stand: 2026-09-12 (Grundsatzentscheidungen 1 bis 10 vom 2026-05-08, Ergaenzungen aus der Stabilisierung im September 2026, Fachentscheidungen 18 und 19 vom 2026-09-09, offene Entscheidungen O8 bis O12 aus der UI-Redesign-Bewertung vom 2026-09-11)
 
 Quelle der Antworten: `xTS Offene Entscheidungen v0.docx`, `xTS Entwicklungskonzept v0.docx`, Reviews der Pull Requests #15 bis #26, Entscheidungsrunde O2/O3 vom 2026-09-09
 
@@ -243,19 +243,33 @@ Entscheidung:
 
 Folgen: Audit Nr. 33 wird damit umsetzbar (Backlog XTS-014, XTS-063). Ausbaustufe "positionsweise Genehmigung" ist im Backlog als P2 vermerkt.
 
+### Entscheidung 20 - UI-Redesign schrittweise beauftragen (O8)
+
+Status: entschieden (2026-09-12, PO)
+
+Entscheidung:
+
+- Das Redesign "Modernist" (`ui-redesign-bewertung.md`) ist grundsaetzlich vorgesehen. Zur Umsetzung freigegeben ist zunaechst nur XTS-140, die verbindliche Design-Baseline mit Funktionsabgleich. Keine Zusatzfunktionen und kein Oberflaechenumbau vor der Abnahme der Baseline.
+- Was die Baseline liefert: ein Repo-Dokument mit Checkliste je Screen, das fuer jede Story in Epic 16 die zu erhaltenden Zustaende, Filter, Fehlerpfade und Test-IDs benennt, dazu die Festlegungen zu Breiten, Kontrast und Schrift. Die Abnahme jeder spaeteren Story ist ein Abgleich gegen diese Liste, nicht gegen einen Eindruck.
+- Was nach der Abnahme folgt: XTS-141, XTS-142 und XTS-150 als erste Etappe, jede Story als eigener PR mit gruenen Fach- und E2E-Tests. Weitere Stories nur nach Abnahme der jeweils vorherigen Etappe; es gibt keine Pauschalfreigabe fuer Epic 16.
+- Kopplung an Audit-Schritt 15 Teil B: Die Verwaltungszerlegung (Befunde 31, 32) wird ausschliesslich mit XTS-154 geplant. Wird das Redesign nach der Baseline nicht fortgesetzt, wird Teil B als eigener Stabilisierungs-PR wieder aufgenommen; die uebrigen Teil-B-Befunde bleiben im Audit nachvollziehbar.
+- O10 (schmale Navigation) und O11 (Schriftbereitstellung) arbeitet die Baseline als Vorschlag aus; beide bleiben bis zur Abnahme der Baseline offen und werden mit ihr entschieden.
+
+Folgen: XTS-140 ist freigegeben (Backlog, Jira XTS-89). XTS-141, XTS-142 und XTS-150 sind die vorgeschlagene erste Etappe, nicht freigegeben. O4 (WE-Bestellposition) wird getrennt mit SAP-MM und Einkauf geklaert und ist keine Voraussetzung fuer die Baseline.
+
 ## Offene Entscheidungen
 
-| Nr. | Thema                                                                                                         | Bezug                                  | Wer                                   |
-| --- | ------------------------------------------------------------------------------------------------------------- | -------------------------------------- | ------------------------------------- |
-| O1  | Entschieden am 2026-09-06: SAP OData V2, Zielsystem SAP ECC (siehe Entscheidung 17)                           | Audit Nr. 13, 16; Schritt 9            | erledigt                              |
-| O2  | Entschieden am 2026-09-09: laufender Monat plus Vormonat bis Tag 5, Zukunft gesperrt (Entscheidung 18)        | Audit Nr. 17                           | erledigt                              |
-| O3  | Entschieden am 2026-09-09: Zustaendigkeit je Kontierung, Tagesfreigabe gesamthaft (Entscheidung 19)           | Audit Nr. 33, Konzept §4               | erledigt                              |
-| O4  | Bestellpositionsbezug und Fehlerfall der WE-Buchung, Wiederholung                                             | XTS-061A, Audit Nr. 34                 | SAP-MM / Einkauf                      |
-| O5  | Ueberplanung: Warnung (heute) oder Blockade                                                                   | XTS-022                                | Ressourcenmanagement                  |
-| O6  | Rollen aus AD-Gruppen statt Stammdaten; Pflegeprozess `AAD_OID`/`AAD_UPN` beim Onboarding                     | XTS-050/080, `entra-anbindung.md`      | IT / xTS-Administration               |
-| O7  | Status `L` (geloescht) fuer Stundenzettel und Planung                                                         | Konzept §6                             | Fachbereich                           |
-| O8  | UI-Redesign: Umfang und Zeitpunkt (Migration zuerst, Zusatzfunktionen separat; Reihenfolge zur SAP-Anbindung) | `ui-redesign-bewertung.md`, Epic 15/16 | PO, Entwicklung, SAP                  |
-| O9  | BANF-Ausloesung: manuelle Anlage (heute) oder Automatik-Job                                                   | XTS-032, Epic 4                        | Ressourcenmanagement, Einkauf, SAP-MM |
-| O10 | Schmale Navigation: Verhalten der Seitenleiste auf Tablet und Mobil (einklappbar, Tastatur, Fokus-Rueckgabe)  | XTS-140, XTS-142, Audit Nr. 26         | UX, Frontend                          |
-| O11 | Schriftbereitstellung Archivo: lokal gehostet (Empfehlung) statt externer Abruf                               | XTS-141                                | Frontend, IT                          |
-| O12 | Planungsruecknahme F/P/B nach V: ob und unter welchen Bedingungen (Belegbezug, Rechte, Audit, SAP-Folgen)     | XTS-021, XTS-023, Epic 3/4             | Fachbereich, Einkauf, SAP             |
+| Nr. | Thema                                                                                                                                                                                  | Bezug                                  | Wer                                   |
+| --- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------- | ------------------------------------- |
+| O1  | Entschieden am 2026-09-06: SAP OData V2, Zielsystem SAP ECC (siehe Entscheidung 17)                                                                                                    | Audit Nr. 13, 16; Schritt 9            | erledigt                              |
+| O2  | Entschieden am 2026-09-09: laufender Monat plus Vormonat bis Tag 5, Zukunft gesperrt (Entscheidung 18)                                                                                 | Audit Nr. 17                           | erledigt                              |
+| O3  | Entschieden am 2026-09-09: Zustaendigkeit je Kontierung, Tagesfreigabe gesamthaft (Entscheidung 19)                                                                                    | Audit Nr. 33, Konzept §4               | erledigt                              |
+| O4  | Bestellpositionsbezug und Fehlerfall der WE-Buchung, Wiederholung                                                                                                                      | XTS-061A, Audit Nr. 34                 | SAP-MM / Einkauf                      |
+| O5  | Ueberplanung: Warnung (heute) oder Blockade                                                                                                                                            | XTS-022                                | Ressourcenmanagement                  |
+| O6  | Rollen aus AD-Gruppen statt Stammdaten; Pflegeprozess `AAD_OID`/`AAD_UPN` beim Onboarding                                                                                              | XTS-050/080, `entra-anbindung.md`      | IT / xTS-Administration               |
+| O7  | Status `L` (geloescht) fuer Stundenzettel und Planung                                                                                                                                  | Konzept §6                             | Fachbereich                           |
+| O8  | Entschieden am 2026-09-12: Redesign schrittweise, zunaechst nur XTS-140 freigegeben (Entscheidung 20)                                                                                  | `ui-redesign-bewertung.md`, Epic 15/16 | erledigt                              |
+| O9  | BANF-Ausloesung: manuelle Anlage (heute) oder Automatik-Job                                                                                                                            | XTS-032, Epic 4                        | Ressourcenmanagement, Einkauf, SAP-MM |
+| O10 | Schmale Navigation: Verhalten der Seitenleiste auf Tablet und Mobil (einklappbar, Tastatur, Fokus-Rueckgabe); Vorschlag kommt aus der Baseline XTS-140, Entscheidung mit deren Abnahme | XTS-140, XTS-142, Audit Nr. 26         | UX, Frontend                          |
+| O11 | Schriftbereitstellung Archivo: lokal gehostet (Empfehlung) statt externer Abruf; Vorschlag kommt aus der Baseline XTS-140, Entscheidung mit deren Abnahme                              | XTS-140, XTS-141                       | Frontend, IT                          |
+| O12 | Planungsruecknahme F/P/B nach V: ob und unter welchen Bedingungen (Belegbezug, Rechte, Audit, SAP-Folgen)                                                                              | XTS-021, XTS-023, Epic 3/4             | Fachbereich, Einkauf, SAP             |

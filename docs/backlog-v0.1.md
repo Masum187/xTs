@@ -6,7 +6,7 @@ Stand: 2026-05-08 (Baseline; Umsetzungsstand siehe unten)
 
 - Im WebClient und in der Mock-API umgesetzt: Epics 2 bis 8, XTS-081, XTS-082 sowie Epics 10 bis 13. XTS-050 ist mit Option B umgesetzt (MSAL im WebClient, Token-Mapping in der Mock-API).
 - SAP-seitig offen: Epic 1 (XTS-001/002 Foundation), XTS-080 (Berechtigungen im OData-Service, Vorgabe in `odata-contracts.md`), Epic 14, echte BANF-/WE-Integration (XTS-032/033/061A sind simuliert).
-- UI-Redesign (Handoff "Modernist" vom 2026-09-11): Bewertung in `ui-redesign-bewertung.md`; Epics 15 und 16 sowie XTS-024/073/074/083/084 sind als Vorschlag angelegt (Jira XTS-87 bis XTS-103), nicht beauftragt (O8).
+- UI-Redesign (Handoff "Modernist" vom 2026-09-11): Bewertung in `ui-redesign-bewertung.md`; Epics 15 und 16 sowie XTS-024/073/074/083/084 sind angelegt (Jira XTS-87 bis XTS-103); freigegeben ist nur XTS-140 (Entscheidung 20), alles Weitere nach Abnahme der Baseline.
 - Stabilisierung (Audit-Schritte 1 bis 10) ist umgesetzt; Restbefunde und Reihenfolge: `audit-2026-09-03.md`, Abschnitt "Restbefunde nach der Stabilisierung". Neue Stories aus den Entscheidungen 18 und 19: XTS-056 (umgesetzt im Mock und WebClient, PR #28), XTS-014 und XTS-063 (umgesetzt, PR #29); XTS-064 bleibt Ausbaustufe. Offene Entscheidungen O4 bis O7: `entscheidungen-v0.1.md`.
 
 ## Priorisierung
@@ -786,7 +786,7 @@ Prioritaet: P0
 
 Rolle: Entwicklerteam / PO
 
-Jira: XTS-89 (Label `redesign`); Grundlage: `ui-redesign-bewertung.md`.
+Jira: XTS-89 (Label `redesign`); Grundlage: `ui-redesign-bewertung.md`. Status: freigegeben (Entscheidung 20, 2026-09-12); XTS-141, XTS-142 und XTS-150 sind die vorgeschlagene erste Etappe nach Abnahme der Baseline, nicht freigegeben.
 
 Akzeptanzkriterien:
 
