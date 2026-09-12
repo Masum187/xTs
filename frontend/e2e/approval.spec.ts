@@ -174,3 +174,28 @@ test("approvers see only days on their cost objects, with all lines of the day",
     data: assignment,
   });
 });
+
+test("special characters and long texts are rendered unchanged as text", async ({
+  page,
+}) => {
+  // Audit Nr. 42: Roepers Tag 2026-04-08 traegt eine Position mit Umlauten,
+  // Sonderzeichen und Script-Text; sie erscheint als Text, nie als HTML.
+  await page.goto("/");
+  await page
+    .getByTestId("persona-select")
+    .selectOption("christian.roeper@qualitytimes.de");
+  await page.getByRole("link", { name: "Genehmigung" }).click();
+  const card = page.getByTestId("approval-ROEPER-2026-04-08");
+  await expect(card).toContainText("Übergabe (ÄÖÜ äöü ß)");
+  await expect(card).toContainText("<script>alert('xTS')</script>");
+  await expect(card).toContainText('"Anführungszeichen"');
+  await expect(card.locator("script")).toHaveCount(0);
+
+  // Teamname mit Sonderzeichen in der Auswahl des Reportings.
+  await page.getByRole("link", { name: "Reporting" }).click();
+  await expect(
+    page
+      .getByLabel("Team")
+      .locator("option", { hasText: "Entwicklung & Support (Süd)" }),
+  ).toHaveCount(1);
+});
