@@ -4,18 +4,19 @@ Dieser Ordner enthaelt die Konzept-Baseline (v0.1, Stand 2026-05-08) und die sei
 
 ## Dateien
 
-| Datei                                   | Zweck                                                                                                                               |
-| --------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------- |
-| `entwicklungskonzept-v0.1.md`           | Baseline: fachlich-technisches Zielbild, Prozesse, Datenmodell, Services, Screens; mit Abschnitt "Umsetzungsstand" zu Abweichungen. |
-| `backlog-v0.1.md`                       | MVP-Backlog mit Epics, User Stories und Akzeptanzkriterien; Umsetzungsstand im Kopf des Dokuments.                                  |
-| `entscheidungen-v0.1.md`                | Entscheidungslog: Grundsatzfragen, Entscheidungen aus der Stabilisierung, offene Entscheidungen.                                    |
-| `development-workflow.md`               | GitHub-, Branching-, PR- und lokale Hook-Regeln.                                                                                    |
-| `odata-contracts.md`                    | OData-nahe Kontraktbasis fuer SAP und Mock-API.                                                                                     |
-| `entscheidungsvorlage-extnr-mapping.md` | Entscheidungsvorlage fuer das AD/OAuth-Attribut des EXTNR-Mappings (XTS-050).                                                       |
-| `testdaten-uat-v0.1.md`                 | Testdatenpaket und UAT-Drehbuch: Ausgangsstand, durchgehender Fall, Rueckweisung, Fehlerfaelle.                                     |
-| `entra-anbindung.md`                    | Anmeldung ueber Microsoft Entra ID (MSAL): App-Registrierung, Konfiguration, Ablauf, SAP-Punkte.                                    |
-| `audit-2026-09-03.md`                   | Audit des Stunden-Tools: Befunde mit Fundstellen, Luecken, priorisierte Stabilisierungsschritte.                                    |
-| `ui-redesign-bewertung.md`              | Bewertung des UI-Redesign-Handoffs (Modernist): Erhaltungsliste, Konflikte K1 bis K8, Backlog- und Jira-Zuordnung, Reihenfolge.     |
+| Datei                                   | Zweck                                                                                                                                                              |
+| --------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `entwicklungskonzept-v0.1.md`           | Baseline: fachlich-technisches Zielbild, Prozesse, Datenmodell, Services, Screens; mit Abschnitt "Umsetzungsstand" zu Abweichungen.                                |
+| `backlog-v0.1.md`                       | MVP-Backlog mit Epics, User Stories und Akzeptanzkriterien; Umsetzungsstand im Kopf des Dokuments.                                                                 |
+| `entscheidungen-v0.1.md`                | Entscheidungslog: Grundsatzfragen, Entscheidungen aus der Stabilisierung, offene Entscheidungen.                                                                   |
+| `development-workflow.md`               | GitHub-, Branching-, PR- und lokale Hook-Regeln.                                                                                                                   |
+| `odata-contracts.md`                    | OData-nahe Kontraktbasis fuer SAP und Mock-API.                                                                                                                    |
+| `entscheidungsvorlage-extnr-mapping.md` | Entscheidungsvorlage fuer das AD/OAuth-Attribut des EXTNR-Mappings (XTS-050).                                                                                      |
+| `testdaten-uat-v0.1.md`                 | Testdatenpaket und UAT-Drehbuch: Ausgangsstand, durchgehender Fall, Rueckweisung, Fehlerfaelle.                                                                    |
+| `entra-anbindung.md`                    | Anmeldung ueber Microsoft Entra ID (MSAL): App-Registrierung, Konfiguration, Ablauf, SAP-Punkte.                                                                   |
+| `audit-2026-09-03.md`                   | Audit des Stunden-Tools: Befunde mit Fundstellen, Luecken, priorisierte Stabilisierungsschritte.                                                                   |
+| `ui-redesign-bewertung.md`              | Bewertung des UI-Redesign-Handoffs (Modernist): Erhaltungsliste, Konflikte K1 bis K8, Backlog- und Jira-Zuordnung, Reihenfolge.                                    |
+| `design-baseline-xts-140.md`            | Design-Baseline und Funktionsabgleich (XTS-140): Grundregeln, Checkliste je Screen mit Test-IDs, Vorschlaege zu Breiten, Kontrast und Schrift, Abnahmereihenfolge. |
 
 ## Empfohlene Reihenfolge fuer neue Beteiligte
 
