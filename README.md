@@ -17,7 +17,7 @@ Dieses Repository ist als Monorepo aufgebaut, damit Konzept, SAP-Artefakte, ODat
 - Schritt 14 (Bedienbarkeit) ist umgesetzt: alle Screens passen ab 375 px ohne seitenweites Scrollen (breite Tabellen scrollen im Panel), Kontraste erfuellen WCAG AA, Problemmeldungen der Stundenschreibung sind per `aria-describedby` mit den Feldern verknuepft; erwartete 403/404 beim Identitaetswechsel bleiben reine Browser-Netzwerkmeldungen, die App loggt nichts (E2E-Regressionstest).
 - UI-Redesign: Der Handoff "Modernist" ist bewertet (`docs/ui-redesign-bewertung.md`): schrittweise Migration der Oberflaeche unter Erhalt von Fachlogik, Kontrakten und Tests; Epics 15 und 16 sind im Backlog und in Jira (XTS-87 bis XTS-103) angelegt; freigegeben ist nur die Design-Baseline XTS-140 (Entscheidung 20), Oberflaechenumbau und Zusatzfunktionen erst nach deren Abnahme.
 - Schritt 15 Teil A ist umgesetzt: jeder E2E-Test setzt das Testdatenpaket zurueck (`frontend/e2e/fixtures.ts`), CI wiederholt einen fehlgeschlagenen Test einmal, die Fixtures enthalten Umlaute, Sonderzeichen, einen langen Text, einen Teamwechsel und leere Listen. Teil B (Komponentenzerlegung, Lazy Loading) wird mit XTS-154 abgestimmt.
-- Offen: Schritt 15 Teil B, SAP-seitige Umsetzung (Epics 9 und 14), Fachentscheidungen O4 bis O7, O9 bis O12 in `docs/entscheidungen-v0.1.md` (O10/O11 mit der Baseline).
+- Offen: Schritt 15 Teil B, SAP-seitige Umsetzung (Epics 9 und 14), Fachentscheidungen O4 bis O7, O9 und O12 in `docs/entscheidungen-v0.1.md`; die Design-Baseline XTS-140 ist abgenommen (`docs/design-baseline-xts-140.md`, O10/O11 entschieden), die erste Redesign-Etappe wartet auf ausdrueckliche Freigabe.
 
 ## Struktur
 
