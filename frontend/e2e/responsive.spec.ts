@@ -1,5 +1,5 @@
 import type { Page } from "@playwright/test";
-import { expect, test } from "@playwright/test";
+import { expect, test } from "./fixtures";
 
 // Schmale Breiten (Audit Nr. 26): kein horizontales Scrollen der ganzen
 // Seite; breite Tabellen scrollen nur innerhalb ihres Panels.

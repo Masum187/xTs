@@ -1,20 +1,12 @@
-import type { APIRequestContext, Page } from "@playwright/test";
-import { expect, test } from "@playwright/test";
+import type { Page } from "@playwright/test";
+import { expect, test } from "./fixtures";
 
-// UAT-Drehbuch aus docs/testdaten-uat-v0.1.md (XTS-082). Beide Faelle setzen
-// das Testdatenpaket zu Beginn zurueck; diese Spec laeuft alphabetisch als
-// letzte, damit der Reset keine anderen Specs stoert.
+// UAT-Drehbuch aus docs/testdaten-uat-v0.1.md (XTS-082). Das Testdatenpaket
+// wird vor jedem Test zurueckgesetzt (fixtures.ts), die Reihenfolge der Specs
+// spielt keine Rolle mehr.
 
-const API = "http://127.0.0.1:4010/odata";
 const SCHILZ = "stephan.schilz@qualitytimes.de";
 const ROEPER = "christian.roeper@qualitytimes.de";
-
-async function resetTestData(request: APIRequestContext) {
-  const response = await request.post(`${API}/TestDataResets`, {
-    headers: { "x-mock-oauth-upn": ROEPER },
-  });
-  expect(response.ok()).toBeTruthy();
-}
 
 async function switchPersona(page: Page, upn: string, name: string) {
   await page.getByTestId("persona-select").selectOption(upn);
@@ -23,9 +15,7 @@ async function switchPersona(page: Page, upn: string, name: string) {
 
 test("UAT-Fall A: Planung bis Genehmigung und Wareneingang", async ({
   page,
-  request,
 }) => {
-  await resetTestData(request);
   await page.goto("/");
   await switchPersona(page, ROEPER, "Christian Roeper");
 

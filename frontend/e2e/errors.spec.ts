@@ -1,4 +1,4 @@
-import { expect, test } from "@playwright/test";
+import { expect, test } from "./fixtures";
 
 // Robustheit der Oberflaeche (Audit Nr. 10, 11, 20): Ladezustand, Fehler
 // mit erneutem Versuch, Sperre gegen Doppelaktionen, unbekannte URL.

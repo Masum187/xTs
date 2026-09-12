@@ -1457,12 +1457,12 @@ test("inactive or deleted teams are not offered in selections", async () => {
   const offered = await routeRequest(request("GET", "/odata/Teams"));
   assert.deepEqual(
     JSON.parse(offered.body).value.map((team) => team.id),
-    ["TRANSFORMATION_MC", "ENTW_SUPPORT"],
+    ["TRANSFORMATION_MC", "ENTW_SUPPORT", "SAP_BASIS"],
   );
   const all = await routeRequest(
     approverRequest("GET", "/odata/Teams?includeInactive=true"),
   );
-  assert.equal(JSON.parse(all.body).value.length, 3);
+  assert.equal(JSON.parse(all.body).value.length, 4);
 
   await routeRequest(
     approverRequest("POST", "/odata/Teams", {
@@ -1475,7 +1475,7 @@ test("inactive or deleted teams are not offered in selections", async () => {
   const afterDelete = await routeRequest(request("GET", "/odata/Teams"));
   assert.deepEqual(
     JSON.parse(afterDelete.body).value.map((team) => team.id),
-    ["TRANSFORMATION_MC"],
+    ["TRANSFORMATION_MC", "SAP_BASIS"],
   );
 });
 
@@ -1531,7 +1531,7 @@ test("team assignments require validity, reject overlaps and drive planning filt
     }),
   );
   assert.equal(created.status, 200);
-  assert.equal(JSON.parse(created.body).id, "MT-000004");
+  assert.equal(JSON.parse(created.body).id, "MT-000005");
 
   const oldTeam = await routeRequest(
     approverRequest(
@@ -1801,7 +1801,7 @@ test("test data reset restores the documented UAT package", async () => {
   assert.equal(body.resetBy, "ROEPER");
   assert.deepEqual(body.counts, {
     employees: 5,
-    teams: 2,
+    teams: 3,
     costObjects: 3,
     assignments: 4,
     costObjectApprovers: 4,
@@ -1811,7 +1811,7 @@ test("test data reset restores the documented UAT package", async () => {
   });
 
   const teams = await routeRequest(request("GET", "/odata/Teams"));
-  assert.equal(JSON.parse(teams.body).value.length, 2);
+  assert.equal(JSON.parse(teams.body).value.length, 3);
   const approvals = await routeRequest(
     approverRequest("GET", "/odata/ApprovalTimesheets"),
   );

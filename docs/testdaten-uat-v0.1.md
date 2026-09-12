@@ -19,9 +19,11 @@ Das Mapping laeuft ueber die Entra OID (Option B der Entscheidungsvorlage), der 
 
 ## 2. Stammdaten
 
-Teams (`ZXTS_TEAM_T`): `TRANSFORMATION_MC` (Transformation MC), `ENTW_SUPPORT` (Entw.-Support).
+Teams (`ZXTS_TEAM_T`): `TRANSFORMATION_MC` (Transformation MC), `ENTW_SUPPORT` (Entwicklung & Support (Süd)), `SAP_BASIS` (SAP Basis / Betrieb).
 
-Teamzuordnung (`ZXTS_MATEAM_T`): Schilz -> Transformation MC (2026), Roeper -> Entw.-Support (2026–2027), Altmann -> Entw.-Support (2025).
+Teamzuordnung (`ZXTS_MATEAM_T`): Schilz -> Transformation MC (2026), Roeper -> Entwicklung & Support bis 2026-06-30 und danach SAP Basis / Betrieb bis 2027-12-31 (Teamwechsel, zwei nicht ueberlappende Zuordnungen), Altmann -> Entwicklung & Support (2025).
+
+Realismus des Pakets (Audit Nr. 42): Umlaute und Sonderzeichen in Teamnamen und Firmenbezeichnung (`QualityTimes GmbH & Co. KG` bei KRAUSE), eine Leistungsposition mit fast 255 Zeichen inkl. `<script>`-Text (Roeper, 2026-04-08; wird als Text gerendert), ein Mitarbeiter mit Teamwechsel, ein Mitarbeiter ohne Stundenzettel (KRAUSE) und ein leeres Fehlerprotokoll.
 
 Kontierungen (`ZXTS_KONT_T`):
 

@@ -61,7 +61,7 @@ export const employees = [
     displayName: "Jonas Krause",
     firstName: "Jonas",
     lastName: "Krause",
-    company: "QualityTimes",
+    company: "QualityTimes GmbH & Co. KG",
     sapAccount: "JKRAUSE",
     aadOid: "4d5e6f70-8192-4a3b-9c0d-1e2f3a4b5c6d",
     aadUpn: "jonas.krause@qualitytimes.de",
@@ -130,7 +130,13 @@ export const teams = [
   },
   {
     id: "ENTW_SUPPORT",
-    name: "Entw.-Support",
+    name: "Entwicklung & Support (Süd)",
+    active: true,
+    deleted: false,
+  },
+  {
+    id: "SAP_BASIS",
+    name: "SAP Basis / Betrieb",
     active: true,
     deleted: false,
   },
@@ -147,11 +153,21 @@ export const teamAssignments = [
     validTo: "2026-12-31",
     deleted: false,
   },
+  // Roeper wechselt zur Jahresmitte das Team (Audit Nr. 42: Mitarbeiter mit
+  // mehreren, nicht ueberlappenden Teamzuordnungen).
   {
     id: "MT-000002",
     extNr: "ROEPER",
     teamId: "ENTW_SUPPORT",
     validFrom: "2026-01-01",
+    validTo: "2026-06-30",
+    deleted: false,
+  },
+  {
+    id: "MT-000004",
+    extNr: "ROEPER",
+    teamId: "SAP_BASIS",
+    validFrom: "2026-07-01",
     validTo: "2027-12-31",
     deleted: false,
   },
@@ -337,7 +353,9 @@ export const timesheets = [
     lines: [
       {
         coIdent: "600000000001",
-        description: "Basis-Setup Testmandant",
+        // Audit Nr. 42: Umlaute, Sonderzeichen, HTML-Text, fast 255 Zeichen.
+        description:
+          "Basis-Setup Testmandant: Rollen & Berechtigungen für die Übergabe (ÄÖÜ äöü ß), Prüfung <script>alert('xTS')</script> \"Anführungszeichen\", 100 % – Sonderzeichen bleiben Text; bewusst lang, um die Grenze von 255 Zeichen fast auszureizen (Audit Nr. 42).",
         hours: 8,
       },
     ],
