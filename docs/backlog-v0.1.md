@@ -801,7 +801,7 @@ Prioritaet: P1
 
 Rolle: Entwicklerteam
 
-Jira: XTS-90 (Label `redesign`); Grundlage: `ui-redesign-bewertung.md`. Abhaengig von XTS-140.
+Jira: XTS-90 (Label `redesign`); Grundlage: `ui-redesign-bewertung.md`. Abhaengig von XTS-140. Status: freigegeben 2026-09-12, umgesetzt in PR #37 (`design-tokens.md`); Bausteine bereitgestellt, nicht auf Screens angewendet.
 
 Akzeptanzkriterien:
 

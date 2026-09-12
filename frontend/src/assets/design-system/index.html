@@ -1,0 +1,192 @@
+<!doctype html>
+<html lang="de">
+  <head>
+    <meta charset="utf-8" />
+    <title>xTS Design-System (Testseite)</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <!-- Nur fuer Entwicklung und E2E: das globale Stylesheet des Dev-Servers
+         enthaelt design-system.css. In Produktions-Builds ist die Datei
+         gehasht; diese Seite ist dort nicht vorgesehen. -->
+    <link rel="stylesheet" href="/styles.css" />
+    <style>
+      main {
+        margin: 0 auto;
+        max-width: 960px;
+        padding: 24px;
+      }
+      section {
+        margin-bottom: 32px;
+      }
+      .row {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 12px;
+        align-items: center;
+      }
+      .swatch {
+        padding: 8px 12px;
+      }
+      .nav-sample {
+        background: var(--xts-color-nav-bg);
+        padding: 12px 16px;
+      }
+    </style>
+  </head>
+  <body class="xts-font" style="background: var(--xts-color-bg)">
+    <main>
+      <h1 class="xts-heading" data-testid="ds-title">xTS Design-System</h1>
+      <p class="xts-kicker" data-check="text" data-testid="ds-kicker">
+        Kicker in Akzenttext
+      </p>
+      <p class="xts-text-muted" data-check="text" data-testid="ds-muted">
+        Gedaempfter Text auf Hintergrund
+      </p>
+
+      <section>
+        <h2 class="xts-heading">Buttons</h2>
+        <div class="row">
+          <button
+            type="button"
+            class="xts-btn xts-btn-primary"
+            data-check="text"
+            data-testid="ds-btn-primary"
+          >
+            Primaer
+          </button>
+          <button
+            type="button"
+            class="xts-btn xts-btn-secondary"
+            data-check="text"
+            data-testid="ds-btn-secondary"
+          >
+            Sekundaer
+          </button>
+          <button
+            type="button"
+            class="xts-btn xts-btn-ghost"
+            data-check="text"
+            data-testid="ds-btn-ghost"
+          >
+            Ghost
+          </button>
+          <button
+            type="button"
+            class="xts-btn xts-btn-primary"
+            disabled
+            data-testid="ds-btn-disabled"
+          >
+            Gesperrt
+          </button>
+        </div>
+      </section>
+
+      <section>
+        <h2 class="xts-heading">Tags</h2>
+        <div class="row">
+          <span
+            class="xts-tag xts-tag-accent"
+            data-check="text"
+            data-testid="ds-tag-accent"
+            >F · freigegeben</span
+          >
+          <span
+            class="xts-tag xts-tag-neutral"
+            data-check="text"
+            data-testid="ds-tag-neutral"
+            >P · BANF erstellt</span
+          >
+          <span
+            class="xts-tag xts-tag-outline"
+            data-check="text"
+            data-testid="ds-tag-outline"
+            >Entwurf</span
+          >
+        </div>
+      </section>
+
+      <section>
+        <h2 class="xts-heading">Felder</h2>
+        <div class="xts-grid">
+          <div class="xts-cell xts-field">
+            <label for="ds-input">Kommt</label>
+            <input
+              id="ds-input"
+              class="xts-input"
+              value="08:30"
+              data-check="text"
+              data-testid="ds-input"
+            />
+          </div>
+          <div class="xts-cell xts-field">
+            <label for="ds-select" data-check="text" data-testid="ds-label"
+              >Leistungsort</label
+            >
+            <select id="ds-select" class="xts-input" data-testid="ds-select">
+              <option>remote</option>
+              <option>on-site</option>
+            </select>
+          </div>
+          <div class="xts-cell xts-cell-span-2">
+            <button
+              type="button"
+              class="xts-cell-button"
+              aria-pressed="true"
+              data-testid="ds-cell-selected"
+            >
+              <strong>40</strong>
+              <span class="xts-tag xts-tag-accent">F · freigegeben</span>
+            </button>
+          </div>
+        </div>
+      </section>
+
+      <section>
+        <h2 class="xts-heading">Tabelle</h2>
+        <table class="xts-table">
+          <thead>
+            <tr>
+              <th data-check="text" data-testid="ds-th">Mitarbeiter</th>
+              <th>Kontierung</th>
+              <th>Std.</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td data-check="text" data-testid="ds-td">Stephan Schilz</td>
+              <td>700000000004</td>
+              <td>8,0</td>
+            </tr>
+          </tbody>
+        </table>
+      </section>
+
+      <section>
+        <h2 class="xts-heading">Seitenleiste (Farben)</h2>
+        <div class="nav-sample row">
+          <span
+            style="color: var(--xts-color-nav-text)"
+            data-check="text"
+            data-testid="ds-nav-inactive"
+            >Genehmigung</span
+          >
+          <span
+            style="color: var(--xts-color-nav-text-active); font-weight: 600"
+            data-check="text"
+            data-testid="ds-nav-active"
+            >Stundenschreibung</span
+          >
+          <span
+            style="
+              color: var(--xts-color-nav-brand-accent);
+              font-weight: 800;
+              font-size: 18px;
+            "
+            data-check="large"
+            data-testid="ds-nav-brand"
+            >xTS</span
+          >
+        </div>
+      </section>
+    </main>
+  </body>
+</html>
