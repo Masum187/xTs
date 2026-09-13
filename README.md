@@ -80,6 +80,7 @@ npm run test:smoke:v2   # gleiche Specs gegen die SAP-OData-V2-Antwortform (lauf
 
 - Vor lokalem Commit: `npm run precommit` (Format, Lint, Typecheck, Unit- und Contract-Tests)
 - Vor Merge in GitHub: Workflow `xTS CI` (zusaetzlich Doku-Links, Build, Playwright)
+- Build-Budget: `npm run build` ist seit PR #37 ein Produktions-Build (`ng build --configuration production`, Hashing, Budgets). Das Initial-Bundle liegt bei 503 kB; die Warnschwelle wurde von 500 auf 600 kB gesetzt, weil der Build zuvor ohne Budgets lief und die Grenze nie geprueft wurde. Die Erhoehung schafft nur Spielraum, keine Verkleinerung. Folgepunkt: Neubewertung der Schwelle (Ziel wieder 500 kB oder weniger) nach Lazy Loading der Routen in Audit-Schritt 15 Teil B / XTS-154.
 - Merge nach Review-Freigabe per Squash-Merge; Branch Protection auf `main`
 - SAP-Deployment: SAP-Transporte bleiben fuehrend; ABAP-Objekte werden parallel via abapGit versioniert
 
