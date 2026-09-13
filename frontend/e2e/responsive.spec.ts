@@ -4,6 +4,12 @@ import { expect, test } from "./fixtures";
 // Schmale Breiten (Audit Nr. 26): kein horizontales Scrollen der ganzen
 // Seite; breite Tabellen scrollen nur innerhalb ihres Panels.
 
+/** Unter 1024 px liegt die Navigation im modalen Menue (XTS-142). */
+async function openNavIfNarrow(page: Page) {
+  const toggle = page.getByTestId("menu-toggle");
+  if (await toggle.isVisible()) await toggle.click();
+}
+
 async function expectNoHorizontalPageScroll(page: Page, label: string) {
   const widths = await page.evaluate(() => ({
     scroll: document.documentElement.scrollWidth,
@@ -25,6 +31,7 @@ for (const width of [375, 768, 1024]) {
     await expect(page.getByLabel("Stunden").first()).toBeVisible();
     await expectNoHorizontalPageScroll(page, "Stundenschreibung");
 
+    await openNavIfNarrow(page);
     await page
       .getByTestId("persona-select")
       .selectOption("christian.roeper@qualitytimes.de");
@@ -36,6 +43,7 @@ for (const width of [375, 768, 1024]) {
       ["Beauftragung", "Beauftragung", /candidate-list|candidates-empty/],
       ["Verwaltung", "Verwaltung", "rules-list"],
     ] as [string, string, string | RegExp][]) {
+      await openNavIfNarrow(page);
       await page.getByRole("link", { name: link }).click();
       await expect(
         page.getByRole("heading", { name: heading, level: 1, exact: true }),

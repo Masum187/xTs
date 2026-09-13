@@ -9,6 +9,7 @@ import {
 import { FormsModule } from "@angular/forms";
 
 import { AuthService } from "../auth/auth.service";
+import { ApprovalBadgeService } from "../shared/approval-badge.service";
 import { describeApiError } from "../shared/api-error";
 import { BusyState, LoadState } from "../shared/async-state";
 import { LoadStatusComponent } from "../shared/load-status.component";
@@ -33,6 +34,7 @@ import { ApprovalService } from "./approval.service";
 export class ApprovalComponent {
   private readonly approvalService = inject(ApprovalService);
   private readonly auth = inject(AuthService);
+  private readonly badge = inject(ApprovalBadgeService);
 
   protected readonly loader = new LoadState();
   protected readonly busy = new BusyState();
@@ -146,6 +148,8 @@ export class ApprovalComponent {
     this.days.update((days) =>
       days.filter((item) => this.dayKey(item) !== this.dayKey(day)),
     );
+    // Badge in der Navigation aus den Serverdaten nachziehen (XTS-142).
+    void this.badge.refresh(this.auth.profile());
   }
 
   private async load(): Promise<void> {

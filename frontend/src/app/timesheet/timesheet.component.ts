@@ -14,6 +14,7 @@ import { describeApiError } from "../shared/api-error";
 import { BusyState, LoadState } from "../shared/async-state";
 import { LoadStatusComponent } from "../shared/load-status.component";
 import { formatSignedHours } from "../shared/hours";
+import { ApprovalBadgeService } from "../shared/approval-badge.service";
 import { UnsavedChangesService } from "../shared/unsaved-changes.service";
 
 import {
@@ -60,6 +61,7 @@ export class TimesheetComponent {
   private readonly timesheetService = inject(TimesheetService);
   private readonly auth = inject(AuthService);
   private readonly unsaved = inject(UnsavedChangesService);
+  private readonly badge = inject(ApprovalBadgeService);
   /** Version des Tages-Caches, damit `isDirty` nach dem Laden neu rechnet. */
   private readonly cacheVersion = signal(0);
   /** Gespeicherte Tage des geladenen Zeitfensters (Audit Nr. 16). */
@@ -323,6 +325,9 @@ export class TimesheetComponent {
         });
         this.day.set(saved);
         this.message.set("Zur Genehmigung freigegeben.");
+        // Ein freigegebener eigener Tag kann in der eigenen Genehmigungsliste
+        // erscheinen (Genehmiger mit Zustaendigkeit, admin): Badge nachziehen.
+        void this.badge.refresh(this.profile());
       } catch (error) {
         this.message.set(this.saveErrorMessage(error));
       }

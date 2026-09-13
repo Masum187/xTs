@@ -19,14 +19,14 @@ Zweck: Dieses Dokument ist die Abnahmegrundlage fuer jede Story der Epics 15 und
 
 ## 2. Rollen und Navigation (Shell, XTS-142)
 
-| Eintrag           | Sichtbar fuer                     | Route                                             | Guard                                                   |
-| ----------------- | --------------------------------- | ------------------------------------------------- | ------------------------------------------------------- |
-| Stundenschreibung | alle angemeldeten                 | `/`                                               | keiner; `CanDeactivate` bei ungespeicherten Aenderungen |
-| Genehmigung       | `approver`                        | `/approvals`                                      | `roleGuard("approver")`                                 |
-| Reporting         | `approver`, `controller`, `admin` | `/reports`                                        | `roleGuard([approver, controller, admin])`              |
-| Planung           | `planner`                         | `/planning`                                       | `roleGuard("planner")`                                  |
-| Beauftragung      | `planner`                         | `/orders`                                         | `roleGuard("planner")`                                  |
-| Verwaltung        | `admin`                           | `/admin` (kuenftig `/einstellungen` mit Redirect) | `roleGuard("admin")`                                    |
+| Eintrag           | Sichtbar fuer                     | Route                                                                                                                              | Guard                                                   |
+| ----------------- | --------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------- |
+| Stundenschreibung | alle angemeldeten                 | `/`                                                                                                                                | keiner; `CanDeactivate` bei ungespeicherten Aenderungen |
+| Genehmigung       | `approver`                        | `/approvals`                                                                                                                       | `roleGuard("approver")`                                 |
+| Reporting         | `approver`, `controller`, `admin` | `/reports`                                                                                                                         | `roleGuard([approver, controller, admin])`              |
+| Planung           | `planner`                         | `/planning`                                                                                                                        | `roleGuard("planner")`                                  |
+| Beauftragung      | `planner`                         | `/orders`                                                                                                                          | `roleGuard("planner")`                                  |
+| Verwaltung        | `admin`                           | `/admin` (Umbenennung nach `/einstellungen` mit Redirect und Beschriftung "Einstellungen" erst mit XTS-154, bestaetigt 2026-09-13) | `roleGuard("admin")`                                    |
 
 Zustaende der Shell, die im neuen Layout eine Darstellung brauchen (Test-IDs): `auth-loading`, `auth-signed-out`, `auth-not-configured`, `auth-not-mapped` (mit `auth-claims`), `auth-inactive`, `auth-failed`, `access-denied` mit `dismiss-notice` (Rollenhinweis des Guards, bleibt bis zur naechsten Navigation), `not-found` (unbekannte URL mit Weg zurueck), `persona-select` (nur Mock-Modus) und `entra-account` mit `auth-login`/`auth-logout` (Entra-Modus). Der Persona-Wechsel fragt bei ungespeicherten Aenderungen nach und setzt die Auswahl bei Abbruch zurueck. Der Zaehler offener Genehmigungen (Handoff-Badge) ist neu und darf nur aus `ApprovalTimesheets` des angemeldeten Genehmigers stammen; ohne Rolle `approver` entfaellt er.
 
@@ -140,7 +140,7 @@ Grundlage: Audit Nr. 10, 11, 20, 21 (PR #20), umgesetzt mit `LoadState`, `BusySt
 
 1. Diese Baseline wird abgenommen; damit sind O10 und O11 entschieden (oder mit Aenderung festgelegt).
 2. XTS-141 Tokens: alle Screens laufen unveraendert mit Tokens, `npm run ci` und beide Smoke-Laeufe gruen.
-3. XTS-142 Shell: Abschnitt 2 vollstaendig, `responsive.spec.ts` und `auth.spec.ts` gruen.
+3. XTS-142 Shell: Abschnitt 2 vollstaendig, `responsive.spec.ts` und `auth.spec.ts` gruen. Umgesetzt in PR #38 (`shell.spec.ts`: Rollen, Badge, modales Menue, abgebrochene Navigation, Breitenwechsel).
 4. XTS-150 Stundenschreibung: Abschnitt 3.1 vollstaendig, `timesheet.spec.ts`, `errors.spec.ts`, `uat.spec.ts` gruen.
 5. Danach je Story die Abschnitte 3.2 bis 3.6, jeweils nach Abnahme der vorherigen Etappe (Entscheidung 20).
 

@@ -113,17 +113,27 @@ test("Archivo is served locally and applied only via opt-in class", async ({
   expect(family).toContain("Archivo");
 });
 
-test("existing screens do not use the new classes or font yet", async ({
+test("screen contents do not use the new classes or font yet", async ({
   page,
 }) => {
+  // Seit XTS-142 nutzt nur die Shell (Seitenleiste, Kopfzeile) Tokens und
+  // Archivo; der Inhaltsbereich bleibt bis zur jeweiligen Screen-Migration
+  // unveraendert.
   await page.goto("/");
   await expect(page.getByTestId("profile")).toContainText("Stephan Schilz");
-  const usage = await page.evaluate(() => ({
-    classes: document.querySelectorAll('[class*="xts-"]').length,
-    bodyFont: getComputedStyle(document.body).fontFamily,
-  }));
+  const usage = await page.evaluate(() => {
+    const main = document.querySelector("main")!;
+    return {
+      classes: main.querySelectorAll('[class*="xts-"]').length,
+      mainFont: getComputedStyle(main).fontFamily,
+      shellFont: getComputedStyle(
+        document.querySelector('[data-testid="sidebar"]')!,
+      ).fontFamily,
+    };
+  });
   expect(usage.classes).toBe(0);
-  expect(usage.bodyFont).toContain("Inter");
+  expect(usage.mainFont).toContain("Inter");
+  expect(usage.shellFont).toContain("Archivo");
 });
 
 test("grid columns and field bounds hold at 375, 600, 768 and 1024 px", async ({
