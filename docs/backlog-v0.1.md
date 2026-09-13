@@ -816,7 +816,7 @@ Prioritaet: P1
 
 Rolle: Alle Rollen
 
-Jira: XTS-91 (Label `redesign`); Grundlage: `ui-redesign-bewertung.md`. Abhaengig von XTS-141.
+Jira: XTS-91 (Label `redesign`); Grundlage: `ui-redesign-bewertung.md`. Abhaengig von XTS-141. Status: freigegeben 2026-09-13, umgesetzt in PR #38. Abweichung (bestaetigt): Route `/admin` und Beschriftung "Verwaltung" bleiben bis XTS-154, dort entstehen Kindrouten, Redirect und die Beschriftung "Einstellungen". Reporting bleibt fuer `approver`, `controller` und `admin` sichtbar (Bestand aus Entscheidung 19).
 
 Akzeptanzkriterien:
 
