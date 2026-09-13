@@ -141,7 +141,7 @@ Grundlage: Audit Nr. 10, 11, 20, 21 (PR #20), umgesetzt mit `LoadState`, `BusySt
 1. Diese Baseline wird abgenommen; damit sind O10 und O11 entschieden (oder mit Aenderung festgelegt).
 2. XTS-141 Tokens: alle Screens laufen unveraendert mit Tokens, `npm run ci` und beide Smoke-Laeufe gruen.
 3. XTS-142 Shell: Abschnitt 2 vollstaendig, `responsive.spec.ts` und `auth.spec.ts` gruen. Umgesetzt in PR #38 (`shell.spec.ts`: Rollen, Badge, modales Menue, abgebrochene Navigation, Breitenwechsel).
-4. XTS-150 Stundenschreibung: Abschnitt 3.1 vollstaendig, `timesheet.spec.ts`, `errors.spec.ts`, `uat.spec.ts` gruen.
+4. XTS-150 Stundenschreibung: Abschnitt 3.1 vollstaendig, `timesheet.spec.ts`, `errors.spec.ts`, `uat.spec.ts` gruen. Umgesetzt in PR #39 (`timesheet-layout.spec.ts`: 375/768/1024/1280 px mit langen Texten, mehrzeiligen Meldungen, Halbzellen nebeneinander ab 1280 px, darunter untereinander; Fokusring). Abweichungen: H1 ist das Datum, "Stundenschreibung" bleibt als H2 fuer die Orientierung; Kontingentzeile "X von Y Std. offen" mit Gueltigkeit und "nicht buchbar".
 5. Danach je Story die Abschnitte 3.2 bis 3.6, jeweils nach Abnahme der vorherigen Etappe (Entscheidung 20).
 
 Jede Story fuehrt am Ende ihres PR-Textes die Checkliste des Screens mit Haken und nennt begruendete Abweichungen; diese werden hier unter "Handoff-Abweichung" ergaenzt.
