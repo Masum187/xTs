@@ -14,7 +14,17 @@ const LONG_ERROR =
   "Wareneingang konnte nicht gebucht werden: Die Bestellung 4500001234 ist für die Buchungsperiode 04/2026 gesperrt. Bitte die Periode im Einkauf öffnen lassen und den Vorgang anschließend erneut auslösen. Referenz: SAP-Meldung M7 053 (Buchung nur in Periode 05/2026 möglich).";
 const LONG_DAY = "2026-04-16";
 // Werktage im April 2026 ohne Kollision mit Fixtures und anderen Specs.
-const EXTRA_DAYS = ["2026-04-20", "2026-04-21", "2026-04-22", "2026-04-23"];
+const EXTRA_DAYS = [
+  "2026-04-13",
+  "2026-04-14",
+  "2026-04-15",
+  "2026-04-17",
+  "2026-04-20",
+  "2026-04-21",
+  "2026-04-22",
+  "2026-04-23",
+  "2026-04-24",
+];
 
 async function seed(page: Page) {
   const request = page.request;
@@ -260,11 +270,23 @@ test("a rejection reason stays with its day and actions lock selection and filte
   await expect(page.getByLabel("Rückweisungsgrund")).toHaveValue("");
   await page.getByRole("button", { name: "Abbrechen" }).click();
 
+  // Auswahlwechsel durch Filter verwirft den Grund ebenfalls.
+  await page.getByTestId(dayA).click();
+  await page.getByTestId(`reject-SCHILZ-${LONG_DAY}`).click();
+  await page.getByLabel("Rückweisungsgrund").fill("Vor dem Filterwechsel.");
+  await page.getByLabel("Mitarbeiter").selectOption("ROEPER");
+  await expect(page.getByTestId(dayA)).toHaveCount(0);
+  await page.getByLabel("Mitarbeiter").selectOption("SCHILZ");
+  await page.getByTestId(dayA).click();
+  await expect(page.getByLabel("Rückweisungsgrund")).toHaveCount(0);
+  await expect(page.getByTestId(`reject-SCHILZ-${LONG_DAY}`)).toBeVisible();
+
   // Waehrend der Aktion sind Auswahl und Filter gesperrt.
   await page.route(`${API}/TimesheetApprovals`, async (route) => {
     await new Promise((resolve) => setTimeout(resolve, 1200));
     await route.continue();
   });
+  await page.getByTestId(dayB).click();
   await page.getByTestId(`approve-SCHILZ-${EXTRA_DAYS[0]}`).click();
   await expect(page.getByTestId(dayA)).toBeDisabled();
   await expect(page.getByLabel("Leistungsmonat")).toBeDisabled();
@@ -282,6 +304,21 @@ test("selection works by keyboard and stays reachable on narrow views", async ({
   await openApprovals(page);
   const list = page.getByTestId("approval-list");
   const entries = list.getByRole("button");
+  const detail = page.getByTestId("approval-detail");
+  const detailVisible = async () => {
+    const box = await detail.boundingBox();
+    return box !== null && box.y >= 0 && box.y + 200 <= 640;
+  };
+
+  // Vorausgewaehlter erster Eintrag: der Klick fuehrt zum Detail, das bei
+  // langer Liste zunaechst unterhalb des Viewports liegt.
+  expect(await entries.count()).toBeGreaterThanOrEqual(12);
+  await expect(entries.first()).toHaveAttribute("aria-current", "true");
+  expect(await detailVisible()).toBe(false);
+  await entries.first().click();
+  await expect.poll(detailVisible).toBe(true);
+  await page.evaluate(() => window.scrollTo(0, 0));
+
   await entries.first().focus();
   await page.keyboard.press("Tab");
   await expect(entries.nth(1)).toBeFocused();
@@ -298,11 +335,6 @@ test("selection works by keyboard and stays reachable on narrow views", async ({
   await last.scrollIntoViewIfNeeded();
   await last.click();
   await expect(last).toHaveAttribute("aria-current", "true");
-  await expect
-    .poll(async () => {
-      const box = await page.getByTestId("approval-detail").boundingBox();
-      return box !== null && box.y >= 0 && box.y < 640;
-    })
-    .toBe(true);
+  await expect.poll(detailVisible).toBe(true);
   await expectContained(page, "375 px: Auswahl");
 });

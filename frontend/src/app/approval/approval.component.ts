@@ -3,6 +3,7 @@ import type { ElementRef } from "@angular/core";
 import {
   Component,
   computed,
+  effect,
   inject,
   linkedSignal,
   signal,
@@ -86,6 +87,15 @@ export class ApprovalComponent {
   private readonly detail = viewChild<ElementRef<HTMLElement>>("detail");
 
   constructor() {
+    // Jeder tatsaechliche Auswahlwechsel, auch durch Filter oder Nachladen,
+    // verwirft einen begonnenen Rueckweisungsgrund; er bleibt nur, solange
+    // sein Tag ausgewaehlt ist (Serverfehler lassen die Auswahl stehen).
+    effect(() => {
+      const selected = this.selectedKey();
+      if (this.rejectingKey() && this.rejectingKey() !== selected) {
+        this.cancelReject();
+      }
+    });
     void this.load();
   }
 
@@ -130,15 +140,12 @@ export class ApprovalComponent {
 
   /**
    * Tag in der Liste auswaehlen. Waehrend einer Aktion gesperrt, damit der
-   * sichtbare Tag zur laufenden Aktion passt. Ein begonnener
-   * Rueckweisungsgrund bleibt an seinem Tag und wird nicht uebernommen.
+   * sichtbare Tag zur laufenden Aktion passt. Auch der bereits ausgewaehlte
+   * (z. B. vorausgewaehlte) Tag fuehrt zum Detail.
    */
   protected select(day: ApprovalDay): void {
     if (this.busy.active()) return;
-    const key = this.dayKey(day);
-    if (key === this.selectedKey()) return;
-    this.selectedKey.set(key);
-    if (this.rejectingKey() && this.rejectingKey() !== key) this.cancelReject();
+    this.selectedKey.set(this.dayKey(day));
     this.revealDetail();
   }
 
