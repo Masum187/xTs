@@ -1,24 +1,41 @@
+/*
+  Stundenschreibung im Werkbank-Raster (XTS-150, Baseline Abschnitt 3.1).
+  Nur Tokens und Bausteine aus design-system.css; Breakpoints sind hier
+  screen-lokal: vier Spalten erst ab 1280 px (Seitenleiste 240 px plus
+  Inhalt), darunter zwei, unter 480 px eine. Die Halbzellen Kontingente und
+  Leistungspositionen wechseln unter 1280 px untereinander.
+*/
+.timesheet {
+  color: var(--xts-color-text);
+}
+
 .page-header {
   align-items: flex-end;
+  border-bottom: var(--xts-rule-strong) solid var(--xts-color-divider);
   display: flex;
   flex-wrap: wrap;
   gap: 12px;
   justify-content: space-between;
-  margin-bottom: 20px;
+  margin-bottom: 16px;
+  padding-bottom: 12px;
 }
 
-.eyebrow {
-  color: #60718f;
-  font-size: 13px;
-  font-weight: 700;
-  letter-spacing: 0;
+.xts-kicker {
   margin: 0 0 4px;
-  text-transform: uppercase;
 }
 
-h1,
-h2 {
+.day-title {
+  font-size: 26px;
   margin: 0;
+  text-transform: capitalize;
+}
+
+.screen-name {
+  color: var(--xts-color-text-muted);
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: var(--xts-font-weight-regular);
+  margin: 4px 0 0;
 }
 
 .profile {
@@ -26,219 +43,248 @@ h2 {
 }
 
 .profile span {
-  color: #60718f;
   display: block;
   font-size: 13px;
 }
 
-.panel {
-  background: #ffffff;
-  border: 1px solid #d9e1ee;
-  border-radius: 8px;
-  margin-bottom: 16px;
-  padding: 18px;
+.day-nav {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px 24px;
+  justify-content: space-between;
+  margin-bottom: 12px;
 }
 
-.grid {
-  display: grid;
-  gap: 14px;
-  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+.day-controls {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
 }
 
-label {
-  color: #465873;
-  display: grid;
+.date-input {
+  width: auto;
+}
+
+.totals {
+  color: var(--xts-color-text-muted);
+  display: flex;
+  flex-wrap: wrap;
   font-size: 13px;
-  font-weight: 700;
   gap: 6px;
 }
 
-input,
-select {
-  border: 1px solid #cbd6e6;
-  border-radius: 6px;
-  min-height: 36px;
-  padding: 0 10px;
+.totals strong {
+  color: var(--xts-color-text);
+  margin-left: 4px;
 }
 
-.section-title,
-.actions,
-.summary {
-  align-items: center;
+.totals .variance-off strong {
+  color: var(--xts-color-accent-text);
+}
+
+/* Hinweise: volle Breite ueber dem Raster */
+.notice {
+  border-left: 3px solid var(--xts-color-divider);
   display: flex;
-  gap: 12px;
-  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 0 0 12px;
+  padding: 12px 16px;
+}
+
+.notice p {
+  flex-basis: 100%;
+  font-size: 13px;
+  margin: 4px 0 0;
+}
+
+.notice-warn {
+  background: var(--xts-color-accent-100);
+  border-left-color: var(--xts-color-accent-600);
+}
+
+.notice-hint {
+  background: var(--xts-color-surface);
+  color: var(--xts-color-text-muted);
+  font-size: 13px;
+}
+
+.notice-error {
+  background: var(--xts-color-accent-100);
+  border-left-color: var(--xts-color-accent-700);
+  color: var(--xts-color-accent-text);
+}
+
+.notice-error p {
+  color: var(--xts-color-accent-text);
+}
+
+/* Raster: screen-lokale Spaltenzahl, Bausteine bleiben unveraendert. */
+.ts-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  margin-bottom: 16px;
+}
+
+@media (min-width: 1280px) {
+  .ts-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 480px) {
+  .ts-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+.xts-field > label {
+  color: var(--xts-color-text-muted);
+  display: grid;
+  font-size: 12px;
+  gap: 5px;
+  margin: 0;
+}
+
+.ts-half {
+  min-width: 0;
+}
+
+.cell-title {
+  font-family: var(--xts-font-heading);
+  font-size: 15px;
+  font-weight: var(--xts-font-weight-heading);
+  margin: 0 0 10px;
 }
 
 .lines {
   display: grid;
-  gap: 10px;
-  margin-top: 16px;
+  gap: 8px;
 }
 
 .line-row {
   align-items: center;
   display: grid;
   gap: 10px;
-  grid-template-columns: 160px 1fr minmax(120px, auto) auto;
+  min-width: 0;
 }
 
-.line-row.blocked {
-  color: #8a94a6;
+.quota-row {
+  grid-template-columns: minmax(0, 120px) minmax(0, 1fr);
+  padding: 6px 0;
+  border-bottom: var(--xts-rule-fine) solid var(--xts-color-divider);
+}
+
+.quota-row .quota-hours {
+  grid-column: 1 / -1;
+  font-size: 13px;
+}
+
+.quota-row.blocked {
+  color: var(--xts-color-neutral-700);
+}
+
+.quota-row.blocked .mono {
+  text-decoration: line-through;
+}
+
+.validity {
+  margin-left: 4px;
 }
 
 .blocked-hint {
-  color: #a3392f;
+  color: var(--xts-color-accent-text);
   font-style: normal;
-  font-weight: 700;
+  font-weight: var(--xts-font-weight-semibold);
   margin-left: 6px;
 }
 
+.position-row {
+  grid-template-columns: minmax(0, 120px) minmax(0, 1fr) 84px auto;
+}
+
+.hours-input {
+  min-width: 0;
+}
+
+.mono {
+  font-variant-numeric: tabular-nums;
+  overflow-wrap: anywhere;
+}
+
+.wrap-anywhere {
+  overflow-wrap: anywhere;
+}
+
 .empty-hint {
-  color: #60718f;
   font-size: 13px;
   margin: 0;
 }
 
-.day-nav {
-  align-items: center;
-  display: flex;
-  gap: 12px;
-}
-
-.status-badge {
-  background: #eef3fa;
-  border: 1px solid #cbd6e6;
-  border-radius: 999px;
-  color: #174b86;
-  font-size: 13px;
-  font-weight: 700;
-  margin-left: auto;
-  padding: 6px 14px;
-}
-
-.rejection {
-  background: #fdf3f2;
-  border-color: #e6b8b2;
-  color: #7c2d24;
-}
-
-.rejection p {
-  color: #7c2d24;
-  font-size: 13px;
-  margin: 8px 0 0;
-}
-
-.summary {
-  border-top: 1px solid #e5ebf4;
-  margin-top: 16px;
-  padding-top: 14px;
-}
-
-.actions {
-  justify-content: flex-start;
-}
-
-button {
-  background: #174b86;
-  border: 0;
-  border-radius: 6px;
-  color: #ffffff;
-  cursor: pointer;
-  min-height: 38px;
-  padding: 0 14px;
-}
-
-button:disabled {
-  background: #a7b5c8;
-  cursor: not-allowed;
-}
-
-.message {
-  color: #23653b;
-  font-weight: 700;
-}
-
-.problems {
-  background: #fdf3f2;
-  border: 1px solid #e6b8b2;
-  border-radius: 6px;
-  color: #7c2d24;
-  font-size: 13px;
-  margin: 12px 0 0;
-  padding: 10px 14px 10px 28px;
-}
-
-.worktime {
-  border-top: 1px solid #e5ebf4;
-  color: #465873;
-  display: flex;
-  flex-wrap: wrap;
-  font-size: 13px;
-  gap: 24px;
-  margin-top: 14px;
-  padding-top: 12px;
-}
-
-.worktime strong {
-  color: #172033;
-  margin-left: 6px;
-}
-
-.worktime .variance-off strong {
-  color: #8a5a12;
-}
-
-.variance-reason {
-  margin-top: 12px;
-}
-
-/* Hinweis: Tag ausserhalb des erfassbaren Zeitraums (Entscheidung 18). */
-.hint-panel {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.5rem;
-  border-left: 4px solid #b26a00;
-  background: #fff7e6;
-}
-
-/* Ungespeicherte Aenderungen (Audit Nr. 19). */
-.unsaved-hint {
-  color: #b26a00;
-  font-style: normal;
-  font-weight: 600;
-}
-
-/* Schmale Breiten (Audit Nr. 26): Positionen und Kopfzeilen stapeln. */
-@media (max-width: 640px) {
-  .day-nav,
-  .worktime,
-  .section-title,
-  .actions,
-  .summary {
-    flex-wrap: wrap;
-  }
-
-  .line-row {
-    grid-template-columns: 1fr;
-  }
-
-  .line-row input,
-  .line-row select {
-    min-width: 0;
-    width: 100%;
-  }
-}
-
-.section-title > div {
+.add-row {
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
-  max-width: 100%;
+  margin-top: 10px;
+}
+
+.add-row select {
+  flex: 1 1 220px;
   min-width: 0;
 }
 
-.section-title > div select {
-  flex: 1 1 200px;
+.problems {
+  background: var(--xts-color-accent-100);
+  border-left: 3px solid var(--xts-color-accent-700);
+  color: var(--xts-color-accent-text);
+  font-size: 13px;
+  margin: 12px 0 0;
+  overflow-wrap: anywhere;
+  padding: 10px 14px 10px 28px;
+}
+
+.summary {
+  align-items: center;
+  border-top: var(--xts-rule-fine) solid var(--xts-color-divider);
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  justify-content: space-between;
+  margin-top: 12px;
+  padding-top: 10px;
+}
+
+.unsaved-hint {
+  color: var(--xts-color-accent-text);
+  font-style: normal;
+  font-weight: var(--xts-font-weight-semibold);
+}
+
+.actions {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.message {
+  color: var(--xts-color-text);
+  font-weight: var(--xts-font-weight-semibold);
   min-width: 0;
+}
+
+/* Schmale Inhaltsbreite: Positionszeilen stapeln. */
+@media (max-width: 720px) {
+  .position-row {
+    grid-template-columns: minmax(0, 1fr) 84px auto;
+  }
+
+  .position-row .mono {
+    grid-column: 1 / -1;
+  }
+
+  .quota-row {
+    grid-template-columns: minmax(0, 1fr);
+  }
 }

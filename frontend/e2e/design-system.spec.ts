@@ -113,14 +113,20 @@ test("Archivo is served locally and applied only via opt-in class", async ({
   expect(family).toContain("Archivo");
 });
 
-test("screen contents do not use the new classes or font yet", async ({
+test("unmigrated screens do not use the new classes or font yet", async ({
   page,
 }) => {
-  // Seit XTS-142 nutzt nur die Shell (Seitenleiste, Kopfzeile) Tokens und
-  // Archivo; der Inhaltsbereich bleibt bis zur jeweiligen Screen-Migration
-  // unveraendert.
+  // Tokens und Archivo gelten in der Shell (XTS-142) und in migrierten
+  // Screens (XTS-150 Stundenschreibung); alle anderen Screens bleiben bis zu
+  // ihrer Migration unveraendert. Geprueft an der Genehmigung.
   await page.goto("/");
-  await expect(page.getByTestId("profile")).toContainText("Stephan Schilz");
+  await page
+    .getByTestId("persona-select")
+    .selectOption("christian.roeper@qualitytimes.de");
+  await page.getByRole("link", { name: "Genehmigung" }).click();
+  await expect(
+    page.getByRole("heading", { name: "Genehmigung" }),
+  ).toBeVisible();
   const usage = await page.evaluate(() => {
     const main = document.querySelector("main")!;
     return {

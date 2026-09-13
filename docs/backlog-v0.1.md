@@ -835,7 +835,7 @@ Prioritaet: P1
 
 Rolle: xTS User
 
-Jira: XTS-92 (Label `redesign`); Grundlage: `ui-redesign-bewertung.md`.
+Jira: XTS-92 (Label `redesign`); Grundlage: `ui-redesign-bewertung.md`. Status: freigegeben 2026-09-13, umgesetzt in PR #39 (Template und Styles; Logik, Zustaende und Test-IDs unveraendert; Raster screen-lokal: vier Spalten ab 1280 px, zwei darunter, eine unter 480 px; Kontingente und Positionen wechseln unter 1280 px untereinander).
 
 Akzeptanzkriterien:
 
