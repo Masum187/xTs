@@ -108,12 +108,16 @@ test("approvers see work time and explained variances", async ({
     .getByTestId("persona-select")
     .selectOption("christian.roeper@qualitytimes.de");
   await page.getByRole("link", { name: "Genehmigung" }).click();
+  // XTS-151: Arbeitszeit und Abweichung stehen im Detail des gewaehlten Tags.
+  await page.getByTestId("approval-SCHILZ-2026-04-05").click();
   await expect(page.getByTestId("worktime-SCHILZ-2026-04-05")).toContainText(
     "08:00–16:30 · Pause 30 Min. · Arbeitszeit 8 Std.",
   );
   await expect(page.getByTestId("variance-SCHILZ-2026-04-05")).toContainText(
     "Abweichung −2 Std. · Anreise zum Kunden",
   );
+  await page.getByTestId("approval-SCHILZ-2026-04-08").click();
+  await expect(page.getByTestId("worktime-SCHILZ-2026-04-08")).toBeVisible();
   await expect(page.getByTestId("variance-SCHILZ-2026-04-08")).toHaveCount(0);
 });
 

@@ -103,6 +103,7 @@ test("approval badge follows approvals and own submissions", async ({
   const before = Number(await badge.textContent());
 
   await page.getByRole("link", { name: "Genehmigung" }).click();
+  await page.getByTestId("approval-SCHILZ-2026-04-08").click();
   await page.getByTestId("approve-SCHILZ-2026-04-08").click();
   await expect(page.getByTestId("approval-message")).toContainText(
     "Wareneingang",

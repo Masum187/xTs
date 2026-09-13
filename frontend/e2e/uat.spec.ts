@@ -71,6 +71,7 @@ test("UAT-Fall A: Planung bis Genehmigung und Wareneingang", async ({
   // Schritt 7: Genehmigung mit Wareneingang
   await switchPersona(page, ROEPER, "Christian Roeper");
   await page.getByRole("link", { name: "Genehmigung" }).click();
+  await page.getByTestId("approval-SCHILZ-2026-05-05").click();
   await page.getByTestId("approve-SCHILZ-2026-05-05").click();
   await expect(page.getByTestId("approval-message")).toContainText(
     "Wareneingang WE-000001",
@@ -125,6 +126,7 @@ test("UAT-Fall B: Rückweisung, Korrektur, erneute Rückweisung", async ({
   // Schritt 3–4: erneute Rueckweisung mit Grund
   await switchPersona(page, ROEPER, "Christian Roeper");
   await page.getByRole("link", { name: "Genehmigung" }).click();
+  await page.getByTestId("approval-SCHILZ-2026-04-10").click();
   await page.getByTestId("reject-SCHILZ-2026-04-10").click();
   await expect(page.getByTestId("confirm-reject")).toBeDisabled();
   await page

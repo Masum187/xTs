@@ -30,24 +30,30 @@ test("filters, approves and rejects submitted days", async ({
     page.getByRole("heading", { name: "Genehmigung" }),
   ).toBeVisible();
 
+  // XTS-151: Listeneintraege sind Auswahlbuttons, das Detail zeigt den
+  // ausgewaehlten Tag mit seinen Aktionen.
   const list = page.getByTestId("approval-list");
-  await expect(list.locator("article")).toHaveCount(4);
+  const entries = list.getByRole("button");
+  await expect(entries).toHaveCount(4);
+  await page.getByTestId("approval-ROEPER-2026-04-08").click();
   await expect(page.getByTestId("own-day-ROEPER-2026-04-08")).toBeVisible();
   await expect(page.getByTestId("approve-ROEPER-2026-04-08")).toHaveCount(0);
 
   await page.getByLabel("Mitarbeiter").selectOption("ROEPER");
-  await expect(list.locator("article")).toHaveCount(2);
+  await expect(entries).toHaveCount(2);
   await page.getByLabel("Leistungsmonat").selectOption("2026-03");
-  await expect(list.locator("article")).toHaveCount(1);
+  await expect(entries).toHaveCount(1);
   await page.getByLabel("Leistungsmonat").selectOption("");
   await page.getByLabel("Mitarbeiter").selectOption("");
 
+  await page.getByTestId("approval-SCHILZ-2026-04-08").click();
   await page.getByTestId("approve-SCHILZ-2026-04-08").click();
   await expect(page.getByTestId("approval-message")).toContainText(
     "Wareneingang WE-",
   );
-  await expect(list.locator("article")).toHaveCount(3);
+  await expect(entries).toHaveCount(3);
 
+  await page.getByTestId("approval-SCHILZ-2026-04-01").click();
   await page.getByTestId("reject-SCHILZ-2026-04-01").click();
   await expect(page.getByTestId("confirm-reject")).toBeDisabled();
   await page
@@ -57,7 +63,7 @@ test("filters, approves and rejects submitted days", async ({
   await expect(page.getByTestId("approval-message")).toContainText(
     "zurückgewiesen",
   );
-  await expect(list.locator("article")).toHaveCount(2);
+  await expect(entries).toHaveCount(2);
 });
 
 test("approved day is locked in the timesheet view", async ({
@@ -131,9 +137,11 @@ test("approvers see only days on their cost objects, with all lines of the day",
   await expect(card).toBeVisible();
   await expect(page.getByTestId("approval-ROEPER-2026-03-31")).toHaveCount(0);
   await expect(page.getByTestId("approval-ROEPER-2026-04-08")).toHaveCount(0);
-  // Alle Positionen bleiben sichtbar, fremde sind markiert.
-  await expect(card).toContainText("Support");
-  await expect(card).toContainText("nicht in Ihrer Zuständigkeit");
+  // Alle Positionen bleiben im Detail sichtbar, fremde sind markiert.
+  await card.click();
+  const detail = page.getByTestId("approval-detail");
+  await expect(detail).toContainText("Support");
+  await expect(detail).toContainText("nicht in Ihrer Zuständigkeit");
   await expect(page.getByTestId("scope-note-SCHILZ-2026-04-12")).toBeVisible();
 
   // Fremder Tag: der Server lehnt ab.
@@ -185,11 +193,12 @@ test("special characters and long texts are rendered unchanged as text", async (
     .getByTestId("persona-select")
     .selectOption("christian.roeper@qualitytimes.de");
   await page.getByRole("link", { name: "Genehmigung" }).click();
-  const card = page.getByTestId("approval-ROEPER-2026-04-08");
-  await expect(card).toContainText("Übergabe (ÄÖÜ äöü ß)");
-  await expect(card).toContainText("<script>alert('xTS')</script>");
-  await expect(card).toContainText('"Anführungszeichen"');
-  await expect(card.locator("script")).toHaveCount(0);
+  await page.getByTestId("approval-ROEPER-2026-04-08").click();
+  const detail = page.getByTestId("approval-detail");
+  await expect(detail).toContainText("Übergabe (ÄÖÜ äöü ß)");
+  await expect(detail).toContainText("<script>alert('xTS')</script>");
+  await expect(detail).toContainText('"Anführungszeichen"');
+  await expect(detail.locator("script")).toHaveCount(0);
 
   // Teamname mit Sonderzeichen in der Auswahl des Reportings.
   await page.getByRole("link", { name: "Reporting" }).click();

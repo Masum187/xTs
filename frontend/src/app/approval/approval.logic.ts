@@ -21,6 +21,25 @@ export function uniqueEmployees(
     .sort((a, b) => a.displayName.localeCompare(b.displayName));
 }
 
+/**
+ * Gueltige Auswahl fuer eine Liste (XTS-151): die bisherige, solange sie in
+ * der Liste steht, sonst der erste Eintrag, bei leerer Liste keine.
+ */
+export function keepSelection(keys: string[], current: string): string {
+  return keys.includes(current) ? current : (keys[0] ?? "");
+}
+
+/**
+ * Auswahl nach einer erfolgreichen Aktion (XTS-151): der naechste Eintrag
+ * der aktuellen Reihenfolge, beim letzten der vorherige, bei leerer Liste
+ * keine Auswahl. `keys` ist die Reihenfolge vor dem Entfernen.
+ */
+export function nextSelectionAfter(keys: string[], removed: string): string {
+  const index = keys.indexOf(removed);
+  if (index < 0) return keys[0] ?? "";
+  return keys[index + 1] ?? keys[index - 1] ?? "";
+}
+
 export function filterApprovals(
   days: ApprovalDay[],
   month: string,
