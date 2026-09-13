@@ -17,6 +17,7 @@ Dieser Ordner enthaelt die Konzept-Baseline (v0.1, Stand 2026-05-08) und die sei
 | `audit-2026-09-03.md`                   | Audit des Stunden-Tools: Befunde mit Fundstellen, Luecken, priorisierte Stabilisierungsschritte.                                                                   |
 | `ui-redesign-bewertung.md`              | Bewertung des UI-Redesign-Handoffs (Modernist): Erhaltungsliste, Konflikte K1 bis K8, Backlog- und Jira-Zuordnung, Reihenfolge.                                    |
 | `design-baseline-xts-140.md`            | Design-Baseline und Funktionsabgleich (XTS-140): Grundregeln, Checkliste je Screen mit Test-IDs, Vorschlaege zu Breiten, Kontrast und Schrift, Abnahmereihenfolge. |
+| `design-tokens.md`                      | Design-Tokens, UI-Bausteine, gemessene Kontraste und Schriftbereitstellung (XTS-141); Bereitstellung ohne Anwendung in den Screens.                                |
 
 ## Empfohlene Reihenfolge fuer neue Beteiligte
 

@@ -1,0 +1,349 @@
+/*
+  Design-System "Modernist" (XTS-141, Entscheidungen 20/21, Baseline XTS-140).
+
+  Nur Bereitstellung: Tokens als CSS-Variablen, Schrift per @font-face und
+  UI-Bausteine als opt-in-Klassen mit Praefix `xts-`. Es gibt bewusst keine
+  Element-Selektoren (body, h1, button ...), damit die bestehenden Screens
+  unveraendert bleiben, bis eine Story sie migriert (XTS-142, XTS-150 ff.).
+  Kontrastwerte: docs/design-tokens.md; Pruefung: e2e/design-system.spec.ts
+  auf /assets/design-system/index.html.
+*/
+
+:root {
+  /* Grundfarben */
+  --xts-color-bg: #f3f2f2;
+  --xts-color-surface: #eae9e9;
+  --xts-color-text: #201e1d;
+  /* Gedaempfter Text: Neutral-700, 5,8:1 auf bg (Handoff nutzt 55 % Ink,
+     das liegt unter 4,5:1 und wird fuer Text nicht verwendet). */
+  --xts-color-text-muted: #605d5d;
+  --xts-color-accent: #ec3013;
+  --xts-color-accent-text: #ae1800;
+  --xts-color-divider: color-mix(in srgb, #201e1d 40%, transparent);
+  --xts-color-focus: #ec3013;
+
+  /* Neutral-Ramp */
+  --xts-color-neutral-100: #f8f4f4;
+  --xts-color-neutral-200: #eae7e7;
+  --xts-color-neutral-300: #d7d3d3;
+  --xts-color-neutral-400: #bab6b6;
+  --xts-color-neutral-500: #9b9797;
+  --xts-color-neutral-600: #7d7979;
+  --xts-color-neutral-700: #605d5d;
+  --xts-color-neutral-800: #444141;
+  --xts-color-neutral-900: #2d2b2b;
+
+  /* Akzent-Ramp */
+  --xts-color-accent-100: #fff2ef;
+  --xts-color-accent-200: #ffe0d9;
+  --xts-color-accent-300: #ffc4b8;
+  --xts-color-accent-400: #ff9783;
+  --xts-color-accent-500: #ff563c;
+  --xts-color-accent-600: #dd2b0f;
+  --xts-color-accent-700: #ae1800;
+  --xts-color-accent-800: #7c1405;
+  --xts-color-accent-900: #4d170e;
+
+  /* Seitenleiste (XTS-142): dunkler Grund, helle Texte */
+  --xts-color-nav-bg: #2d2b2b;
+  --xts-color-nav-text: #bab6b6;
+  --xts-color-nav-text-active: #ffffff;
+  --xts-color-nav-rule: #605d5d;
+  --xts-color-nav-brand-accent: #ff563c;
+
+  /* Typografie */
+  --xts-font-heading: "Archivo", system-ui, sans-serif;
+  --xts-font-body: "Archivo", system-ui, sans-serif;
+  --xts-font-weight-regular: 400;
+  --xts-font-weight-semibold: 600;
+  --xts-font-weight-heading: 800;
+  --xts-font-size-body: 15px;
+  --xts-line-height-body: 1.55;
+
+  /* Abstaende und Linien */
+  --xts-space-1: 4px;
+  --xts-space-2: 8px;
+  --xts-space-3: 12px;
+  --xts-space-4: 16px;
+  --xts-space-6: 24px;
+  --xts-space-8: 32px;
+  --xts-radius: 0px;
+  --xts-rule-strong: 2px;
+  --xts-rule-fine: 1px;
+
+  /* Schatten */
+  --xts-shadow-sm: 0 1px 2px color-mix(in srgb, #2d2b2b 14%, transparent);
+  --xts-shadow-md: 0 3px 10px color-mix(in srgb, #2d2b2b 16%, transparent);
+  --xts-shadow-lg: 0 12px 32px color-mix(in srgb, #2d2b2b 22%, transparent);
+}
+
+/* Schrift (Entscheidung 21, O11): lokal, mit Fallback und swap. */
+@font-face {
+  font-family: "Archivo";
+  font-style: normal;
+  font-weight: 100 900;
+  font-stretch: 62% 125%;
+  font-display: swap;
+  src: url("/assets/fonts/archivo/Archivo-Variable.ttf") format("truetype");
+}
+
+/* Opt-in: Schrift und Grundfarben nur dort, wo eine Story sie anwendet. */
+.xts-font {
+  font-family: var(--xts-font-body);
+  font-size: var(--xts-font-size-body);
+  line-height: var(--xts-line-height-body);
+  font-weight: var(--xts-font-weight-regular);
+  color: var(--xts-color-text);
+}
+
+.xts-heading {
+  font-family: var(--xts-font-heading);
+  font-weight: var(--xts-font-weight-heading);
+  line-height: 1.12;
+  letter-spacing: -0.015em;
+  margin: 0 0 var(--xts-space-2);
+}
+
+.xts-kicker {
+  color: var(--xts-color-accent-text);
+  font-size: 13px;
+  font-weight: var(--xts-font-weight-semibold);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.xts-text-muted {
+  color: var(--xts-color-text-muted);
+}
+
+/* Linien */
+.xts-hr {
+  background: var(--xts-color-divider);
+  border: 0;
+  height: var(--xts-rule-strong);
+  margin: var(--xts-space-4) 0;
+}
+
+/* Buttons */
+.xts-btn {
+  align-items: center;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: var(--xts-radius);
+  box-sizing: border-box;
+  color: var(--xts-color-text);
+  cursor: pointer;
+  display: inline-flex;
+  font-family: var(--xts-font-heading);
+  font-size: 14px;
+  font-weight: var(--xts-font-weight-heading);
+  gap: 6px;
+  justify-content: center;
+  line-height: 1.2;
+  padding: var(--xts-space-2) calc(var(--xts-space-3) * 1.2);
+  text-decoration: none;
+}
+
+.xts-btn:disabled {
+  cursor: not-allowed;
+  opacity: 0.45;
+}
+
+/* Primaer: Akzent-700 statt 500 (Handoff), weil 14px-Text auf #ec3013 nur
+   3,8:1 erreicht; #ffffff auf #ae1800 liegt bei 7,2:1. */
+.xts-btn-primary {
+  background: var(--xts-color-accent-700);
+  color: #ffffff;
+}
+
+.xts-btn-primary:hover {
+  background: var(--xts-color-accent-800);
+}
+
+.xts-btn-primary:active {
+  background: var(--xts-color-accent-900);
+}
+
+.xts-btn-secondary {
+  border-color: var(--xts-color-divider);
+}
+
+.xts-btn-secondary:hover {
+  background: color-mix(in srgb, var(--xts-color-text) 7%, transparent);
+}
+
+.xts-btn-secondary:active {
+  background: color-mix(in srgb, var(--xts-color-text) 14%, transparent);
+}
+
+.xts-btn-ghost {
+  color: var(--xts-color-accent-text);
+  padding-inline: var(--xts-space-1);
+}
+
+.xts-btn-ghost:hover {
+  background: color-mix(in srgb, var(--xts-color-accent) 10%, transparent);
+}
+
+.xts-btn-block {
+  justify-content: flex-start;
+  text-align: left;
+  width: 100%;
+}
+
+/* Fokus: sichtbarer Ring nur bei Tastaturfokus (Baseline Abschnitt 1). */
+.xts-btn:focus-visible,
+.xts-input:focus-visible,
+.xts-cell-button:focus-visible {
+  outline: 2px solid var(--xts-color-focus);
+  outline-offset: 2px;
+}
+
+/* Tags */
+.xts-tag {
+  align-items: center;
+  border-radius: var(--xts-radius);
+  display: inline-flex;
+  font-size: 11px;
+  font-weight: var(--xts-font-weight-semibold);
+  letter-spacing: 0.02em;
+  padding: 3px 10px;
+}
+
+.xts-tag-accent {
+  background: var(--xts-color-accent-100);
+  color: var(--xts-color-accent-800);
+}
+
+.xts-tag-neutral {
+  background: var(--xts-color-neutral-100);
+  color: var(--xts-color-neutral-800);
+}
+
+/* Outline-Tag mit Akzent-700 (6,4:1) statt 500 (3,8:1). */
+.xts-tag-outline {
+  border: 1px solid var(--xts-color-accent-text);
+  color: var(--xts-color-accent-text);
+}
+
+/* Felder */
+.xts-field > label {
+  color: var(--xts-color-text-muted);
+  display: block;
+  font-size: 12px;
+  margin-bottom: 5px;
+}
+
+.xts-input {
+  background: var(--xts-color-surface);
+  border: 1px solid var(--xts-color-divider);
+  border-radius: var(--xts-radius);
+  /* Breite inkl. Rahmen und Innenabstand, sonst ragt das Feld 2 px + 2 x
+     Padding ueber die Rasterzelle hinaus (Review PR #37). */
+  box-sizing: border-box;
+  caret-color: var(--xts-color-accent);
+  color: var(--xts-color-text);
+  font: inherit;
+  font-size: 14px;
+  min-height: 36px;
+  padding: 6px 10px;
+  width: 100%;
+}
+
+.xts-input:hover {
+  border-color: color-mix(in srgb, var(--xts-color-text) 45%, transparent);
+}
+
+.xts-input:focus-visible {
+  border-color: var(--xts-color-accent);
+  outline-offset: 0;
+}
+
+/* Tabellen */
+.xts-table {
+  border-collapse: collapse;
+  font-size: 14px;
+  width: 100%;
+}
+
+.xts-table th {
+  border-bottom: var(--xts-rule-strong) solid var(--xts-color-divider);
+  color: var(--xts-color-text-muted);
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  padding: var(--xts-space-2);
+  text-align: left;
+  text-transform: uppercase;
+}
+
+.xts-table td {
+  border-bottom: var(--xts-rule-fine) solid var(--xts-color-divider);
+  padding: var(--xts-space-2);
+}
+
+.xts-table tbody tr:hover {
+  background: color-mix(in srgb, var(--xts-color-text) 4%, transparent);
+}
+
+/* Werkbank-Raster: Zellen mit 1px-Linien, 2px-Regeln zwischen Sektionen. */
+.xts-grid {
+  border-left: var(--xts-rule-fine) solid var(--xts-color-divider);
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+}
+
+.xts-cell {
+  border-bottom: var(--xts-rule-fine) solid var(--xts-color-divider);
+  border-right: var(--xts-rule-fine) solid var(--xts-color-divider);
+  box-sizing: border-box;
+  min-width: 0;
+  padding: var(--xts-space-4);
+}
+
+.xts-cell-span-2 {
+  grid-column: span 2;
+}
+
+.xts-cell-full {
+  grid-column: 1 / -1;
+}
+
+.xts-cell-button {
+  align-items: flex-start;
+  background: transparent;
+  border: var(--xts-rule-fine) dashed var(--xts-color-divider);
+  border-radius: var(--xts-radius);
+  box-sizing: border-box;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  font: inherit;
+  min-height: 64px;
+  padding: var(--xts-space-2);
+  text-align: left;
+  width: 100%;
+}
+
+.xts-cell-button[aria-pressed="true"] {
+  background: var(--xts-color-accent-100);
+  border: 2px solid var(--xts-color-accent);
+}
+
+@media (max-width: 720px) {
+  .xts-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 480px) {
+  .xts-grid {
+    grid-template-columns: 1fr;
+  }
+
+  /* Ein Spann ueber zwei Spalten wuerde im Einspaltenraster eine implizite
+     zweite Spalte erzeugen (Review PR #37); mobil belegt jede Zelle eine
+     Spalte. */
+  .xts-cell-span-2 {
+    grid-column: auto;
+  }
+}

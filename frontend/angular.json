@@ -18,16 +18,26 @@
             "browser": "src/main.ts",
             "polyfills": ["zone.js"],
             "tsConfig": "tsconfig.app.json",
-            "assets": [],
-            "styles": ["src/styles.css"],
+            "assets": [
+              { "glob": "**/*", "input": "src/assets", "output": "assets" }
+            ],
+            "styles": ["src/styles.css", "src/design-system.css"],
             "scripts": []
           },
           "configurations": {
             "production": {
+              "assets": [
+                {
+                  "glob": "**/*",
+                  "input": "src/assets",
+                  "output": "assets",
+                  "ignore": ["design-system/**"]
+                }
+              ],
               "budgets": [
                 {
                   "type": "initial",
-                  "maximumWarning": "500kb",
+                  "maximumWarning": "600kb",
                   "maximumError": "1mb"
                 }
               ],
