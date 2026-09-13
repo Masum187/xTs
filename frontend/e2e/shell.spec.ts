@@ -230,3 +230,60 @@ test.describe("modal menu below 1024 px", () => {
     expect(stillInside).toBe(false);
   });
 });
+
+test.describe("modal menu at low viewport height", () => {
+  test.use({ viewport: { width: 768, height: 375 } });
+
+  test("all entries stay reachable by scrolling and keyboard, trap and inert hold", async ({
+    page,
+  }) => {
+    await page.goto("/");
+    await page.getByTestId("menu-toggle").click();
+    await page.getByTestId("persona-select").selectOption(ROEPER);
+    await expect(page.getByTestId("profile")).toContainText("Christian Roeper");
+
+    await page.getByTestId("menu-toggle").focus();
+    await page.keyboard.press("Enter");
+    const nav = page.locator("#app-nav");
+    await expect(nav).toBeVisible();
+    await expect(page.locator("main")).toHaveAttribute("inert", "");
+    // Der Menueinhalt ist hoeher als das Fenster und scrollt intern.
+    const metrics = await nav.evaluate((element) => ({
+      scrollHeight: element.scrollHeight,
+      clientHeight: element.clientHeight,
+      bottom: element.getBoundingClientRect().bottom,
+    }));
+    expect(metrics.scrollHeight).toBeGreaterThan(metrics.clientHeight);
+    expect(metrics.bottom).toBeLessThanOrEqual(375);
+
+    // Jedes Element im Menue wird per Tab erreicht und ist dann sichtbar.
+    const expectedOrder = [
+      "menu-close",
+      ...NAV.map((n) => `link:${n}`),
+      "persona-select",
+    ];
+    const reached: string[] = [];
+    for (let i = 0; i < expectedOrder.length; i += 1) {
+      const active = await page.evaluate(() => {
+        const element = document.activeElement as HTMLElement | null;
+        if (!element || !element.closest("#app-nav")) return null;
+        const id = element.getAttribute("data-testid");
+        return id ?? `link:${element.textContent?.trim().split(/\s+/)[0]}`;
+      });
+      expect(active, `Schritt ${i}`).not.toBeNull();
+      reached.push(active!);
+      await expect(page.locator(":focus")).toBeInViewport();
+      await page.keyboard.press("Tab");
+    }
+    expect(reached).toEqual(expectedOrder);
+    // Nach dem letzten Element beginnt der Zyklus wieder im Menue.
+    await expect(page.getByTestId("menu-close")).toBeFocused();
+
+    // Persona-Auswahl per Scrollen erreichbar und bedienbar.
+    await page.getByTestId("persona-select").scrollIntoViewIfNeeded();
+    await expect(page.getByTestId("persona-select")).toBeInViewport();
+    await page.keyboard.press("Escape");
+    await expect(nav).toHaveCount(0);
+    await expect(page.locator("main")).not.toHaveAttribute("inert", "");
+  });
+});
