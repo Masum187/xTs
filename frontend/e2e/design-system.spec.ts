@@ -125,3 +125,50 @@ test("existing screens do not use the new classes or font yet", async ({
   expect(usage.classes).toBe(0);
   expect(usage.bodyFont).toContain("Inter");
 });
+
+test("grid columns and field bounds hold at 375, 600, 768 and 1024 px", async ({
+  page,
+}) => {
+  // Breakpoints der Bausteine: bis 480 px eine, bis 720 px zwei, darueber
+  // vier Spalten (Handoff: repeat(4, 1fr)).
+  const expected: Record<number, number> = { 375: 1, 600: 2, 768: 4, 1024: 4 };
+  for (const [width, columns] of Object.entries(expected)) {
+    await page.setViewportSize({ width: Number(width), height: 800 });
+    await page.goto(PAGE);
+    await expect(page.getByTestId("ds-title")).toBeVisible();
+    const tracks = await page
+      .locator(".xts-grid")
+      .first()
+      .evaluate(
+        (grid) => getComputedStyle(grid).gridTemplateColumns.split(" ").length,
+      );
+    expect(tracks, `${width} px: Spalten`).toBe(columns);
+    // Kein Kind ragt ueber seine Rasterzelle oder das Raster hinaus.
+    const overflow = await page
+      .locator(".xts-grid")
+      .first()
+      .evaluate((grid) => {
+        const outer = grid.getBoundingClientRect();
+        const issues: string[] = [];
+        for (const cell of grid.querySelectorAll(".xts-cell")) {
+          const box = cell.getBoundingClientRect();
+          if (box.right > outer.right + 0.5) issues.push("cell>grid");
+          for (const child of cell.querySelectorAll("input, select, button")) {
+            const inner = child.getBoundingClientRect();
+            if (inner.right > box.right + 0.5 || inner.left < box.left - 0.5) {
+              issues.push(`${child.tagName.toLowerCase()}>cell`);
+            }
+          }
+        }
+        return issues;
+      });
+    expect(overflow, `${width} px`).toEqual([]);
+    const pageWidth = await page.evaluate(() => ({
+      scroll: document.documentElement.scrollWidth,
+      client: document.documentElement.clientWidth,
+    }));
+    expect(pageWidth.scroll, `${width} px: Seitenbreite`).toBe(
+      pageWidth.client,
+    );
+  }
+});

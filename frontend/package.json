@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "start": "ng serve",
-    "build": "ng build",
+    "build": "ng build --configuration production",
     "lint": "eslint .",
     "typecheck": "tsc -p tsconfig.app.json --noEmit",
     "test": "vitest run",
