@@ -1,391 +1,465 @@
-<section class="page-header">
-  <div>
-    <p class="eyebrow">WebClient</p>
-    <h1>Reporting</h1>
-  </div>
-</section>
-
-<section class="panel">
-  <div class="section-title">
-    <h2>Ressourcen-Live-Circle</h2>
-    <p class="hint">
-      Planung → Beauftragung → BANF → Bestellung → Ist-Stunden → Wareneingang →
-      Rechnung je Mitarbeiter und Kontierung
-    </p>
-  </div>
-
-  <div class="filters">
-    <label>
-      Zeitraum von
-      <input
-        type="month"
-        aria-label="Zeitraum von"
-        [ngModel]="lifecycleFrom()"
-        (ngModelChange)="updateLifecycleFilter({ from: $event })"
-      />
-    </label>
-    <label>
-      Zeitraum bis
-      <input
-        type="month"
-        aria-label="Zeitraum bis"
-        [ngModel]="lifecycleTo()"
-        (ngModelChange)="updateLifecycleFilter({ to: $event })"
-      />
-    </label>
-    <label>
-      Einkaufsbeleg
-      <input
-        aria-label="Einkaufsbeleg"
-        placeholder="z. B. 4500001234"
-        [ngModel]="lifecycleEbeln()"
-        (ngModelChange)="updateLifecycleFilter({ ebeln: $event })"
-      />
-    </label>
-    <label>
-      Bestellposition
-      <input
-        aria-label="Bestellposition"
-        placeholder="z. B. 00010"
-        [ngModel]="lifecycleEbelp()"
-        (ngModelChange)="updateLifecycleFilter({ ebelp: $event })"
-      />
-    </label>
-  </div>
-
-  <xts-load-status
-    [state]="lifecycleLoader.value()"
-    loadingText="Ressourcen-Live-Circle wird geladen …"
-    (retry)="reloadLifecycle()"
-  />
-  @if (lifecycleLoader.ready()) {
-    <div class="table-wrap">
-      <table data-testid="lifecycle-table" class="lifecycle">
-        <thead>
-          <tr>
-            <th>Mitarbeiter</th>
-            <th>Kontierung</th>
-            <th class="num">Plan</th>
-            <th>Beauftragung</th>
-            <th>BANF</th>
-            <th>Bestellung</th>
-            <th class="num">Bestellmenge</th>
-            <th class="num">Bestellpreis</th>
-            <th class="num">Ist erfasst</th>
-            <th class="num">Genehmigt</th>
-            <th>Wareneingang</th>
-            <th>Rechnung</th>
-          </tr>
-        </thead>
-        <tbody>
-          @for (row of lifecycleRows(); track row.extNr + row.coIdent) {
-            <tr
-              [attr.data-testid]="'lifecycle-' + row.extNr + '-' + row.coIdent"
-            >
-              <td>{{ row.displayName }}</td>
-              <td>
-                {{ row.coIdent }}
-                <span class="sub">{{ row.description }}</span>
-              </td>
-              <td class="num">{{ row.plannedHours | number: "1.0-2" }}</td>
-              <td>
-                @if (row.orders.length > 0) {
-                  <strong>{{ row.orderedHours | number: "1.0-2" }} Std.</strong>
-                  @for (order of row.orders; track order.orderId) {
-                    <span class="sub">
-                      {{ order.orderId }} ·
-                      {{ order.hours | number: "1.0-2" }} Std. ·
-                      {{ orderStatusLabel(order.status) }}
-                    </span>
-                  }
-                } @else {
-                  <span class="empty">–</span>
-                }
-              </td>
-              <td>
-                @for (order of row.orders; track order.orderId) {
-                  @if (order.banfNumber) {
-                    <span class="sub"
-                      >{{ order.banfNumber }}/{{ order.banfItem }}</span
-                    >
-                  }
-                }
-                @if (!hasAny(row, "banfNumber")) {
-                  <span class="empty">–</span>
-                }
-              </td>
-              <td>
-                @for (order of row.orders; track order.orderId) {
-                  @if (order.ebeln) {
-                    <span class="sub">{{ order.ebeln }}/{{ order.ebelp }}</span>
-                  }
-                }
-                @if (!hasAny(row, "ebeln")) {
-                  <span class="empty">–</span>
-                }
-              </td>
-              <td class="num">
-                @if (row.purchaseOrderHours > 0) {
-                  {{ row.purchaseOrderHours | number: "1.0-2" }}
-                } @else {
-                  <span class="empty">–</span>
-                }
-              </td>
-              <td class="num">
-                @if (row.purchaseOrderPrice !== null) {
-                  {{ row.purchaseOrderPrice }}
-                } @else {
-                  <span class="empty">–</span>
-                }
-              </td>
-              <td class="num">{{ row.recordedHours | number: "1.0-2" }}</td>
-              <td class="num">{{ row.approvedHours | number: "1.0-2" }}</td>
-              <td [attr.data-testid]="'we-' + row.extNr + '-' + row.coIdent">
-                @if (row.goodsReceipts.length > 0) {
-                  <strong
-                    >{{ row.goodsReceiptHours | number: "1.0-2" }} Std.</strong
-                  >
-                  @for (
-                    receipt of row.goodsReceipts;
-                    track receipt.weDocument
-                  ) {
-                    <span class="sub">
-                      {{ receipt.weDocument }} ·
-                      {{ receipt.date | date: "dd.MM.yyyy" }} ·
-                      {{ receipt.hours | number: "1.0-2" }} Std.
-                    </span>
-                  }
-                } @else if (row.pendingGoodsReceiptHours === 0) {
-                  <span class="empty">–</span>
-                }
-                @if (row.pendingGoodsReceiptHours > 0) {
-                  <span class="sub pending">
-                    {{ row.pendingGoodsReceiptHours | number: "1.0-2" }} Std. WE
-                    ausstehend
-                  </span>
-                }
-              </td>
-              <td
-                [attr.data-testid]="'invoice-' + row.extNr + '-' + row.coIdent"
-              >
-                @if (row.invoiceNumber !== null) {
-                  {{ row.invoiceNumber }}
-                } @else {
-                  <span class="empty">–</span>
-                }
-              </td>
-            </tr>
-          } @empty {
-            <tr>
-              <td colspan="12" class="empty-hint" data-testid="lifecycle-empty">
-                Keine Daten für die aktuelle Selektion.
-              </td>
-            </tr>
-          }
-        </tbody>
-      </table>
+<div class="reporting xts-font">
+  <header class="page-header">
+    <div>
+      <p class="xts-kicker">Auswerten</p>
+      <h1 class="xts-heading page-title">Reporting</h1>
     </div>
-  }
-  <p class="footnote">
-    „–" = keine Daten vorhanden. Bestellpreis und Rechnung sind nicht Teil des
-    MVP; genehmigte Stunden ohne WE-Beleg gelten als „WE ausstehend".
-  </p>
-</section>
+  </header>
 
-<section class="panel">
-  <div class="section-title">
-    <h2>Budget-Monitor</h2>
-    <label>
-      Detailstufe
-      <select
-        aria-label="Detailstufe"
-        [ngModel]="budgetDetail()"
-        (ngModelChange)="setBudgetDetail($event)"
+  <section class="report-panel" aria-labelledby="lifecycle-title">
+    <div class="section-title">
+      <h2 class="xts-heading panel-title" id="lifecycle-title">
+        Ressourcen-Live-Circle
+      </h2>
+      <p class="xts-text-muted hint">
+        Planung → Beauftragung → BANF → Bestellung → Ist-Stunden → Wareneingang
+        → Rechnung je Mitarbeiter und Kontierung
+      </p>
+    </div>
+
+    <div class="filters">
+      <div class="xts-field">
+        <label>
+          Zeitraum von
+          <input
+            class="xts-input"
+            type="month"
+            aria-label="Zeitraum von"
+            [ngModel]="lifecycleFrom()"
+            (ngModelChange)="updateLifecycleFilter({ from: $event })"
+          />
+        </label>
+      </div>
+      <div class="xts-field">
+        <label>
+          Zeitraum bis
+          <input
+            class="xts-input"
+            type="month"
+            aria-label="Zeitraum bis"
+            [ngModel]="lifecycleTo()"
+            (ngModelChange)="updateLifecycleFilter({ to: $event })"
+          />
+        </label>
+      </div>
+      <div class="xts-field">
+        <label>
+          Einkaufsbeleg
+          <input
+            class="xts-input"
+            aria-label="Einkaufsbeleg"
+            placeholder="z. B. 4500001234"
+            [ngModel]="lifecycleEbeln()"
+            (ngModelChange)="updateLifecycleFilter({ ebeln: $event })"
+          />
+        </label>
+      </div>
+      <div class="xts-field">
+        <label>
+          Bestellposition
+          <input
+            class="xts-input"
+            aria-label="Bestellposition"
+            placeholder="z. B. 00010"
+            [ngModel]="lifecycleEbelp()"
+            (ngModelChange)="updateLifecycleFilter({ ebelp: $event })"
+          />
+        </label>
+      </div>
+    </div>
+
+    <xts-load-status
+      [state]="lifecycleLoader.value()"
+      loadingText="Ressourcen-Live-Circle wird geladen …"
+      (retry)="reloadLifecycle()"
+    />
+    @if (lifecycleLoader.ready()) {
+      <div
+        class="table-wrap"
+        tabindex="0"
+        role="region"
+        aria-label="Tabelle Ressourcen-Live-Circle, seitlich scrollbar"
       >
-        <option value="none">Keine Mitarbeiterdetails</option>
-        <option value="employee">Summe je Mitarbeiter</option>
-        <option value="day">Alle Tagesdetails</option>
-      </select>
-    </label>
-  </div>
-
-  <xts-load-status
-    [state]="budgetLoader.value()"
-    loadingText="Budget-Monitor wird geladen …"
-    (retry)="reloadBudget()"
-  />
-  @if (budgetLoader.ready()) {
-    <div class="table-wrap">
-      <table data-testid="budget-table">
-        <thead>
-          <tr>
-            <th>Kontierung</th>
-            <th>Beschreibung</th>
-            <th class="num">Budget</th>
-            <th class="num">Verbraucht</th>
-            <th class="num">Verbrauch %</th>
-            <th class="num">Rest</th>
-            <th>Ampel</th>
-          </tr>
-        </thead>
-        <tbody>
-          @for (row of budgetRows(); track row.coIdent) {
-            <tr [attr.data-testid]="'budget-' + row.coIdent">
-              <td>{{ row.coIdent }}</td>
-              <td>{{ row.description }}</td>
-              <td class="num">{{ row.budgetHours | number: "1.0-2" }}</td>
-              <td class="num">{{ row.consumedHours | number: "1.0-2" }}</td>
-              <td class="num">{{ row.consumedPercent | number: "1.0-1" }} %</td>
-              <td class="num">{{ row.remainingHours | number: "1.0-2" }}</td>
-              <td>
-                <span
-                  class="traffic"
-                  [class]="'traffic ' + row.trafficLight"
-                  [attr.data-testid]="'traffic-' + row.coIdent"
-                >
-                  {{ trafficLabel(row.trafficLight) }}
-                </span>
-              </td>
+        <table data-testid="lifecycle-table" class="xts-table lifecycle">
+          <thead>
+            <tr>
+              <th>Mitarbeiter</th>
+              <th>Kontierung</th>
+              <th class="num">Plan</th>
+              <th>Beauftragung</th>
+              <th>BANF</th>
+              <th>Bestellung</th>
+              <th class="num">Bestellmenge</th>
+              <th class="num">Bestellpreis</th>
+              <th class="num">Ist erfasst</th>
+              <th class="num">Genehmigt</th>
+              <th>Wareneingang</th>
+              <th>Rechnung</th>
             </tr>
-            @for (employee of row.byEmployee ?? []; track employee.extNr) {
-              <tr class="detail-row">
-                <td></td>
-                <td>{{ employee.displayName }}</td>
-                <td class="num"></td>
-                <td class="num">{{ employee.hours | number: "1.0-2" }}</td>
-                <td class="num"></td>
-                <td class="num"></td>
-                <td></td>
+          </thead>
+          <tbody>
+            @for (row of lifecycleRows(); track row.extNr + row.coIdent) {
+              <tr
+                [attr.data-testid]="
+                  'lifecycle-' + row.extNr + '-' + row.coIdent
+                "
+              >
+                <td class="wrap">{{ row.displayName }}</td>
+                <td>
+                  <span class="mono">{{ row.coIdent }}</span>
+                  <span class="sub wrap">{{ row.description }}</span>
+                </td>
+                <td class="num">{{ row.plannedHours | number: "1.0-2" }}</td>
+                <td>
+                  @if (row.orders.length > 0) {
+                    <strong
+                      >{{ row.orderedHours | number: "1.0-2" }} Std.</strong
+                    >
+                    @for (order of row.orders; track order.orderId) {
+                      <span class="sub">
+                        {{ order.orderId }} ·
+                        {{ order.hours | number: "1.0-2" }} Std. ·
+                        {{ orderStatusLabel(order.status) }}
+                      </span>
+                    }
+                  } @else {
+                    <span class="empty">–</span>
+                  }
+                </td>
+                <td>
+                  @for (order of row.orders; track order.orderId) {
+                    @if (order.banfNumber) {
+                      <span class="sub"
+                        >{{ order.banfNumber }}/{{ order.banfItem }}</span
+                      >
+                    }
+                  }
+                  @if (!hasAny(row, "banfNumber")) {
+                    <span class="empty">–</span>
+                  }
+                </td>
+                <td>
+                  @for (order of row.orders; track order.orderId) {
+                    @if (order.ebeln) {
+                      <span class="sub"
+                        >{{ order.ebeln }}/{{ order.ebelp }}</span
+                      >
+                    }
+                  }
+                  @if (!hasAny(row, "ebeln")) {
+                    <span class="empty">–</span>
+                  }
+                </td>
+                <td class="num">
+                  @if (row.purchaseOrderHours > 0) {
+                    {{ row.purchaseOrderHours | number: "1.0-2" }}
+                  } @else {
+                    <span class="empty">–</span>
+                  }
+                </td>
+                <td class="num">
+                  @if (row.purchaseOrderPrice !== null) {
+                    {{ row.purchaseOrderPrice }}
+                  } @else {
+                    <span class="empty">–</span>
+                  }
+                </td>
+                <td class="num">{{ row.recordedHours | number: "1.0-2" }}</td>
+                <td class="num">{{ row.approvedHours | number: "1.0-2" }}</td>
+                <td [attr.data-testid]="'we-' + row.extNr + '-' + row.coIdent">
+                  @if (row.goodsReceipts.length > 0) {
+                    <strong
+                      >{{
+                        row.goodsReceiptHours | number: "1.0-2"
+                      }}
+                      Std.</strong
+                    >
+                    @for (
+                      receipt of row.goodsReceipts;
+                      track receipt.weDocument
+                    ) {
+                      <span class="sub">
+                        {{ receipt.weDocument }} ·
+                        {{ receipt.date | date: "dd.MM.yyyy" }} ·
+                        {{ receipt.hours | number: "1.0-2" }} Std.
+                      </span>
+                    }
+                  } @else if (row.pendingGoodsReceiptHours === 0) {
+                    <span class="empty">–</span>
+                  }
+                  @if (row.pendingGoodsReceiptHours > 0) {
+                    <span class="sub pending">
+                      {{ row.pendingGoodsReceiptHours | number: "1.0-2" }} Std.
+                      WE ausstehend
+                    </span>
+                  }
+                </td>
+                <td
+                  [attr.data-testid]="
+                    'invoice-' + row.extNr + '-' + row.coIdent
+                  "
+                >
+                  @if (row.invoiceNumber !== null) {
+                    {{ row.invoiceNumber }}
+                  } @else {
+                    <span class="empty">–</span>
+                  }
+                </td>
               </tr>
-              @for (day of employee.days ?? []; track day.date) {
+            } @empty {
+              <tr>
+                <td
+                  colspan="12"
+                  class="empty-hint"
+                  data-testid="lifecycle-empty"
+                >
+                  Keine Daten für die aktuelle Selektion.
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    }
+    <p class="xts-text-muted footnote">
+      „–" = keine Daten vorhanden. Bestellpreis und Rechnung sind nicht Teil des
+      MVP; genehmigte Stunden ohne WE-Beleg gelten als „WE ausstehend".
+    </p>
+  </section>
+
+  <section class="report-panel" aria-labelledby="budget-title">
+    <div class="section-title">
+      <h2 class="xts-heading panel-title" id="budget-title">Budget-Monitor</h2>
+    </div>
+    <div class="filters">
+      <div class="xts-field">
+        <label>
+          Detailstufe
+          <select
+            class="xts-input"
+            aria-label="Detailstufe"
+            [ngModel]="budgetDetail()"
+            (ngModelChange)="setBudgetDetail($event)"
+          >
+            <option value="none">Keine Mitarbeiterdetails</option>
+            <option value="employee">Summe je Mitarbeiter</option>
+            <option value="day">Alle Tagesdetails</option>
+          </select>
+        </label>
+      </div>
+    </div>
+
+    <xts-load-status
+      [state]="budgetLoader.value()"
+      loadingText="Budget-Monitor wird geladen …"
+      (retry)="reloadBudget()"
+    />
+    @if (budgetLoader.ready()) {
+      <div
+        class="table-wrap"
+        tabindex="0"
+        role="region"
+        aria-label="Tabelle Budget-Monitor, seitlich scrollbar"
+      >
+        <table data-testid="budget-table" class="xts-table">
+          <thead>
+            <tr>
+              <th>Kontierung</th>
+              <th>Beschreibung</th>
+              <th class="num">Budget</th>
+              <th class="num">Verbraucht</th>
+              <th class="num">Verbrauch %</th>
+              <th class="num">Rest</th>
+              <th>Ampel</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (row of budgetRows(); track row.coIdent) {
+              <tr [attr.data-testid]="'budget-' + row.coIdent">
+                <td class="mono">{{ row.coIdent }}</td>
+                <td class="wrap">{{ row.description }}</td>
+                <td class="num">{{ row.budgetHours | number: "1.0-2" }}</td>
+                <td class="num">{{ row.consumedHours | number: "1.0-2" }}</td>
+                <td class="num">
+                  {{ row.consumedPercent | number: "1.0-1" }} %
+                </td>
+                <td class="num">{{ row.remainingHours | number: "1.0-2" }}</td>
+                <td>
+                  <span
+                    class="traffic"
+                    [class]="'traffic ' + row.trafficLight"
+                    [attr.data-testid]="'traffic-' + row.coIdent"
+                  >
+                    {{ trafficLabel(row.trafficLight) }}
+                  </span>
+                </td>
+              </tr>
+              @for (employee of row.byEmployee ?? []; track employee.extNr) {
+                <tr class="detail-row">
+                  <td></td>
+                  <td>{{ employee.displayName }}</td>
+                  <td class="num"></td>
+                  <td class="num">{{ employee.hours | number: "1.0-2" }}</td>
+                  <td class="num"></td>
+                  <td class="num"></td>
+                  <td></td>
+                </tr>
+                @for (day of employee.days ?? []; track day.date) {
+                  <tr class="detail-row day-row">
+                    <td></td>
+                    <td>
+                      {{ day.date | date: "dd.MM.yyyy" }} –
+                      {{ day.description }}
+                    </td>
+                    <td class="num"></td>
+                    <td class="num">{{ day.hours | number: "1.0-2" }}</td>
+                    <td class="num"></td>
+                    <td class="num"></td>
+                    <td></td>
+                  </tr>
+                }
+              }
+            } @empty {
+              <tr>
+                <td colspan="7" class="empty-hint" data-testid="budget-empty">
+                  Keine Kontierungen für Ihre Zuständigkeit.
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    }
+  </section>
+
+  <section class="report-panel" aria-labelledby="quota-title">
+    <div class="section-title">
+      <h2 class="xts-heading panel-title" id="quota-title">
+        Stundenkontingent-Monitor
+      </h2>
+    </div>
+
+    <div class="filters">
+      <div class="xts-field">
+        <label>
+          Nachname
+          <input
+            class="xts-input"
+            aria-label="Nachname"
+            placeholder="z. B. Schilz"
+            [ngModel]="quotaLastName()"
+            (ngModelChange)="updateQuotaFilter({ lastName: $event })"
+          />
+        </label>
+      </div>
+      <div class="xts-field">
+        <label>
+          Team
+          <select
+            class="xts-input"
+            aria-label="Team"
+            [ngModel]="quotaTeam()"
+            (ngModelChange)="updateQuotaFilter({ team: $event })"
+          >
+            <option value="">Alle Teams</option>
+            @for (team of teams(); track team.id) {
+              <option [value]="team.id">{{ team.name }}</option>
+            }
+          </select>
+        </label>
+      </div>
+      <div class="xts-field">
+        <label>
+          Buchungsdatum von
+          <input
+            class="xts-input"
+            type="date"
+            aria-label="Buchungsdatum von"
+            [ngModel]="quotaFrom()"
+            (ngModelChange)="updateQuotaFilter({ from: $event })"
+          />
+        </label>
+      </div>
+      <div class="xts-field">
+        <label>
+          Buchungsdatum bis
+          <input
+            class="xts-input"
+            type="date"
+            aria-label="Buchungsdatum bis"
+            [ngModel]="quotaTo()"
+            (ngModelChange)="updateQuotaFilter({ to: $event })"
+          />
+        </label>
+      </div>
+      <label class="checkbox">
+        <input
+          type="checkbox"
+          aria-label="Tagesdetails"
+          [ngModel]="quotaDayDetail()"
+          (ngModelChange)="updateQuotaFilter({ dayDetail: $event })"
+        />
+        Tagesdetails
+      </label>
+    </div>
+
+    <xts-load-status
+      [state]="quotaLoader.value()"
+      loadingText="Stundenkontingent-Monitor wird geladen …"
+      (retry)="reloadQuota()"
+    />
+    @if (quotaLoader.ready()) {
+      <div
+        class="table-wrap"
+        tabindex="0"
+        role="region"
+        aria-label="Tabelle Stundenkontingent-Monitor, seitlich scrollbar"
+      >
+        <table data-testid="quota-table" class="xts-table">
+          <thead>
+            <tr>
+              <th>Mitarbeiter</th>
+              <th>Kontierung</th>
+              <th>Gültigkeit</th>
+              <th class="num">Beauftragt</th>
+              <th class="num">Gebucht</th>
+              <th class="num">Rest</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (row of quotaRows(); track row.extNr + row.coIdent) {
+              <tr [attr.data-testid]="'quota-' + row.extNr + '-' + row.coIdent">
+                <td class="wrap">{{ row.displayName }}</td>
+                <td class="mono">{{ row.coIdent }}</td>
+                <td>
+                  {{ row.validFrom | date: "dd.MM.yyyy" }} –
+                  {{ row.validTo | date: "dd.MM.yyyy" }}
+                </td>
+                <td class="num">{{ row.orderedHours | number: "1.0-2" }}</td>
+                <td class="num">{{ row.bookedHours | number: "1.0-2" }}</td>
+                <td class="num">{{ row.remainingHours | number: "1.0-2" }}</td>
+              </tr>
+              @for (day of row.days ?? []; track day.date) {
                 <tr class="detail-row day-row">
                   <td></td>
-                  <td>
+                  <td colspan="2">
                     {{ day.date | date: "dd.MM.yyyy" }} – {{ day.description }}
                   </td>
                   <td class="num"></td>
                   <td class="num">{{ day.hours | number: "1.0-2" }}</td>
                   <td class="num"></td>
-                  <td class="num"></td>
-                  <td></td>
                 </tr>
               }
-            }
-          }
-        </tbody>
-      </table>
-    </div>
-  }
-</section>
-
-<section class="panel">
-  <div class="section-title">
-    <h2>Stundenkontingent-Monitor</h2>
-  </div>
-
-  <div class="filters">
-    <label>
-      Nachname
-      <input
-        aria-label="Nachname"
-        placeholder="z. B. Schilz"
-        [ngModel]="quotaLastName()"
-        (ngModelChange)="updateQuotaFilter({ lastName: $event })"
-      />
-    </label>
-    <label>
-      Team
-      <select
-        aria-label="Team"
-        [ngModel]="quotaTeam()"
-        (ngModelChange)="updateQuotaFilter({ team: $event })"
-      >
-        <option value="">Alle Teams</option>
-        @for (team of teams(); track team.id) {
-          <option [value]="team.id">{{ team.name }}</option>
-        }
-      </select>
-    </label>
-    <label>
-      Buchungsdatum von
-      <input
-        type="date"
-        aria-label="Buchungsdatum von"
-        [ngModel]="quotaFrom()"
-        (ngModelChange)="updateQuotaFilter({ from: $event })"
-      />
-    </label>
-    <label>
-      Buchungsdatum bis
-      <input
-        type="date"
-        aria-label="Buchungsdatum bis"
-        [ngModel]="quotaTo()"
-        (ngModelChange)="updateQuotaFilter({ to: $event })"
-      />
-    </label>
-    <label class="checkbox">
-      <input
-        type="checkbox"
-        aria-label="Tagesdetails"
-        [ngModel]="quotaDayDetail()"
-        (ngModelChange)="updateQuotaFilter({ dayDetail: $event })"
-      />
-      Tagesdetails
-    </label>
-  </div>
-
-  <xts-load-status
-    [state]="quotaLoader.value()"
-    loadingText="Stundenkontingent-Monitor wird geladen …"
-    (retry)="reloadQuota()"
-  />
-  @if (quotaLoader.ready()) {
-    <div class="table-wrap">
-      <table data-testid="quota-table">
-        <thead>
-          <tr>
-            <th>Mitarbeiter</th>
-            <th>Kontierung</th>
-            <th>Gültigkeit</th>
-            <th class="num">Beauftragt</th>
-            <th class="num">Gebucht</th>
-            <th class="num">Rest</th>
-          </tr>
-        </thead>
-        <tbody>
-          @for (row of quotaRows(); track row.extNr + row.coIdent) {
-            <tr [attr.data-testid]="'quota-' + row.extNr + '-' + row.coIdent">
-              <td>{{ row.displayName }}</td>
-              <td>{{ row.coIdent }}</td>
-              <td>
-                {{ row.validFrom | date: "dd.MM.yyyy" }} –
-                {{ row.validTo | date: "dd.MM.yyyy" }}
-              </td>
-              <td class="num">{{ row.orderedHours | number: "1.0-2" }}</td>
-              <td class="num">{{ row.bookedHours | number: "1.0-2" }}</td>
-              <td class="num">{{ row.remainingHours | number: "1.0-2" }}</td>
-            </tr>
-            @for (day of row.days ?? []; track day.date) {
-              <tr class="detail-row day-row">
-                <td></td>
-                <td colspan="2">
-                  {{ day.date | date: "dd.MM.yyyy" }} – {{ day.description }}
+            } @empty {
+              <tr>
+                <td colspan="6" class="empty-hint" data-testid="quota-empty">
+                  Keine Kontingente für die aktuelle Selektion.
                 </td>
-                <td class="num"></td>
-                <td class="num">{{ day.hours | number: "1.0-2" }}</td>
-                <td class="num"></td>
               </tr>
             }
-          } @empty {
-            <tr>
-              <td colspan="6" class="empty-hint" data-testid="quota-empty">
-                Keine Kontingente für die aktuelle Selektion.
-              </td>
-            </tr>
-          }
-        </tbody>
-      </table>
-    </div>
-  }
-</section>
+          </tbody>
+        </table>
+      </div>
+    }
+  </section>
+</div>

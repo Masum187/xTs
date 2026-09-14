@@ -907,7 +907,7 @@ Prioritaet: P1
 
 Rolle: Projektleiter / Controlling
 
-Jira: XTS-97 (Label `redesign`); Grundlage: `ui-redesign-bewertung.md`.
+Jira: XTS-97 (Label `redesign`); Grundlage: `ui-redesign-bewertung.md`. Status: freigegeben 2026-09-14, umgesetzt in PR #41 (drei Abschnitte untereinander, Tabellen vollstaendig und seitlich scrollbar im per Tastatur bedienbaren Container, Ampel mit Text und Kontrast; nur Template und Styles, Filter, Rollenschnitt, Labels und Test-IDs unveraendert; neu `budget-empty`).
 
 Akzeptanzkriterien:
 

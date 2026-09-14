@@ -1,106 +1,138 @@
+/*
+  Reporting im Werkbank-Stil (XTS-155, Baseline Abschnitt 3.3). Nur Tokens
+  und Bausteine aus design-system.css; drei Abschnitte untereinander, Modus
+  "Nur Tabelle" bis XTS-073. Tabellen behalten alle Spalten und scrollen
+  unterhalb ihrer Inhaltsbreite seitlich im eigenen, per Tastatur
+  fokussierbaren Container; die Seite wird nie breiter als der Viewport.
+  Ampelfarben sind screen-lokal (die Tokens kennen keine), immer mit Text.
+*/
+.reporting {
+  color: var(--xts-color-text);
+  min-width: 0;
+}
+
 .page-header {
   align-items: flex-end;
+  border-bottom: var(--xts-rule-strong) solid var(--xts-color-divider);
   display: flex;
   flex-wrap: wrap;
   gap: 12px;
   justify-content: space-between;
-  margin-bottom: 20px;
+  margin-bottom: 16px;
+  padding-bottom: 12px;
 }
 
-.eyebrow {
-  color: #60718f;
-  font-size: 13px;
-  font-weight: 700;
-  letter-spacing: 0;
+.xts-kicker {
   margin: 0 0 4px;
-  text-transform: uppercase;
 }
 
-h1,
-h2 {
+.page-title {
+  font-size: 26px;
   margin: 0;
 }
 
-.panel {
-  background: #ffffff;
-  border: 1px solid #d9e1ee;
-  border-radius: 8px;
+.report-panel {
+  background: var(--xts-color-neutral-100);
+  border: var(--xts-rule-fine) solid var(--xts-color-neutral-300);
   margin-bottom: 16px;
-  padding: 18px;
+  min-width: 0;
+  padding: 16px;
 }
 
 .section-title {
-  align-items: center;
+  align-items: baseline;
   display: flex;
-  gap: 12px;
+  flex-wrap: wrap;
+  gap: 4px 16px;
   justify-content: space-between;
+  margin-bottom: 12px;
+}
+
+.panel-title {
+  font-size: 17px;
+  margin: 0;
+}
+
+.hint {
+  font-size: 13px;
+  margin: 0;
+  overflow-wrap: anywhere;
 }
 
 .filters {
   align-items: end;
   display: flex;
   flex-wrap: wrap;
-  gap: 14px;
-  margin-top: 16px;
+  gap: 12px 16px;
+  margin-bottom: 12px;
 }
 
-label {
-  color: #465873;
-  display: grid;
-  font-size: 13px;
-  font-weight: 700;
-  gap: 6px;
+.filters .xts-field {
+  flex: 0 1 200px;
+  min-width: 0;
+}
+
+.filters .xts-input {
+  max-width: 100%;
 }
 
 label.checkbox {
   align-items: center;
+  color: var(--xts-color-text-muted);
   display: flex;
+  font-size: 13px;
+  font-weight: var(--xts-font-weight-semibold);
   gap: 8px;
+  min-height: 40px;
 }
 
-input,
-select {
-  border: 1px solid #cbd6e6;
-  border-radius: 6px;
-  min-height: 36px;
-  padding: 0 10px;
+label.checkbox input {
+  accent-color: var(--xts-color-accent);
+  height: 18px;
+  margin: 0;
+  width: 18px;
 }
 
-input[type="checkbox"] {
-  min-height: auto;
+label.checkbox input:focus-visible {
+  outline: 2px solid var(--xts-color-focus);
+  outline-offset: 2px;
 }
 
+/* Scrollbereich: fokussierbar, sichtbarer Fokus, seitlich scrollbar. */
 .table-wrap {
-  margin-top: 16px;
+  background: #ffffff;
+  max-width: 100%;
   overflow-x: auto;
 }
 
-table {
-  border-collapse: collapse;
-  width: 100%;
+.table-wrap:focus-visible {
+  outline: 2px solid var(--xts-color-focus);
+  outline-offset: 2px;
 }
 
-th,
-td {
-  border-bottom: 1px solid #e5ebf4;
-  color: #2b3a52;
-  font-size: 14px;
-  padding: 10px 12px;
-  text-align: left;
-}
-
-th {
-  color: #465873;
-  font-size: 13px;
+.xts-table td {
+  vertical-align: top;
 }
 
 .num {
+  font-variant-numeric: tabular-nums;
   text-align: right;
+  white-space: nowrap;
+}
+
+.mono {
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.wrap {
+  min-width: 160px;
+  overflow-wrap: anywhere;
 }
 
 .detail-row td {
-  background: #f7fafd;
-  color: #60718f;
+  background: var(--xts-color-neutral-100);
+  color: var(--xts-color-text-muted);
   font-size: 13px;
 }
 
@@ -108,82 +140,58 @@ th {
   font-style: italic;
 }
 
+/* Ampel: Text bleibt ohne Farbe verstaendlich; Kontrast >= 4,5:1. */
 .traffic {
-  border-radius: 999px;
+  border: var(--xts-rule-fine) solid currentColor;
+  display: inline-block;
   font-size: 12px;
-  font-weight: 700;
-  padding: 4px 10px;
+  font-weight: var(--xts-font-weight-semibold);
+  letter-spacing: 0.04em;
+  padding: 2px 8px;
+  text-transform: uppercase;
+  white-space: nowrap;
 }
 
 .traffic.green {
   background: #e3f2e8;
-  color: #23653b;
+  color: #1f5a35;
 }
 
 .traffic.yellow {
   background: #fdf1dc;
-  color: #8a5a12;
+  color: #7a4f0e;
 }
 
 .traffic.red {
   background: #fdecea;
-  color: #a3392f;
+  color: #9a332a;
 }
 
 .empty-hint {
-  color: #60718f;
+  color: var(--xts-color-text-muted);
   font-size: 13px;
-}
-
-.hint {
-  color: #60718f;
-  font-size: 13px;
-  margin: 0;
 }
 
 .sub {
-  color: #60718f;
+  color: var(--xts-color-text-muted);
   display: block;
   font-size: 12px;
   white-space: nowrap;
 }
 
+.sub.wrap {
+  white-space: normal;
+}
+
 .sub.pending {
-  color: #8a5a12;
+  color: var(--xts-color-accent-text);
 }
 
 .empty {
-  /* 5,4:1 auf Weiss (Audit Nr. 35), vorher #9aa8bd mit 2,4:1 */
-  color: #5b6b85;
-}
-
-table.lifecycle td {
-  vertical-align: top;
+  color: var(--xts-color-text-muted);
 }
 
 .footnote {
-  color: #60718f;
   font-size: 12px;
   margin: 12px 0 0;
-}
-
-/* Schmale Breiten (Audit Nr. 26). */
-@media (max-width: 640px) {
-  .section-title {
-    flex-wrap: wrap;
-    gap: 8px;
-  }
-}
-
-/* Filterfelder duerfen die Seite nicht verbreitern (Audit Nr. 26). */
-.filters > label {
-  flex: 0 1 auto;
-  /* Grid-Label: die Spalte darf unter die Breite des Auswahlfelds schrumpfen. */
-  grid-template-columns: minmax(0, 1fr);
-  min-width: 0;
-}
-
-.filters select,
-.filters input {
-  max-width: 100%;
 }
