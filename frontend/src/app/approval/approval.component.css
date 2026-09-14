@@ -1,214 +1,302 @@
+/*
+  Genehmigung als Liste und Detailansicht (XTS-151, Baseline Abschnitt 3.2).
+  Nur Tokens und Bausteine aus design-system.css; Breakpoints sind hier
+  screen-lokal: Liste und Detail nebeneinander erst ab 1280 px (Seitenleiste
+  240 px plus Inhalt), darunter liegt das Detail unter der Liste.
+*/
+.approval {
+  color: var(--xts-color-text);
+}
+
 .page-header {
   align-items: flex-end;
+  border-bottom: var(--xts-rule-strong) solid var(--xts-color-divider);
   display: flex;
   flex-wrap: wrap;
   gap: 12px;
   justify-content: space-between;
-  margin-bottom: 20px;
+  margin-bottom: 16px;
+  padding-bottom: 12px;
 }
 
-.eyebrow {
-  color: #60718f;
-  font-size: 13px;
-  font-weight: 700;
-  letter-spacing: 0;
+.xts-kicker {
   margin: 0 0 4px;
-  text-transform: uppercase;
 }
 
-h1,
-h2 {
+.page-title {
+  font-size: 26px;
   margin: 0;
 }
 
-.panel {
-  background: #ffffff;
-  border: 1px solid #d9e1ee;
-  border-radius: 8px;
-  margin-bottom: 16px;
-  padding: 18px;
+.panel-title {
+  font-size: 17px;
+  margin: 0 0 12px;
 }
 
 .filters {
-  align-items: end;
   display: flex;
   flex-wrap: wrap;
-  gap: 14px;
+  gap: 12px 16px;
+  margin-bottom: 12px;
 }
 
-label {
-  color: #465873;
-  display: grid;
+.filters .xts-field {
+  flex: 0 1 240px;
+  min-width: 0;
+}
+
+.filters .xts-input {
+  max-width: 100%;
+}
+
+.notice {
+  border-left: 3px solid var(--xts-color-divider);
+  margin: 0 0 12px;
+  padding: 12px 16px;
+}
+
+.notice-warn {
+  background: var(--xts-color-accent-100);
+  border-left-color: var(--xts-color-accent-600);
+}
+
+.notice-hint {
+  background: var(--xts-color-surface);
+  color: var(--xts-color-text-muted);
   font-size: 13px;
-  font-weight: 700;
-  gap: 6px;
 }
 
-input,
-select {
-  border: 1px solid #cbd6e6;
-  border-radius: 6px;
-  min-height: 36px;
-  padding: 0 10px;
+.message {
+  color: var(--xts-color-text);
+  font-weight: var(--xts-font-weight-semibold);
 }
 
-.section-title {
-  align-items: center;
-  display: flex;
-  gap: 12px;
-  justify-content: space-between;
+/* Liste und Detail: screen-lokaler Umbruch bei 1280 px. */
+.layout {
+  align-items: start;
+  display: grid;
+  gap: 16px;
+  grid-template-columns: minmax(0, 1fr);
+}
+
+@media (min-width: 1280px) {
+  .layout {
+    grid-template-columns: minmax(280px, 2fr) minmax(0, 3fr);
+  }
+}
+
+.list-panel,
+.detail-panel {
+  background: var(--xts-color-neutral-100);
+  border: var(--xts-rule-fine) solid var(--xts-color-neutral-300);
+  min-width: 0;
+  padding: 16px;
+  /* Detail ist Sprungziel unter 1280 px; Abstand zur Kopfzeile. */
+  scroll-margin-top: 8px;
 }
 
 .approval-list {
   display: grid;
-  gap: 12px;
-  margin-top: 16px;
+  gap: 8px;
+  /* Lange Listen scrollen im Bereich, das Detail bleibt erreichbar. */
+  max-height: 60vh;
+  overflow-y: auto;
 }
 
-.approval-card {
-  border: 1px solid #d9e1ee;
-  border-radius: 8px;
-  display: grid;
-  gap: 12px;
-  padding: 14px;
+@media (max-width: 1279px) {
+  .approval-list {
+    max-height: 40vh;
+  }
 }
 
-.approval-card header {
-  align-items: baseline;
+.day-item {
+  align-items: center;
+  background: #ffffff;
+  border: var(--xts-rule-fine) solid var(--xts-color-neutral-300);
+  border-left: 3px solid transparent;
+  color: inherit;
+  cursor: pointer;
   display: flex;
+  flex-wrap: wrap;
+  font: inherit;
+  gap: 8px 12px;
   justify-content: space-between;
+  min-width: 0;
+  padding: 10px 12px;
+  text-align: left;
+  width: 100%;
 }
 
-.approval-card header span {
-  color: #60718f;
-  display: block;
+.day-item:hover:not(:disabled) {
+  border-color: var(--xts-color-neutral-600);
+}
+
+.day-item:focus-visible {
+  outline: 2px solid var(--xts-color-focus);
+  outline-offset: 2px;
+}
+
+.day-item.selected {
+  background: var(--xts-color-accent-100);
+  border-color: var(--xts-color-accent-600);
+  border-left-color: var(--xts-color-accent);
+}
+
+.day-item:disabled {
+  cursor: not-allowed;
+  opacity: 0.7;
+}
+
+.day-item-main {
+  display: grid;
+  font-size: 14px;
+  gap: 2px;
+  min-width: 0;
+}
+
+.day-item-main span {
   font-size: 13px;
+}
+
+.day-item-side {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.detail-header {
+  align-items: flex-start;
+  border-bottom: var(--xts-rule-fine) solid var(--xts-color-neutral-300);
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 16px;
+  justify-content: space-between;
+  margin-bottom: 12px;
+  padding-bottom: 12px;
+}
+
+.detail-header > div {
+  min-width: 0;
+}
+
+.detail-header .panel-title {
+  margin-bottom: 4px;
+  overflow-wrap: anywhere;
+}
+
+.detail-meta {
+  font-size: 13px;
+  margin: 0;
+}
+
+.variance-line {
+  color: var(--xts-color-accent-text);
+  font-size: 13px;
+  margin: 4px 0 0;
+}
+
+.total {
+  display: grid;
+  font-size: 13px;
+  gap: 2px;
+  margin: 0;
+  text-align: right;
+}
+
+.total strong {
+  font-size: 18px;
 }
 
 .approval-lines {
   display: grid;
   gap: 6px;
+  margin-bottom: 12px;
 }
 
 .approval-line {
-  color: #465873;
+  border-bottom: var(--xts-rule-fine) solid var(--xts-color-neutral-200);
   display: grid;
   font-size: 14px;
-  gap: 10px;
-  grid-template-columns: 160px 1fr 90px;
+  gap: 4px 12px;
+  grid-template-columns: minmax(0, 130px) minmax(0, 1fr) auto;
+  padding-bottom: 6px;
 }
 
-.approval-card footer {
-  align-items: center;
-  display: flex;
-  gap: 10px;
-}
-
-.approval-card footer input {
-  flex: 1;
-}
-
-button {
-  background: #174b86;
-  border: 0;
-  border-radius: 6px;
-  color: #ffffff;
-  cursor: pointer;
-  min-height: 38px;
-  padding: 0 14px;
-}
-
-button:disabled {
-  background: #a7b5c8;
-  cursor: not-allowed;
-}
-
-button.danger {
-  background: #a3392f;
-}
-
-button.danger:disabled {
-  background: #a7b5c8;
-}
-
-button.ghost {
-  background: transparent;
-  border: 1px solid #cbd6e6;
-  color: #465873;
-}
-
-.message {
-  color: #23653b;
-  font-weight: 700;
-}
-
-.empty-hint {
-  color: #60718f;
-  font-size: 13px;
-  margin: 0;
-}
-
-.own-hint {
-  color: #60718f;
-  font-size: 13px;
-}
-
-.worktime-line,
-.variance-line {
-  color: #60718f;
-  display: block;
-  font-size: 13px;
-}
-
-.variance-line {
-  color: #8a5a12;
+.line-hours {
+  text-align: right;
+  white-space: nowrap;
 }
 
 /* Positionen ausserhalb der eigenen Zustaendigkeit (Entscheidung 19). */
 .approval-line.foreign > span {
-  color: #60718f;
+  color: var(--xts-color-text-muted);
 }
 
 .foreign-hint {
-  margin-left: 0.4rem;
+  color: var(--xts-color-accent-text);
   font-size: 0.85em;
-  color: #b26a00;
+  margin-left: 0.4rem;
 }
 
 .scope-note {
-  margin: 0.5rem 0 0;
-  font-size: 0.9em;
-  color: #b26a00;
+  font-size: 13px;
 }
 
-/* Schmale Breiten (Audit Nr. 26). */
+.detail-actions {
+  display: grid;
+  gap: 10px;
+}
+
+.own-hint {
+  margin: 0;
+}
+
+.reject-field .xts-input {
+  width: 100%;
+}
+
+.button-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.btn-danger {
+  background: var(--xts-color-accent-800);
+  border-color: var(--xts-color-accent-800);
+}
+
+.empty-hint {
+  color: var(--xts-color-text-muted);
+  font-size: 13px;
+  margin: 0;
+}
+
+.mono {
+  font-variant-numeric: tabular-nums;
+  overflow-wrap: anywhere;
+}
+
+.wrap-anywhere {
+  overflow-wrap: anywhere;
+}
+
+/* Schmale Breiten: Positionen und Kopf stapeln. */
 @media (max-width: 640px) {
-  .approval-card header,
-  .approval-card footer,
-  .section-title {
-    flex-wrap: wrap;
-    gap: 8px;
-  }
-
   .approval-line {
-    grid-template-columns: 1fr;
-    gap: 2px;
+    grid-template-columns: minmax(0, 1fr);
   }
 
-  .approval-card footer input {
-    flex-basis: 100%;
+  .line-hours {
+    text-align: left;
   }
-}
 
-/* Filterfelder duerfen die Seite nicht verbreitern (Audit Nr. 26). */
-.filters > label {
-  flex: 0 1 auto;
-  /* Grid-Label: die Spalte darf unter die Breite des Auswahlfelds schrumpfen. */
-  grid-template-columns: minmax(0, 1fr);
-  min-width: 0;
-}
+  .total {
+    text-align: left;
+  }
 
-.filters select,
-.filters input {
-  max-width: 100%;
+  .button-row .xts-btn {
+    flex: 1 1 100%;
+  }
 }

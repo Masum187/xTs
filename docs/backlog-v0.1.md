@@ -849,7 +849,7 @@ Prioritaet: P1
 
 Rolle: Projektleiter
 
-Jira: XTS-93 (Label `redesign`); Grundlage: `ui-redesign-bewertung.md`.
+Jira: XTS-93 (Label `redesign`); Grundlage: `ui-redesign-bewertung.md`. Status: freigegeben 2026-09-13, umgesetzt in PR #40 (Liste links, Detail rechts ab 1280 px, darunter Detail unter der Liste; Auswahlzustand rein praesentativ mit Schluessel Mitarbeiter+Datum; Filter, Vier-Augen-Prinzip, Zustaendigkeit, Pflichtgrund und Servermeldungen unveraendert; `approval-{extNr}-{date}` ist der Auswahlbutton, Aktionen im Detail).
 
 Akzeptanzkriterien:
 

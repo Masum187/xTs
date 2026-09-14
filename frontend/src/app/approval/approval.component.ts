@@ -1,9 +1,13 @@
 import { DatePipe, DecimalPipe } from "@angular/common";
+import type { ElementRef } from "@angular/core";
 import {
   Component,
   computed,
+  effect,
   inject,
+  linkedSignal,
   signal,
+  viewChild,
   ChangeDetectionStrategy,
 } from "@angular/core";
 import { FormsModule } from "@angular/forms";
@@ -19,9 +23,14 @@ import { dayVariance, sumLineHours } from "../timesheet/timesheet.logic";
 import type { ApprovalDay, TimesheetLine } from "../timesheet/timesheet.models";
 import {
   filterApprovals,
+  keepSelection,
+  nextSelectionAfter,
   uniqueEmployees,
   uniqueMonths,
 } from "./approval.logic";
+
+/** Screen-lokaler Umbruch: Liste und Detail nebeneinander erst ab 1280 px. */
+const STACKED_QUERY = "(max-width: 1279px)";
 import { ApprovalService } from "./approval.service";
 
 @Component({
@@ -56,8 +65,37 @@ export class ApprovalComponent {
   protected readonly filteredDays = computed(() =>
     filterApprovals(this.days(), this.monthFilter(), this.employeeFilter()),
   );
+  /**
+   * Auswahl fuer die Detailansicht (XTS-151), rein praesentativ: stabiler
+   * Schluessel aus Mitarbeiter und Datum. Filterwechsel und Nachladen
+   * korrigieren eine Auswahl, die nicht mehr in der Liste steht.
+   */
+  protected readonly selectedKey = linkedSignal<ApprovalDay[], string>({
+    source: this.filteredDays,
+    computation: (days, previous) =>
+      keepSelection(
+        days.map((day) => this.dayKey(day)),
+        previous?.value ?? "",
+      ),
+  });
+  protected readonly selectedDay = computed(
+    () =>
+      this.filteredDays().find(
+        (day) => this.dayKey(day) === this.selectedKey(),
+      ) ?? null,
+  );
+  private readonly detail = viewChild<ElementRef<HTMLElement>>("detail");
 
   constructor() {
+    // Jeder tatsaechliche Auswahlwechsel, auch durch Filter oder Nachladen,
+    // verwirft einen begonnenen Rueckweisungsgrund; er bleibt nur, solange
+    // sein Tag ausgewaehlt ist (Serverfehler lassen die Auswahl stehen).
+    effect(() => {
+      const selected = this.selectedKey();
+      if (this.rejectingKey() && this.rejectingKey() !== selected) {
+        this.cancelReject();
+      }
+    });
     void this.load();
   }
 
@@ -94,6 +132,30 @@ export class ApprovalComponent {
 
   protected reload(): void {
     void this.load();
+  }
+
+  protected isSelected(day: ApprovalDay): boolean {
+    return this.dayKey(day) === this.selectedKey();
+  }
+
+  /**
+   * Tag in der Liste auswaehlen. Waehrend einer Aktion gesperrt, damit der
+   * sichtbare Tag zur laufenden Aktion passt. Auch der bereits ausgewaehlte
+   * (z. B. vorausgewaehlte) Tag fuehrt zum Detail.
+   */
+  protected select(day: ApprovalDay): void {
+    if (this.busy.active()) return;
+    this.selectedKey.set(this.dayKey(day));
+    this.revealDetail();
+  }
+
+  /** Unter 1280 px liegt das Detail unter der Liste: dorthin scrollen. */
+  private revealDetail(): void {
+    if (!window.matchMedia(STACKED_QUERY).matches) return;
+    this.detail()?.nativeElement.scrollIntoView({
+      block: "start",
+      behavior: "smooth",
+    });
   }
 
   protected async approve(day: ApprovalDay): Promise<void> {
@@ -145,9 +207,15 @@ export class ApprovalComponent {
   }
 
   private removeDay(day: ApprovalDay): void {
+    // Auswahl springt in der aktuellen Reihenfolge weiter (XTS-151).
+    const next = nextSelectionAfter(
+      this.filteredDays().map((item) => this.dayKey(item)),
+      this.dayKey(day),
+    );
     this.days.update((days) =>
       days.filter((item) => this.dayKey(item) !== this.dayKey(day)),
     );
+    this.selectedKey.set(next);
     // Badge in der Navigation aus den Serverdaten nachziehen (XTS-142).
     void this.badge.refresh(this.auth.profile());
   }
