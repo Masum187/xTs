@@ -33,3 +33,34 @@ export function formatMonthLabel(month: string): string {
   const [year, monthPart] = month.split("-");
   return `${monthPart}.${year}`;
 }
+
+/** Sichtbare Monate je Seite der Planungsmatrix (XTS-152). */
+export const MONTHS_PER_PAGE = 4;
+
+/** Stabiler Schluessel einer Zelle aus Mitarbeiter, Kontierung und Monat. */
+export function cellKey(extNr: string, coIdent: string, month: string): string {
+  return `${extNr}|${coIdent}|${month}`;
+}
+
+export function pageCount(total: number, perPage = MONTHS_PER_PAGE): number {
+  return Math.max(1, Math.ceil(total / perPage));
+}
+
+/** Sichtbarer Ausschnitt (1-basiert) einer Seite, z. B. 5 bis 8 von 12. */
+export function pageRange(
+  page: number,
+  total: number,
+  perPage = MONTHS_PER_PAGE,
+): { from: number; to: number; total: number } {
+  const from = Math.min(page * perPage + 1, Math.max(total, 1));
+  return { from, to: Math.min(page * perPage + perPage, total), total };
+}
+
+/** Ausschnitt einer Liste fuer eine Seite. */
+export function pageSlice<T>(
+  items: T[],
+  page: number,
+  perPage = MONTHS_PER_PAGE,
+): T[] {
+  return items.slice(page * perPage, page * perPage + perPage);
+}

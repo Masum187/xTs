@@ -1,187 +1,334 @@
-<section class="page-header">
-  <div>
-    <p class="eyebrow">WebClient</p>
-    <h1>Ressourcenplanung</h1>
-  </div>
-</section>
+<div class="planning xts-font">
+  <header class="page-header">
+    <div>
+      <p class="xts-kicker">Planen</p>
+      <h1 class="xts-heading page-title">Ressourcenplanung</h1>
+    </div>
+  </header>
 
-<section class="panel filters">
-  <label>
-    Startmonat
-    <input
-      aria-label="Startmonat"
-      placeholder="MM.JJJJ"
-      [ngModel]="startInput()"
-      (change)="onStartChange($any($event.target).value)"
-    />
-  </label>
-  <label>
-    Mitarbeiter
-    <select
-      aria-label="Mitarbeiter"
-      [ngModel]="filterExtNr()"
-      (ngModelChange)="updateFilter({ extNr: $event })"
-    >
-      <option value="">Alle Mitarbeiter</option>
-      @for (option of employeeOptions(); track option.value) {
-        <option [value]="option.value">{{ option.label }}</option>
-      }
-    </select>
-  </label>
-  <label>
-    Team
-    <select
-      aria-label="Team"
-      [ngModel]="filterTeam()"
-      (ngModelChange)="updateFilter({ team: $event })"
-    >
-      <option value="">Alle Teams</option>
-      @for (team of teams(); track team.id) {
-        <option [value]="team.id">{{ team.name }}</option>
-      }
-    </select>
-  </label>
-  <label>
-    Kontierung
-    <select
-      aria-label="Kontierung"
-      [ngModel]="filterCoIdent()"
-      (ngModelChange)="updateFilter({ coIdent: $event })"
-    >
-      <option value="">Alle Kontierungen</option>
-      @for (option of coIdentOptions(); track option.value) {
-        <option [value]="option.value">{{ option.label }}</option>
-      }
-    </select>
-  </label>
-</section>
+  <section class="filters" aria-label="Filter">
+    <div class="xts-field">
+      <label>
+        Startmonat
+        <input
+          class="xts-input"
+          aria-label="Startmonat"
+          placeholder="MM.JJJJ"
+          [ngModel]="startInput()"
+          [disabled]="busy.active()"
+          (change)="onStartInput($any($event.target))"
+        />
+      </label>
+    </div>
+    <div class="xts-field">
+      <label>
+        Mitarbeiter
+        <select
+          class="xts-input"
+          aria-label="Mitarbeiter"
+          [ngModel]="filterExtNr()"
+          [disabled]="busy.active()"
+          (change)="onFilterInput('extNr', $any($event.target))"
+        >
+          <option value="">Alle Mitarbeiter</option>
+          @for (option of employeeOptions(); track option.value) {
+            <option [value]="option.value">{{ option.label }}</option>
+          }
+        </select>
+      </label>
+    </div>
+    <div class="xts-field">
+      <label>
+        Team
+        <select
+          class="xts-input"
+          aria-label="Team"
+          [ngModel]="filterTeam()"
+          [disabled]="busy.active()"
+          (change)="onFilterInput('team', $any($event.target))"
+        >
+          <option value="">Alle Teams</option>
+          @for (team of teams(); track team.id) {
+            <option [value]="team.id">{{ team.name }}</option>
+          }
+        </select>
+      </label>
+    </div>
+    <div class="xts-field">
+      <label>
+        Kontierung
+        <select
+          class="xts-input"
+          aria-label="Kontierung"
+          [ngModel]="filterCoIdent()"
+          [disabled]="busy.active()"
+          (change)="onFilterInput('coIdent', $any($event.target))"
+        >
+          <option value="">Alle Kontierungen</option>
+          @for (option of coIdentOptions(); track option.value) {
+            <option [value]="option.value">{{ option.label }}</option>
+          }
+        </select>
+      </label>
+    </div>
+  </section>
 
-@if (startError()) {
-  <section class="panel notice error" data-testid="start-error">
-    Ungültiger Startmonat. Bitte im Format MM.JJJJ eingeben, z.&nbsp;B. 03.2026.
-  </section>
-}
-@if (warning()) {
-  <section class="panel notice warn" data-testid="overbooked-warning">
-    {{ warning() }}
-  </section>
-}
-@if (message()) {
-  <section class="panel notice ok" data-testid="planning-message">
-    {{ message() }}
-  </section>
-}
+  @if (startError()) {
+    <p class="notice notice-error" data-testid="start-error" role="alert">
+      Ungültiger Startmonat. Bitte im Format MM.JJJJ eingeben, z.&nbsp;B.
+      03.2026.
+    </p>
+  }
+  @if (warning()) {
+    <p class="notice notice-warn" data-testid="overbooked-warning">
+      {{ warning() }}
+    </p>
+  }
+  @if (message()) {
+    <p
+      class="notice notice-hint message wrap-anywhere"
+      data-testid="planning-message"
+      aria-live="polite"
+    >
+      {{ message() }}
+    </p>
+  }
 
-<section class="panel">
   <xts-load-status
     [state]="loader.value()"
     loadingText="Planungsübersicht wird geladen …"
     (retry)="reload()"
   />
+
   @if (loader.ready()) {
-    <div class="table-wrap">
-      <table data-testid="planning-grid">
-        <thead>
-          <tr>
-            <th class="sticky">Mitarbeiter / Kontierung</th>
-            @for (month of monthLabels(); track month.month) {
-              <th class="num">
-                {{ month.label }}
-                <span class="available"
-                  >{{ month.availableHours | number: "1.0-2" }} Std.</span
-                >
-              </th>
+    <div class="plan-layout">
+      <section class="matrix-panel" aria-labelledby="matrix-title">
+        <div class="matrix-head">
+          <h2 class="xts-heading panel-title" id="matrix-title">Planmonate</h2>
+          <nav class="pager" aria-label="Monatsauswahl">
+            <button
+              type="button"
+              class="xts-btn xts-btn-secondary"
+              data-testid="months-prev"
+              [disabled]="busy.active() || page() === 0"
+              (click)="goToPage(-1)"
+            >
+              Vorherige Monate
+            </button>
+            <span
+              class="xts-text-muted page-label"
+              data-testid="months-page"
+              aria-live="polite"
+            >
+              Monate {{ pageRange().from }} bis {{ pageRange().to }} von
+              {{ pageRange().total }}
+            </span>
+            <button
+              type="button"
+              class="xts-btn xts-btn-secondary"
+              data-testid="months-next"
+              [disabled]="busy.active() || page() >= pageCount() - 1"
+              (click)="goToPage(1)"
+            >
+              Nächste Monate
+            </button>
+          </nav>
+        </div>
+
+        <div class="planning-grid" data-testid="planning-grid">
+          <div class="month-head" data-testid="month-head">
+            @for (month of visibleMonths(); track month.month) {
+              <span class="month-chip">
+                <strong>{{ month.label }}</strong>
+                <span class="xts-text-muted">
+                  {{ month.availableHours | number: "1.0-2" }} Std. verfügbar
+                </span>
+              </span>
             }
-          </tr>
-        </thead>
-        <tbody>
+          </div>
           @for (row of overview()?.rows ?? []; track row.extNr + row.coIdent) {
-            <tr>
-              <td class="sticky">
-                <strong>{{ row.displayName }}</strong>
-                <span class="co">{{ row.coIdent }}</span>
-              </td>
-              @for (cell of row.cells; track cell.month) {
-                <td
-                  class="num cell"
-                  [class.overbooked]="cell.overbooked"
-                  [attr.data-testid]="
-                    'cell-' + row.extNr + '-' + row.coIdent + '-' + cell.month
-                  "
-                >
-                  @if (!cell.valid) {
-                    <span class="locked-badge" data-status="invalid">
-                      {{
-                        cell.teamMissing
-                          ? "keine Teamzuordnung"
-                          : "nicht gültig"
-                      }}
+            <div class="plan-row">
+              <div class="row-head">
+                <strong class="wrap-anywhere">{{ row.displayName }}</strong>
+                <span class="mono xts-text-muted">{{ row.coIdent }}</span>
+              </div>
+              <div class="tiles">
+                @for (cell of visibleCells(row); track cell.month) {
+                  <button
+                    type="button"
+                    class="tile"
+                    [class.overbooked]="cell.overbooked"
+                    [class.selected]="isSelected(row, cell)"
+                    [class.locked]="cell.valid && cell.locked"
+                    [class.invalid]="!cell.valid"
+                    [attr.aria-current]="isSelected(row, cell) ? 'true' : null"
+                    [attr.data-testid]="
+                      'cell-' + row.extNr + '-' + row.coIdent + '-' + cell.month
+                    "
+                    [disabled]="busy.active()"
+                    (click)="selectCell(row, cell)"
+                  >
+                    <span class="tile-month">{{
+                      formatMonth(cell.month)
+                    }}</span>
+                    <span class="tile-value">
+                      @if (!cell.valid) {
+                        {{
+                          cell.teamMissing
+                            ? "keine Teamzuordnung"
+                            : "nicht gültig"
+                        }}
+                      } @else if (cell.locked) {
+                        {{ cell.hours | number: "1.0-2" }} · {{ cell.status }}
+                      } @else if (cell.hours > 0) {
+                        {{ cell.hours | number: "1.0-2" }} · V
+                      } @else {
+                        leer
+                      }
                     </span>
-                  } @else if (cell.locked) {
-                    <span class="locked-badge" [attr.data-status]="cell.status">
-                      {{ cell.hours | number: "1.0-2" }} · {{ cell.status }}
-                    </span>
-                  } @else {
-                    <input
-                      type="number"
-                      min="0"
-                      [attr.aria-label]="
-                        'Planstunden ' +
-                        row.displayName +
-                        ' ' +
-                        row.coIdent +
-                        ' ' +
-                        cell.month
-                      "
-                      [attr.data-testid]="
-                        'input-' +
-                        row.extNr +
-                        '-' +
-                        row.coIdent +
-                        '-' +
-                        cell.month
-                      "
-                      [disabled]="busy.active()"
-                      [value]="cell.hours || ''"
-                      (change)="saveCell(row, cell, $any($event.target).value)"
-                    />
-                    @if (cell.status === "V" && cell.hours > 0) {
-                      <button
-                        type="button"
-                        class="release"
-                        title="Für BANF freigeben"
-                        [attr.data-testid]="
-                          'release-' +
-                          row.extNr +
-                          '-' +
-                          row.coIdent +
-                          '-' +
-                          cell.month
-                        "
-                        [disabled]="busy.active()"
-                        (click)="releaseCell(row, cell)"
-                      >
-                        F
-                      </button>
+                    @if (cell.overbooked) {
+                      <span class="xts-tag xts-tag-accent tile-flag">
+                        Überplanung
+                      </span>
                     }
-                  }
-                </td>
-              }
-            </tr>
+                  </button>
+                }
+              </div>
+            </div>
           } @empty {
-            <tr>
-              <td colspan="13" class="empty-hint">
-                Keine Planungszeilen für die aktuelle Selektion.
-              </td>
-            </tr>
+            <p class="empty-hint" data-testid="planning-empty">
+              Keine Planungszeilen für die aktuelle Selektion.
+            </p>
           }
-        </tbody>
-      </table>
+        </div>
+        <p class="xts-text-muted legend">
+          Status: V = Vorschlag (editierbar), F = für BANF freigegeben, P = BANF
+          erstellt, B = Bestellung. Zellen mit „Überplanung" liegen über den
+          verfügbaren Stunden des Werkkalenders.
+        </p>
+      </section>
+
+      <section
+        class="editor-panel"
+        #editor
+        aria-labelledby="editor-title"
+        data-testid="cell-editor"
+      >
+        @if (selectedCell(); as selected) {
+          <p class="xts-kicker">Zelleneditor</p>
+          <h2 class="xts-heading panel-title" id="editor-title">
+            {{ selected.row.displayName }} ·
+            {{ formatMonth(selected.cell.month) }}
+          </h2>
+          <p class="xts-text-muted editor-meta wrap-anywhere">
+            <span class="mono">{{ selected.row.coIdent }}</span> ·
+            {{ selected.row.description }}
+          </p>
+          <p class="xts-text-muted editor-meta">
+            Verfügbar im Monat:
+            {{ availableHoursFor(selected.cell.month) | number: "1.0-2" }} Std.
+          </p>
+          @if (!selected.cell.valid) {
+            <p class="notice notice-hint">
+              @if (selected.cell.teamMissing) {
+                Keine Teamzuordnung im Planmonat: die Zelle kann nicht geplant
+                werden.
+              } @else {
+                Außerhalb der Kontierungsgültigkeit: die Zelle kann nicht
+                geplant werden.
+              }
+            </p>
+          } @else if (selected.cell.locked) {
+            <p class="notice notice-hint">
+              {{ selected.cell.hours | number: "1.0-2" }} Std. · Status
+              {{ selected.cell.status }}: gesperrt, kein Zurücksetzen auf V.
+            </p>
+          } @else {
+            <div class="xts-field">
+              <label>
+                Planstunden
+                <input
+                  class="xts-input"
+                  type="number"
+                  min="0"
+                  [attr.aria-label]="
+                    'Planstunden ' +
+                    selected.row.displayName +
+                    ' ' +
+                    selected.row.coIdent +
+                    ' ' +
+                    selected.cell.month
+                  "
+                  [attr.data-testid]="
+                    'input-' +
+                    selected.row.extNr +
+                    '-' +
+                    selected.row.coIdent +
+                    '-' +
+                    selected.cell.month
+                  "
+                  [disabled]="busy.active()"
+                  [value]="editorValue()"
+                  (input)="draft.set($any($event.target).value)"
+                  (change)="commitDraft($any($event.target).value)"
+                />
+              </label>
+            </div>
+            <p class="xts-text-muted editor-hint">
+              Speichern mit Enter oder beim Verlassen des Feldes. 0 bis 744
+              Stunden in ganzen Minuten.
+            </p>
+            @if (hasUnsavedDraft()) {
+              <p class="notice notice-warn" data-testid="editor-unsaved">
+                Eingabe noch nicht gespeichert.
+              </p>
+            }
+            <div class="button-row">
+              <button
+                type="button"
+                class="xts-btn xts-btn-secondary"
+                [attr.data-testid]="
+                  'save-' +
+                  selected.row.extNr +
+                  '-' +
+                  selected.row.coIdent +
+                  '-' +
+                  selected.cell.month
+                "
+                [disabled]="busy.active()"
+                (click)="commitDraft(editorValue())"
+              >
+                Speichern
+              </button>
+              @if (selected.cell.status === "V" && selected.cell.hours > 0) {
+                <button
+                  type="button"
+                  class="xts-btn xts-btn-primary"
+                  [attr.data-testid]="
+                    'release-' +
+                    selected.row.extNr +
+                    '-' +
+                    selected.row.coIdent +
+                    '-' +
+                    selected.cell.month
+                  "
+                  [disabled]="busy.active()"
+                  (click)="releaseCell(selected.row, selected.cell)"
+                >
+                  Für BANF freigeben
+                </button>
+              }
+            </div>
+          }
+        } @else {
+          <h2 class="xts-heading panel-title" id="editor-title">
+            Zelleneditor
+          </h2>
+          <p class="empty-hint" data-testid="cell-editor-empty">
+            Keine Zelle ausgewählt. Wählen Sie eine Kachel in der Matrix.
+          </p>
+        }
+      </section>
     </div>
-    <p class="legend">
-      Status: V = Vorschlag (editierbar), F = für BANF freigegeben, P = BANF
-      erstellt, B = Bestellung. Rot hinterlegte Zellen liegen über den
-      verfügbaren Stunden des Werkkalenders.
-    </p>
   }
-</section>
+</div>
