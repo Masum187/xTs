@@ -191,12 +191,16 @@ fieldset.plain {
   margin: 0;
 }
 
-/* Belegkette: Nummern ungebrochen, solange sie passen; sonst umbrechen. */
+/*
+  Belegkette: Felder stapeln abhaengig von der Kartenbreite (auto-fit),
+  damit Beschriftungen nie ueberlappen; Nummern und Beschriftungen bleiben
+  ungebrochen, solange sie passen, sonst umbrechen sie kontrolliert.
+*/
 .chain {
   display: grid;
   font-size: 13px;
   gap: 4px 12px;
-  grid-template-columns: repeat(3, minmax(0, auto));
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
   margin: 0;
 }
 
@@ -208,17 +212,12 @@ fieldset.plain {
   color: var(--xts-color-text-muted);
   font-size: 11px;
   letter-spacing: 0.06em;
+  overflow-wrap: anywhere;
   text-transform: uppercase;
 }
 
 .chain dd {
   margin: 0;
-}
-
-@media (max-width: 480px) {
-  .chain {
-    grid-template-columns: minmax(0, 1fr);
-  }
 }
 
 .card .xts-field {

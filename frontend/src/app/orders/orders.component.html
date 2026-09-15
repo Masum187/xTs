@@ -33,7 +33,11 @@
             Vorschlag
           </h2>
           <span class="xts-tag xts-tag-neutral" data-testid="candidates-count">
-            {{ candidates().length }} Vorschläge
+            @if (candidatesLoader.ready()) {
+              {{ candidates().length }} Vorschläge
+            } @else {
+              Vorschläge: unbekannt
+            }
           </span>
         </div>
         <p class="xts-text-muted hint">

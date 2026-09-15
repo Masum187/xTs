@@ -125,6 +125,29 @@ async function expectContained(page: Page, label: string) {
         out.push("Belegnummer nowrap oder abgeschnitten");
       }
     }
+    // Beschriftungen der Belegkette: nicht abgeschnitten, keine Ueberlappung.
+    for (const chain of document.querySelectorAll(".chain")) {
+      const fields = [...chain.querySelectorAll(":scope > div")];
+      for (const field of fields) {
+        const label = field.querySelector("dt")!;
+        if (label.scrollWidth > label.clientWidth + 0.5) {
+          out.push(`Beschriftung "${label.textContent?.trim()}" abgeschnitten`);
+        }
+      }
+      const boxes = fields.map((field) => field.getBoundingClientRect());
+      for (let i = 0; i < boxes.length; i += 1) {
+        for (let j = i + 1; j < boxes.length; j += 1) {
+          const a = boxes[i]!;
+          const b = boxes[j]!;
+          const overlapX =
+            Math.min(a.right, b.right) - Math.max(a.left, b.left);
+          const overlapY =
+            Math.min(a.bottom, b.bottom) - Math.max(a.top, b.top);
+          if (overlapX > 0.5 && overlapY > 0.5)
+            out.push("Belegkette ueberlappt");
+        }
+      }
+    }
     return [...new Set(out)];
   });
   expect(issues, label).toEqual([]);
@@ -233,11 +256,14 @@ test("load errors keep the other columns and never look like empty columns", asy
   await expect(page.getByTestId("order-protocol")).toBeVisible();
   const counts = await expectCountsMatchCards(page);
 
-  // Kandidatenfilter scheitert: nur Spalte 1 zeigt den Fehler.
+  // Kandidatenfilter scheitert: nur Spalte 1 zeigt den Fehler; der Zaehler
+  // zeigt keinen veralteten Wert.
   state.candidates = true;
   await page.getByLabel("Mitarbeiter-Nr.").fill("ROEPER");
   await expect(page.getByTestId("load-error")).toContainText("Kandidaten weg");
   await expect(page.getByTestId("candidate-list")).toHaveCount(0);
+  await expect(page.getByTestId("candidates-count")).toHaveText(/unbekannt/);
+  await expect(page.getByTestId("candidates-count")).not.toHaveText(/\d/);
   await expect(page.getByTestId("candidates-empty")).toHaveCount(0);
   await expect(ordersArea).toBeVisible();
   await expect(page.getByTestId("done-count")).toHaveText(
@@ -247,6 +273,7 @@ test("load errors keep the other columns and never look like empty columns", asy
   state.candidates = false;
   await page.getByTestId("retry").click();
   await expect(page.getByTestId("candidate-ROEPER-600000000001")).toBeVisible();
+  await expectCountsMatchCards(page);
 });
 
 test("text buffers survive failures and BANF waits for the saved text", async ({
