@@ -1,9 +1,15 @@
 import { DecimalPipe } from "@angular/common";
+import type { ElementRef } from "@angular/core";
 import {
+  afterNextRender,
   Component,
   computed,
+  effect,
   inject,
+  Injector,
+  linkedSignal,
   signal,
+  viewChild,
   ChangeDetectionStrategy,
 } from "@angular/core";
 import { FormsModule } from "@angular/forms";
@@ -16,7 +22,11 @@ import { formatHours } from "../shared/hours";
 import type { Team } from "../reporting/reporting.models";
 import { ReportingService } from "../reporting/reporting.service";
 import {
+  cellKey,
   formatMonthLabel,
+  pageCount,
+  pageRange,
+  pageSlice,
   parseStartMonth,
   planningHoursProblem,
 } from "./planning.logic";
@@ -32,6 +42,17 @@ interface FilterOption {
   label: string;
 }
 
+interface SelectedCell {
+  row: PlanningRow;
+  cell: PlanningCell;
+}
+
+/** Screen-lokaler Umbruch: Matrix und Zelleneditor nebeneinander ab 1280 px. */
+const STACKED_QUERY = "(max-width: 1279px)";
+
+export const DISCARD_PLAN_MESSAGE =
+  "Es gibt ungespeicherte Planstunden im Zelleneditor. Änderungen verwerfen?";
+
 @Component({
   selector: "xts-planning",
   imports: [DecimalPipe, FormsModule, LoadStatusComponent],
@@ -42,6 +63,7 @@ interface FilterOption {
 export class PlanningComponent {
   private readonly planningService = inject(PlanningService);
   private readonly reportingService = inject(ReportingService);
+  private readonly injector = inject(Injector);
 
   protected readonly loader = new LoadState();
   protected readonly busy = new BusyState();
@@ -65,11 +87,177 @@ export class PlanningComponent {
     })),
   );
 
+  // XTS-152: Matrix als Ausschnitt von vier Monaten mit Pager und
+  // Zelleneditor. Seite und Auswahl sind rein praesentativ.
+  protected readonly page = signal<number>(0);
+  protected readonly pageCount = computed(() =>
+    pageCount(this.monthLabels().length),
+  );
+  protected readonly pageRange = computed(() =>
+    pageRange(this.page(), this.monthLabels().length),
+  );
+  protected readonly visibleMonths = computed(() =>
+    pageSlice(this.monthLabels(), this.page()),
+  );
+  /**
+   * Ausgewaehlte Zelle, Schluessel aus Mitarbeiter, Kontierung und Monat.
+   * Verschwindet die Zelle durch Filter, Seite oder Nachladen, ist die
+   * Auswahl aufgehoben; nach Speichern oder Freigeben bleibt sie bestehen.
+   */
+  protected readonly selectedKey = linkedSignal<
+    { overview: PlanningOverview | null; page: number },
+    string
+  >({
+    source: computed(() => ({ overview: this.overview(), page: this.page() })),
+    computation: ({ overview, page }, previous) => {
+      const current = previous?.value ?? "";
+      const visible = (overview?.rows ?? []).some((row) =>
+        pageSlice(row.cells, page).some(
+          (cell) => cellKey(row.extNr, row.coIdent, cell.month) === current,
+        ),
+      );
+      return visible ? current : "";
+    },
+  });
+  protected readonly selectedCell = computed<SelectedCell | null>(() => {
+    const key = this.selectedKey();
+    if (!key) return null;
+    for (const row of this.overview()?.rows ?? []) {
+      const cell = row.cells.find(
+        (item) => cellKey(row.extNr, row.coIdent, item.month) === key,
+      );
+      if (cell) return { row, cell };
+    }
+    return null;
+  });
+  /** Eingabe im Editor, solange sie nicht dem Serverstand entspricht. */
+  protected readonly draft = signal<string | null>(null);
+  protected readonly editorValue = computed(() => {
+    const draft = this.draft();
+    if (draft !== null) return draft;
+    const hours = this.selectedCell()?.cell.hours ?? 0;
+    return hours > 0 ? String(hours) : "";
+  });
+  protected readonly hasUnsavedDraft = computed(() => {
+    const draft = this.draft();
+    const selected = this.selectedCell();
+    return (
+      draft !== null &&
+      selected !== null &&
+      Number(draft) !== selected.cell.hours
+    );
+  });
+  private readonly editor = viewChild<ElementRef<HTMLElement>>("editor");
+
   constructor() {
+    // Jeder Auswahlwechsel (Klick, Seite, Filter, Nachladen) verwirft den
+    // Eingabepuffer; nur dieselbe Zelle behaelt ihn (z. B. nach Fehler).
+    effect(() => {
+      this.selectedKey();
+      this.draft.set(null);
+    });
     void this.reportingService.getTeams().then((teams) => {
       this.teams.set(teams);
     });
     void this.load(true);
+  }
+
+  protected visibleCells(row: PlanningRow): PlanningCell[] {
+    return pageSlice(row.cells, this.page());
+  }
+
+  protected isSelected(row: PlanningRow, cell: PlanningCell): boolean {
+    return cellKey(row.extNr, row.coIdent, cell.month) === this.selectedKey();
+  }
+
+  protected availableHoursFor(month: string): number {
+    return (
+      this.overview()?.months.find((entry) => entry.month === month)
+        ?.availableHours ?? 0
+    );
+  }
+
+  /**
+   * Kachel auswaehlen. Waehrend einer Aktion gesperrt; ein ungespeicherter
+   * Entwurf wird nur nach Rueckfrage verworfen. Auch die bereits gewaehlte
+   * Kachel fuehrt zum Editor (unter 1280 px liegt er unter der Matrix).
+   */
+  protected selectCell(row: PlanningRow, cell: PlanningCell): void {
+    if (this.busy.active()) return;
+    const key = cellKey(row.extNr, row.coIdent, cell.month);
+    if (key !== this.selectedKey()) {
+      if (!this.confirmDiscard()) return;
+      this.selectedKey.set(key);
+      // Auch ohne Rueckfrage: der alte Puffer gehoert nicht zur neuen Zelle.
+      this.draft.set(null);
+    }
+    this.revealEditor();
+  }
+
+  protected goToPage(delta: number): void {
+    if (this.busy.active()) return;
+    const next = Math.min(
+      Math.max(this.page() + delta, 0),
+      this.pageCount() - 1,
+    );
+    if (next === this.page() || !this.confirmDiscard()) return;
+    this.page.set(next);
+  }
+
+  /** Startmonat aus dem Feld uebernehmen; Seite 1, Rueckfrage bei Entwurf. */
+  protected onStartInput(target: HTMLInputElement): void {
+    if (!this.confirmDiscard()) {
+      target.value = this.startInput();
+      return;
+    }
+    this.page.set(0);
+    void this.onStartChange(target.value);
+  }
+
+  protected onFilterInput(
+    field: "extNr" | "team" | "coIdent",
+    target: HTMLSelectElement,
+  ): void {
+    if (!this.confirmDiscard()) {
+      target.value = {
+        extNr: this.filterExtNr(),
+        team: this.filterTeam(),
+        coIdent: this.filterCoIdent(),
+      }[field];
+      return;
+    }
+    void this.updateFilter({ [field]: target.value });
+  }
+
+  /**
+   * Eingabe speichern (Enter oder Verlassen des Feldes). Bei Erfolg zeigt
+   * dieselbe Zelle den Serverstand, bei Fehler oder ungueltiger Eingabe
+   * bleibt der Wert im Editor stehen.
+   */
+  protected async commitDraft(value: string): Promise<void> {
+    const selected = this.selectedCell();
+    if (!selected) return;
+    this.draft.set(value);
+    await this.saveCell(selected.row, selected.cell, value);
+    const current = this.selectedCell();
+    if (current && Number(value) === current.cell.hours) this.draft.set(null);
+  }
+
+  private confirmDiscard(): boolean {
+    if (!this.hasUnsavedDraft()) return true;
+    if (!window.confirm(DISCARD_PLAN_MESSAGE)) return false;
+    this.draft.set(null);
+    return true;
+  }
+
+  private revealEditor(): void {
+    if (!window.matchMedia(STACKED_QUERY).matches) return;
+    // Erst nach dem Rendern des Editorinhalts scrollen, sonst reicht die
+    // Seitenhoehe noch nicht bis zum Editor.
+    afterNextRender(
+      () => this.editor()?.nativeElement.scrollIntoView({ block: "start" }),
+      { injector: this.injector },
+    );
   }
 
   protected formatMonth(month: string): string {
@@ -137,6 +325,14 @@ export class PlanningComponent {
     row: PlanningRow,
     cell: PlanningCell,
   ): Promise<void> {
+    // Freigabe nur fuer den gespeicherten Stand (XTS-152): eine offene oder
+    // ungueltige Eingabe muss zuerst erfolgreich gespeichert werden.
+    if (this.hasUnsavedDraft()) {
+      this.message.set(
+        "Bitte die Planstunden zuerst speichern, bevor die Zeile freigegeben wird.",
+      );
+      return;
+    }
     await this.busy.guard(async () => {
       try {
         await this.planningService.releaseEntry(

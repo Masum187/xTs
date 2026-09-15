@@ -21,6 +21,7 @@ test("UAT-Fall A: Planung bis Genehmigung und Wareneingang", async ({
 
   // Schritt 1–2: Planung und Freigabe
   await page.getByRole("link", { name: "Planung" }).click();
+  await page.getByTestId("cell-SCHILZ-700000000004-2026-05").click();
   const input = page.getByTestId("input-SCHILZ-700000000004-2026-05");
   await input.fill("40");
   await input.press("Tab");

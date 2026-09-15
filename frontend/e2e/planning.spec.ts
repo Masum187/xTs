@@ -17,10 +17,24 @@ test("shows 12 months from the start month with locked entries", async ({
 }) => {
   await openPlanningAsPlanner(page);
 
+  // XTS-152: vier Monate je Seite ueber den zwoelf Monaten des Horizonts.
   const grid = page.getByTestId("planning-grid");
   await expect(grid).toContainText("03.2026");
+  await expect(page.getByTestId("months-page")).toHaveText(
+    "Monate 1 bis 4 von 12",
+  );
+  await expect(
+    page.getByTestId("month-head").locator(".month-chip"),
+  ).toHaveCount(4);
+  await page.getByTestId("months-next").click();
+  await page.getByTestId("months-next").click();
+  await expect(page.getByTestId("months-page")).toHaveText(
+    "Monate 9 bis 12 von 12",
+  );
   await expect(grid).toContainText("02.2027");
-  await expect(grid.locator("thead th")).toHaveCount(13);
+  await expect(page.getByTestId("months-next")).toBeDisabled();
+  await page.getByTestId("months-prev").click();
+  await page.getByTestId("months-prev").click();
 
   await expect(
     page.getByTestId("cell-SCHILZ-600000000001-2026-03"),
@@ -43,6 +57,8 @@ test("shows 12 months from the start month with locked entries", async ({
 test("saves plan hours and warns about overplanning", async ({ page }) => {
   await openPlanningAsPlanner(page);
 
+  // XTS-152: Eingabe im Zelleneditor der ausgewaehlten Kachel.
+  await page.getByTestId("cell-SCHILZ-700000000004-2026-05").click();
   const input = page.getByTestId("input-SCHILZ-700000000004-2026-05");
   await input.fill("200");
   await input.press("Tab");
@@ -60,6 +76,7 @@ test("saves plan hours and warns about overplanning", async ({ page }) => {
 test("releases a V entry for BANF and locks it", async ({ page }) => {
   await openPlanningAsPlanner(page);
 
+  await page.getByTestId("cell-SCHILZ-700000000004-2026-04").click();
   await page.getByTestId("release-SCHILZ-700000000004-2026-04").click();
   await expect(page.getByTestId("planning-message")).toContainText(
     "für BANF freigegeben",
@@ -94,6 +111,9 @@ test("plan hours are validated before sending and need a team assignment", async
 }) => {
   await openPlanningAsPlanner(page);
 
+  // 09.2026 liegt auf der zweiten Seite, 01.2027 auf der dritten.
+  await page.getByTestId("months-next").click();
+  await page.getByTestId("cell-SCHILZ-700000000004-2026-09").click();
   const input = page.getByTestId("input-SCHILZ-700000000004-2026-09");
   await input.fill("0.333");
   await input.press("Tab");
@@ -105,7 +125,10 @@ test("plan hours are validated before sending and need a team assignment", async
   await expect(page.getByTestId("planning-message")).toContainText(
     "zwischen 0 und 744",
   );
-  // Schilz hat 2027 keine Teamzuordnung: Zelle ist gesperrt.
+  // Schilz hat 2027 keine Teamzuordnung: Zelle ist gesperrt. Der Seitenwechsel
+  // verwirft die ungueltige Eingabe nach Rueckfrage.
+  page.once("dialog", (dialog) => dialog.accept());
+  await page.getByTestId("months-next").click();
   await expect(
     page.getByTestId("cell-SCHILZ-700000000004-2027-01"),
   ).toContainText("keine Teamzuordnung");

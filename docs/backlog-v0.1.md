@@ -863,7 +863,7 @@ Prioritaet: P1
 
 Rolle: Ressourcenmanager
 
-Jira: XTS-94 (Label `redesign`); Grundlage: `ui-redesign-bewertung.md`.
+Jira: XTS-94 (Label `redesign`); Grundlage: `ui-redesign-bewertung.md`. Status: freigegeben 2026-09-14, umgesetzt in PR #42 (Kachel-Matrix mit vier Monaten je Seite und Pager ueber zwoelf Monate, Eingabe ausschliesslich im Zelleneditor, Auswahl- und Seitenzustand rein praesentativ; Filter, Zellzustaende, Sperren, Ueberplanungswarnung und Planstundenpruefung unveraendert; kein Auslastungsbalken, siehe XTS-157).
 
 Akzeptanzkriterien:
 
@@ -914,6 +914,21 @@ Akzeptanzkriterien:
 - Drei Reports (Live-Circle, Budget-Monitor, Kontingent-Monitor) im neuen Tabellen- und Filterlayout; Darstellung "KPI + Tabelle" erst mit XTS-073.
 - Erhalten: alle Filter (Zeitraum, Einkaufsbeleg, Bestellposition, Nachname, Team, Detailstufe), Ampelschwellen, Rollenschnitt fuer `approver` und volle Sicht fuer `controller`/`admin`.
 - E2E `reporting.spec.ts` gruen.
+
+### XTS-157 - Auslastungsbalken je Mitarbeiter mit serverseitiger Aggregation
+
+Prioritaet: P3
+
+Rolle: Ressourcenmanager
+
+Jira: noch nicht angelegt (Label `redesign`); Grundlage: Handoff Planung (K4), Entscheidung 2026-09-14 zu XTS-152. Status: nicht freigegeben.
+
+Akzeptanzkriterien:
+
+- Die Planungsuebersicht liefert je Mitarbeiter und Monat die Summe der Planstunden ueber alle Kontierungen serverseitig (Minutenarithmetik, unabhaengig vom Kontierungsfilter des Clients).
+- Der Auslastungsbalken zeigt Summe und verfuegbare Stunden des Werkkalenders; ein aktiver Kontierungsfilter darf keine scheinbare Gesamtauslastung erzeugen (Summe bleibt die des Mitarbeiters, Filter wird als Hinweis genannt).
+- Ueberplanung wird als Text und Farbe markiert; Kontrast nach Baseline.
+- E2E `planning.spec.ts` und `planning-layout.spec.ts` gruen.
 
 ### XTS-156 - Visuelle und funktionale Abnahme (fortlaufend je Screen)
 

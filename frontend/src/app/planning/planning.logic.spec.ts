@@ -1,7 +1,11 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  cellKey,
   formatMonthLabel,
+  pageCount,
+  pageRange,
+  pageSlice,
   parseStartMonth,
   planningHoursProblem,
 } from "./planning.logic";
@@ -36,5 +40,22 @@ describe("planning logic", () => {
   it("formats months for display", () => {
     expect(formatMonthLabel("2026-03")).toBe("03.2026");
     expect(formatMonthLabel("2027-12")).toBe("12.2027");
+  });
+});
+
+describe("matrix pages (XTS-152)", () => {
+  it("splits twelve months into three pages of four", () => {
+    expect(pageCount(12)).toBe(3);
+    expect(pageCount(0)).toBe(1);
+    expect(pageRange(0, 12)).toEqual({ from: 1, to: 4, total: 12 });
+    expect(pageRange(2, 12)).toEqual({ from: 9, to: 12, total: 12 });
+    expect(pageRange(0, 0)).toEqual({ from: 1, to: 0, total: 0 });
+    expect(pageSlice(["a", "b", "c", "d", "e"], 1)).toEqual(["e"]);
+  });
+
+  it("builds a stable cell key", () => {
+    expect(cellKey("SCHILZ", "700000000004", "2026-05")).toBe(
+      "SCHILZ|700000000004|2026-05",
+    );
   });
 });
