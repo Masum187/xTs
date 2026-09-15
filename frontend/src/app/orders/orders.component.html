@@ -1,235 +1,347 @@
-<section class="page-header">
-  <div>
-    <p class="eyebrow">WebClient</p>
-    <h1>Beauftragung</h1>
-  </div>
-  <button
-    type="button"
-    [disabled]="busy.active()"
-    (click)="runSync()"
-    data-testid="run-po-sync"
-  >
-    Bestelldaten aktualisieren (Job)
-  </button>
-</section>
-
-@if (message()) {
-  <section class="panel notice ok" data-testid="orders-message">
-    {{ message() }}
-  </section>
-}
-
-<xts-load-status
-  [state]="loader.value()"
-  loadingText="Beauftragungen werden geladen …"
-  (retry)="reload()"
-/>
-
-<fieldset class="plain" [disabled]="busy.active()">
-  <section class="panel">
-    <div class="section-title">
-      <h2>Beauftragungskandidaten</h2>
-      <span>{{ candidates().length }} Vorschläge</span>
+<div class="orders xts-font">
+  <header class="page-header">
+    <div>
+      <p class="xts-kicker">Beauftragen</p>
+      <h1 class="xts-heading page-title">Beauftragung</h1>
     </div>
-    <p class="hint">
-      Zusammenfassung je Mitarbeiter und Kontierung gemäß Regelwerk — niemals
-      über mehrere Mitarbeiter hinweg.
+    <button
+      type="button"
+      class="xts-btn xts-btn-secondary"
+      [disabled]="busy.active()"
+      (click)="runSync()"
+      data-testid="run-po-sync"
+    >
+      Bestelldaten aktualisieren (Job)
+    </button>
+  </header>
+
+  @if (message()) {
+    <p
+      class="notice notice-hint message wrap-anywhere"
+      data-testid="orders-message"
+      aria-live="polite"
+    >
+      {{ message() }}
     </p>
+  }
 
-    <div class="filters">
-      <label>
-        Mitarbeiter-Nr.
-        <input
-          aria-label="Mitarbeiter-Nr."
-          placeholder="z. B. SCHILZ"
-          [ngModel]="filterExtNr()"
-          (ngModelChange)="updateFilter({ extNr: $event })"
-        />
-      </label>
-      <label>
-        Kontierung
-        <input
-          aria-label="Kontierung"
-          placeholder="z. B. 700000000004"
-          [ngModel]="filterCoIdent()"
-          (ngModelChange)="updateFilter({ coIdent: $event })"
-        />
-      </label>
-      <label>
-        Zeitraum von
-        <input
-          aria-label="Zeitraum von"
-          placeholder="MM.JJJJ"
-          [ngModel]="filterFrom()"
-          (ngModelChange)="updateFilter({ from: $event })"
-        />
-      </label>
-      <label>
-        Zeitraum bis
-        <input
-          aria-label="Zeitraum bis"
-          placeholder="MM.JJJJ"
-          [ngModel]="filterTo()"
-          (ngModelChange)="updateFilter({ to: $event })"
-        />
-      </label>
-    </div>
+  <fieldset class="plain" [disabled]="busy.active()">
+    <div class="board">
+      <section class="column" aria-labelledby="candidates-title">
+        <div class="column-head">
+          <h2 class="xts-heading column-title" id="candidates-title">
+            Vorschlag
+          </h2>
+          <span class="xts-tag xts-tag-neutral" data-testid="candidates-count">
+            {{ candidates().length }} Vorschläge
+          </span>
+        </div>
+        <p class="xts-text-muted hint">
+          Zusammenfassung je Mitarbeiter und Kontierung gemäß Regelwerk, niemals
+          über mehrere Mitarbeiter hinweg.
+        </p>
 
-    <xts-load-status
-      [state]="candidatesLoader.value()"
-      loadingText="Beauftragungskandidaten werden geladen …"
-      (retry)="reloadCandidates()"
-    />
-    @if (candidatesLoader.ready()) {
-      <div class="cards" data-testid="candidate-list">
-        @for (candidate of candidates(); track candidateKey(candidate)) {
-          <article
-            class="card"
-            [attr.data-testid]="
-              'candidate-' + candidate.extNr + '-' + candidate.coIdent
-            "
-          >
-            <header>
-              <div>
-                <strong>{{ candidate.displayName }}</strong>
-                <span>{{ candidate.coIdent }}</span>
-              </div>
-              <strong>{{ candidate.totalHours | number: "1.0-2" }} Std.</strong>
-            </header>
-            <p class="period">
-              {{ periodLabel(candidate.periodFrom, candidate.periodTo) }} ·
-              {{ candidate.months.length }} Monat(e)
-            </p>
-            <footer>
+        <div class="filters">
+          <div class="xts-field">
+            <label>
+              Mitarbeiter-Nr.
               <input
-                aria-label="BANF-Positionstext"
-                [ngModel]="textFor(candidate)"
-                (ngModelChange)="setText(candidate, $event)"
+                class="xts-input"
+                aria-label="Mitarbeiter-Nr."
+                placeholder="z. B. SCHILZ"
+                [ngModel]="filterExtNr()"
+                (ngModelChange)="updateFilter({ extNr: $event })"
               />
-              <button
-                type="button"
-                (click)="createOrder(candidate)"
+            </label>
+          </div>
+          <div class="xts-field">
+            <label>
+              Kontierung
+              <input
+                class="xts-input"
+                aria-label="Kontierung"
+                placeholder="z. B. 700000000004"
+                [ngModel]="filterCoIdent()"
+                (ngModelChange)="updateFilter({ coIdent: $event })"
+              />
+            </label>
+          </div>
+          <div class="xts-field">
+            <label>
+              Zeitraum von
+              <input
+                class="xts-input"
+                aria-label="Zeitraum von"
+                placeholder="MM.JJJJ"
+                [ngModel]="filterFrom()"
+                (ngModelChange)="updateFilter({ from: $event })"
+              />
+            </label>
+          </div>
+          <div class="xts-field">
+            <label>
+              Zeitraum bis
+              <input
+                class="xts-input"
+                aria-label="Zeitraum bis"
+                placeholder="MM.JJJJ"
+                [ngModel]="filterTo()"
+                (ngModelChange)="updateFilter({ to: $event })"
+              />
+            </label>
+          </div>
+        </div>
+
+        <xts-load-status
+          [state]="candidatesLoader.value()"
+          loadingText="Beauftragungskandidaten werden geladen …"
+          (retry)="reloadCandidates()"
+        />
+        @if (candidatesLoader.ready()) {
+          <div class="cards" data-testid="candidate-list">
+            @for (candidate of candidates(); track candidateKey(candidate)) {
+              <article
+                class="card"
                 [attr.data-testid]="
-                  'create-order-' + candidate.extNr + '-' + candidate.coIdent
+                  'candidate-' + candidate.extNr + '-' + candidate.coIdent
                 "
               >
-                Beauftragung anlegen
-              </button>
-            </footer>
-          </article>
-        } @empty {
-          <p class="empty-hint" data-testid="candidates-empty">
-            Keine freigegebenen Planzeilen für die aktuelle Selektion.
-          </p>
-        }
-      </div>
-    }
-  </section>
-
-  @if (loader.ready()) {
-    <section class="panel">
-      <div class="section-title">
-        <h2>Beauftragungen</h2>
-      </div>
-      <div class="table-wrap">
-        <table data-testid="orders-table">
-          <thead>
-            <tr>
-              <th>Nr.</th>
-              <th>Mitarbeiter</th>
-              <th>Kontierung</th>
-              <th>Zeitraum</th>
-              <th class="num">Std.</th>
-              <th>BANF-Positionstext</th>
-              <th>Status</th>
-              <th>BANF</th>
-              <th>Bestellung</th>
-              <th></th>
-            </tr>
-          </thead>
-          <tbody>
-            @for (order of orders(); track order.orderId) {
-              <tr [attr.data-testid]="'order-' + order.orderId">
-                <td>{{ order.orderId }}</td>
-                <td>{{ order.displayName }}</td>
-                <td>{{ order.coIdent }}</td>
-                <td>{{ periodLabel(order.periodFrom, order.periodTo) }}</td>
-                <td class="num">{{ order.hours | number: "1.0-2" }}</td>
-                <td>
-                  @if (order.status === "created") {
-                    <div class="text-edit">
-                      <input
-                        [attr.aria-label]="
-                          'BANF-Positionstext ' + order.orderId
-                        "
-                        [ngModel]="orderTextFor(order)"
-                        (ngModelChange)="setOrderText(order, $event)"
-                      />
-                      <button
-                        type="button"
-                        (click)="saveOrderText(order)"
-                        [disabled]="!orderTextFor(order).trim()"
-                        [attr.data-testid]="'save-text-' + order.orderId"
-                      >
-                        Speichern
-                      </button>
-                    </div>
-                  } @else {
-                    {{ order.text }}
-                  }
-                </td>
-                <td>
-                  <span class="status" [attr.data-status]="order.status">
-                    {{ statusLabel(order.status) }}
-                  </span>
-                </td>
-                <td>
-                  @if (order.banfNumber) {
-                    {{ order.banfNumber }}/{{ order.banfItem }}
-                  }
-                </td>
-                <td>
-                  @if (order.ebeln) {
-                    {{ order.ebeln }}/{{ order.ebelp }}
-                  }
-                </td>
-                <td>
-                  @if (order.status === "created") {
-                    <button
-                      type="button"
-                      (click)="createBanf(order)"
-                      [attr.data-testid]="'create-banf-' + order.orderId"
-                    >
-                      BANF anlegen
-                    </button>
-                  }
-                </td>
-              </tr>
+                <header class="card-head">
+                  <div class="card-title">
+                    <strong class="wrap-anywhere">{{
+                      candidate.displayName
+                    }}</strong>
+                    <span class="mono xts-text-muted">{{
+                      candidate.coIdent
+                    }}</span>
+                  </div>
+                  <strong class="mono card-hours"
+                    >{{ candidate.totalHours | number: "1.0-2" }} Std.</strong
+                  >
+                </header>
+                <p class="xts-text-muted card-meta">
+                  {{ periodLabel(candidate.periodFrom, candidate.periodTo) }} ·
+                  {{ candidate.months.length }} Monat(e)
+                </p>
+                <div class="xts-field">
+                  <label>
+                    BANF-Positionstext
+                    <input
+                      class="xts-input"
+                      aria-label="BANF-Positionstext"
+                      [ngModel]="textFor(candidate)"
+                      (ngModelChange)="setText(candidate, $event)"
+                    />
+                  </label>
+                </div>
+                <div class="card-actions">
+                  <button
+                    type="button"
+                    class="xts-btn xts-btn-primary"
+                    (click)="createOrder(candidate)"
+                    [attr.data-testid]="
+                      'create-order-' +
+                      candidate.extNr +
+                      '-' +
+                      candidate.coIdent
+                    "
+                  >
+                    Beauftragung anlegen
+                  </button>
+                </div>
+              </article>
             } @empty {
-              <tr>
-                <td colspan="10" class="empty-hint">
-                  Noch keine Beauftragungen angelegt.
-                </td>
-              </tr>
+              <p class="empty-hint" data-testid="candidates-empty">
+                Keine freigegebenen Planzeilen für die aktuelle Selektion.
+              </p>
             }
-          </tbody>
-        </table>
-      </div>
-    </section>
+          </div>
+        }
+      </section>
 
-    <section class="panel">
-      <div class="section-title">
-        <h2>Fehlerprotokoll</h2>
-      </div>
-      <div class="protocol" data-testid="order-protocol">
-        @for (entry of protocol(); track $index) {
-          <p class="protocol-entry">
-            <strong>{{ entry.orderId }}</strong> · {{ entry.message }}
-          </p>
-        } @empty {
-          <p class="empty-hint">Keine Fehler protokolliert.</p>
+      <div class="order-columns" data-testid="orders-table">
+        @if (!loader.ready()) {
+          <xts-load-status
+            class="span-columns"
+            [state]="loader.value()"
+            loadingText="Beauftragungen werden geladen …"
+            (retry)="reload()"
+          />
+        } @else {
+          <section class="column" aria-labelledby="open-title">
+            <div class="column-head">
+              <h2 class="xts-heading column-title" id="open-title">
+                Beauftragung angelegt / BANF
+              </h2>
+              <span class="xts-tag xts-tag-neutral" data-testid="open-count">
+                {{ openOrders().length }} offen
+              </span>
+            </div>
+            <p class="xts-text-muted hint">
+              Angelegte Beauftragungen mit editierbarem Text; die BANF wird
+              ausdrücklich angelegt, Bestelldaten holt der Job.
+            </p>
+            <div class="cards">
+              @for (order of openOrders(); track order.orderId) {
+                <ng-container
+                  *ngTemplateOutlet="orderCard; context: { $implicit: order }"
+                />
+              } @empty {
+                <p class="empty-hint" data-testid="orders-open-empty">
+                  Keine angelegten Beauftragungen.
+                </p>
+              }
+            </div>
+          </section>
+
+          <section class="column" aria-labelledby="done-title">
+            <div class="column-head">
+              <h2 class="xts-heading column-title" id="done-title">
+                Bestellung vorhanden
+              </h2>
+              <span class="xts-tag xts-tag-neutral" data-testid="done-count">
+                {{ purchasedOrders().length }} bestellt
+              </span>
+            </div>
+            <p class="xts-text-muted hint">
+              Beauftragungen mit Bestellung aus dem Bestelldaten-Job.
+            </p>
+            <div class="cards">
+              @for (order of purchasedOrders(); track order.orderId) {
+                <ng-container
+                  *ngTemplateOutlet="orderCard; context: { $implicit: order }"
+                />
+              } @empty {
+                <p class="empty-hint" data-testid="orders-done-empty">
+                  Noch keine Bestellung vorhanden.
+                </p>
+              }
+            </div>
+          </section>
         }
       </div>
-    </section>
-  }
-</fieldset>
+    </div>
+
+    @if (loader.ready()) {
+      <section class="protocol-panel" aria-labelledby="protocol-title">
+        <h2 class="xts-heading column-title" id="protocol-title">
+          Fehlerprotokoll
+        </h2>
+        <div class="protocol" data-testid="order-protocol">
+          @for (entry of protocol(); track $index) {
+            <p class="protocol-entry wrap-anywhere">
+              <strong class="mono">{{ entry.orderId }}</strong> ·
+              {{ entry.message }}
+            </p>
+          } @empty {
+            <p class="empty-hint">Keine Fehler protokolliert.</p>
+          }
+        </div>
+      </section>
+    }
+  </fieldset>
+</div>
+
+<ng-template #orderCard let-order>
+  <article
+    class="card"
+    [class.card-open]="order.status === 'created'"
+    [attr.data-testid]="'order-' + order.orderId"
+  >
+    <header class="card-head">
+      <div class="card-title">
+        <strong class="wrap-anywhere">{{ order.displayName }}</strong>
+        <span class="mono xts-text-muted">{{ order.coIdent }}</span>
+      </div>
+      <strong class="mono card-hours"
+        >{{ order.hours | number: "1.0-2" }} Std.</strong
+      >
+    </header>
+    <p class="xts-text-muted card-meta">
+      {{ periodLabel(order.periodFrom, order.periodTo) }} ·
+      <span
+        class="xts-tag"
+        [class.xts-tag-outline]="order.status === 'created'"
+        [class.xts-tag-neutral]="order.status === 'banf'"
+        [class.xts-tag-accent]="order.status === 'bestellt'"
+        [attr.data-status]="order.status"
+      >
+        {{ statusLabel(order.status) }}
+      </span>
+    </p>
+    <dl class="chain">
+      <div>
+        <dt>Beauftragung</dt>
+        <dd class="mono">{{ order.orderId }}</dd>
+      </div>
+      <div>
+        <dt>BANF</dt>
+        <dd class="mono">
+          @if (order.banfNumber) {
+            {{ order.banfNumber }}/{{ order.banfItem }}
+          } @else {
+            <span class="xts-text-muted">offen</span>
+          }
+        </dd>
+      </div>
+      <div>
+        <dt>Bestellung</dt>
+        <dd class="mono">
+          @if (order.ebeln) {
+            {{ order.ebeln }}/{{ order.ebelp }}
+          } @else {
+            <span class="xts-text-muted">offen</span>
+          }
+        </dd>
+      </div>
+    </dl>
+    @if (order.status === "created") {
+      <div class="xts-field">
+        <label>
+          BANF-Positionstext
+          <input
+            class="xts-input"
+            [attr.aria-label]="'BANF-Positionstext ' + order.orderId"
+            [ngModel]="orderTextFor(order)"
+            (ngModelChange)="setOrderText(order, $event)"
+          />
+        </label>
+      </div>
+      @if (hasUnsavedOrderText(order)) {
+        <p
+          class="xts-text-muted unsaved-hint"
+          [attr.data-testid]="'text-unsaved-' + order.orderId"
+        >
+          Text noch nicht gespeichert.
+        </p>
+      }
+      <div class="card-actions">
+        <button
+          type="button"
+          class="xts-btn xts-btn-secondary"
+          (click)="saveOrderText(order)"
+          [disabled]="!orderTextFor(order).trim()"
+          [attr.data-testid]="'save-text-' + order.orderId"
+        >
+          Speichern
+        </button>
+        <button
+          type="button"
+          class="xts-btn xts-btn-primary"
+          (click)="createBanf(order)"
+          [disabled]="hasUnsavedOrderText(order)"
+          [attr.data-testid]="'create-banf-' + order.orderId"
+        >
+          BANF anlegen
+        </button>
+      </div>
+    } @else {
+      <p class="card-text wrap-anywhere">{{ order.text }}</p>
+      @if (order.status === "banf") {
+        <p class="xts-text-muted card-meta">
+          Bestelldaten werden über den Job übernommen.
+        </p>
+      }
+    }
+  </article>
+</ng-template>

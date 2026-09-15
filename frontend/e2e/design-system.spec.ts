@@ -117,16 +117,15 @@ test("unmigrated screens do not use the new classes or font yet", async ({
   page,
 }) => {
   // Tokens und Archivo gelten in der Shell (XTS-142) und in migrierten
-  // Screens (XTS-150 Stundenschreibung, XTS-151 Genehmigung, XTS-155
-  // Reporting, XTS-152 Planung); alle anderen Screens bleiben bis zu ihrer
-  // Migration unveraendert. Geprueft an der Beauftragung.
+  // Screens (XTS-150, 151, 155, 152, 153); die Verwaltung bleibt bis zu
+  // ihrer Migration (XTS-154) unveraendert.
   await page.goto("/");
   await page
     .getByTestId("persona-select")
     .selectOption("christian.roeper@qualitytimes.de");
-  await page.getByRole("link", { name: "Beauftragung" }).click();
+  await page.getByRole("link", { name: "Verwaltung" }).click();
   await expect(
-    page.getByRole("heading", { name: "Beauftragung", level: 1 }),
+    page.getByRole("heading", { name: "Verwaltung", level: 1 }),
   ).toBeVisible();
   const usage = await page.evaluate(() => {
     const main = document.querySelector("main")!;

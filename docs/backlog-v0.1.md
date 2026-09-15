@@ -878,7 +878,7 @@ Prioritaet: P1
 
 Rolle: Ressourcenmanager / Order Manager
 
-Jira: XTS-95 (Label `redesign`); Grundlage: `ui-redesign-bewertung.md`.
+Jira: XTS-95 (Label `redesign`); Grundlage: `ui-redesign-bewertung.md`. Status: freigegeben 2026-09-15, umgesetzt in PR #43 (Board mit drei Spalten, Karten mit Belegkette, Statusmodell und Aktionen unveraendert, kein optimistischer Wechsel, Textpuffer geschuetzt, BANF nur mit gespeichertem Text; `orders-table` bleibt als Test-ID am Container der Beauftragungsspalten).
 
 Akzeptanzkriterien:
 
