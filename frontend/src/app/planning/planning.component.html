@@ -312,7 +312,7 @@
                     '-' +
                     selected.cell.month
                   "
-                  [disabled]="busy.active()"
+                  [disabled]="busy.active() || hasUnsavedDraft()"
                   (click)="releaseCell(selected.row, selected.cell)"
                 >
                   Für BANF freigeben

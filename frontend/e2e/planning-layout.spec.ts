@@ -207,6 +207,28 @@ test("unsaved editor input is never discarded silently", async ({ page }) => {
   await expect(page.getByTestId("editor-unsaved")).toHaveCount(0);
 });
 
+test("an entry equal to the server value never carries over to another cell", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 1280, height: 900 });
+  await openPlanning(page);
+  const april = "cell-SCHILZ-700000000004-2026-04";
+  const aprilInput = "input-SCHILZ-700000000004-2026-04";
+  await page.getByTestId(april).click();
+  const aprilValue = await page.getByTestId(aprilInput).inputValue();
+  expect(aprilValue).not.toBe("");
+
+  // Mai: denselben Wert wie auf dem Server eintippen (kein Entwurf, keine
+  // Rueckfrage), dann April waehlen: der Editor zeigt Aprils Serverwert.
+  await page.getByTestId(CELL).click();
+  const mayInput = page.getByTestId(INPUT);
+  const mayValue = await mayInput.inputValue();
+  await mayInput.fill(mayValue === "" ? "0" : mayValue);
+  await expect(page.getByTestId("editor-unsaved")).toHaveCount(0);
+  await page.getByTestId(april).click();
+  await expect(page.getByTestId(aprilInput)).toHaveValue(aprilValue);
+});
+
 test("a failed save keeps selection and value, success shows the server state", async ({
   page,
 }) => {
@@ -237,6 +259,21 @@ test("a failed save keeps selection and value, success shows the server state", 
   await expect(input).toHaveValue("12");
   await expect(page.getByTestId("editor-unsaved")).toBeVisible();
 
+  // Freigabe ist mit offenem Entwurf gesperrt; kein Freigabe-Request.
+  const releases: string[] = [];
+  await page.route(`${API}/PlanningReleases`, async (route) => {
+    releases.push(route.request().url());
+    await route.continue();
+  });
+  const release = page.getByTestId("release-SCHILZ-700000000004-2026-05");
+  await expect(release).toBeDisabled();
+  // Auch ein erzwungener Klick kommt nicht an der Methode vorbei.
+  await release.dispatchEvent("click");
+  await expect(page.getByTestId("planning-message")).toContainText(
+    "zuerst speichern",
+  );
+  expect(releases).toEqual([]);
+
   // Erneut speichern ohne Neueingabe; waehrend der Aktion sind Kacheln,
   // Pager, Filter und Editor gesperrt.
   state.fail = false;
@@ -254,7 +291,6 @@ test("a failed save keeps selection and value, success shows the server state", 
   await expect(page.getByTestId(CELL)).toContainText("12 · V");
   await expect(input).toHaveValue("12");
   await expect(page.getByTestId("editor-unsaved")).toHaveCount(0);
-  await expect(
-    page.getByTestId("release-SCHILZ-700000000004-2026-05"),
-  ).toBeVisible();
+  await expect(release).toBeEnabled();
+  expect(releases).toEqual([]);
 });

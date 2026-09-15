@@ -150,9 +150,11 @@ export class PlanningComponent {
   private readonly editor = viewChild<ElementRef<HTMLElement>>("editor");
 
   constructor() {
-    // Ohne Auswahl gibt es keinen Entwurf.
+    // Jeder Auswahlwechsel (Klick, Seite, Filter, Nachladen) verwirft den
+    // Eingabepuffer; nur dieselbe Zelle behaelt ihn (z. B. nach Fehler).
     effect(() => {
-      if (!this.selectedKey()) this.draft.set(null);
+      this.selectedKey();
+      this.draft.set(null);
     });
     void this.reportingService.getTeams().then((teams) => {
       this.teams.set(teams);
@@ -186,6 +188,8 @@ export class PlanningComponent {
     if (key !== this.selectedKey()) {
       if (!this.confirmDiscard()) return;
       this.selectedKey.set(key);
+      // Auch ohne Rueckfrage: der alte Puffer gehoert nicht zur neuen Zelle.
+      this.draft.set(null);
     }
     this.revealEditor();
   }
@@ -321,6 +325,14 @@ export class PlanningComponent {
     row: PlanningRow,
     cell: PlanningCell,
   ): Promise<void> {
+    // Freigabe nur fuer den gespeicherten Stand (XTS-152): eine offene oder
+    // ungueltige Eingabe muss zuerst erfolgreich gespeichert werden.
+    if (this.hasUnsavedDraft()) {
+      this.message.set(
+        "Bitte die Planstunden zuerst speichern, bevor die Zeile freigegeben wird.",
+      );
+      return;
+    }
     await this.busy.guard(async () => {
       try {
         await this.planningService.releaseEntry(
