@@ -1,6 +1,7 @@
-import { DecimalPipe } from "@angular/common";
+import { DecimalPipe, NgTemplateOutlet } from "@angular/common";
 import {
   Component,
+  computed,
   inject,
   signal,
   ChangeDetectionStrategy,
@@ -29,7 +30,7 @@ const STATUS_LABELS: Record<OrderStatus, string> = {
 
 @Component({
   selector: "xts-orders",
-  imports: [DecimalPipe, FormsModule, LoadStatusComponent],
+  imports: [DecimalPipe, FormsModule, LoadStatusComponent, NgTemplateOutlet],
   templateUrl: "./orders.component.html",
   changeDetection: ChangeDetectionStrategy.Eager,
   styleUrl: "./orders.component.css",
@@ -52,6 +53,15 @@ export class OrdersComponent {
   protected readonly filterCoIdent = signal<string>("");
   protected readonly filterFrom = signal<string>("");
   protected readonly filterTo = signal<string>("");
+
+  // XTS-153: Spalten des Boards aus dem Serverstand, kein optimistischer
+  // Wechsel; Zaehler entsprechen den dargestellten Karten.
+  protected readonly openOrders = computed(() =>
+    this.orders().filter((order) => order.status !== "bestellt"),
+  );
+  protected readonly purchasedOrders = computed(() =>
+    this.orders().filter((order) => order.status === "bestellt"),
+  );
 
   constructor() {
     void this.load();
@@ -88,6 +98,11 @@ export class OrdersComponent {
 
   protected setOrderText(order: Order, text: string): void {
     this.orderTexts.set(order.orderId, text);
+  }
+
+  /** Karte zeigt einen Text, der nicht dem gespeicherten Servertext entspricht. */
+  protected hasUnsavedOrderText(order: Order): boolean {
+    return this.orderTextFor(order) !== order.text;
   }
 
   protected async updateFilter(
@@ -138,6 +153,14 @@ export class OrdersComponent {
   }
 
   protected async createBanf(order: Order): Promise<void> {
+    // Die BANF nutzt den gespeicherten Text: ein ungespeicherter Text auf der
+    // Karte muss zuerst gespeichert werden (XTS-153).
+    if (this.hasUnsavedOrderText(order)) {
+      this.message.set(
+        `Bitte den BANF-Positionstext für ${order.orderId} zuerst speichern, bevor die BANF angelegt wird.`,
+      );
+      return;
+    }
     await this.guarded("BANF konnte nicht angelegt werden.", async () => {
       const updated = await this.ordersService.createBanf(order.orderId);
       this.message.set(
