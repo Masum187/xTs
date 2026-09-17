@@ -1,0 +1,181 @@
+<section class="settings-page">
+  <header class="page-head">
+    <div>
+      <h2 class="xts-heading page-title">Kontierungen (ZXTS_KONT_T)</h2>
+      <p class="xts-text-muted hint">
+        Zulässige Kontierungsarten: KS, OR, PR, FB, KL. Die Gültigkeit kann
+        gegen SAP CO geprüft werden (Phase 1: Stub). Gelöschte Kontierungen
+        werden in Planung und Stundenschreibung nicht mehr angeboten.
+      </p>
+    </div>
+  </header>
+
+  @if (message()) {
+    <p
+      class="notice"
+      [class.notice-ok]="messageKind() === 'ok'"
+      [class.notice-error]="messageKind() === 'error'"
+      data-testid="admin-message"
+      aria-live="polite"
+    >
+      {{ message() }}
+    </p>
+  }
+
+  <xts-load-status
+    [state]="loader.value()"
+    loadingText="Kontierungen werden geladen …"
+    (retry)="reload()"
+  />
+
+  @if (loader.ready()) {
+    <fieldset class="plain" [disabled]="lock.active()">
+      <div
+        class="table-wrap"
+        tabindex="0"
+        role="region"
+        aria-label="Tabelle Kontierungen, seitlich scrollbar"
+      >
+        <table class="xts-table" data-testid="cost-object-table">
+          <thead>
+            <tr>
+              <th>Kontierung</th>
+              <th>Art</th>
+              <th>Bezeichnung</th>
+              <th>Aktiv</th>
+              <th>Geändert</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (item of costObjects(); track item.coIdent) {
+              <tr
+                [attr.data-testid]="'cost-object-' + item.coIdent"
+                [class.deleted]="item.deleted"
+              >
+                <td>
+                  <strong class="mono">{{ item.coIdent }}</strong>
+                  @if (item.deleted) {
+                    <span class="xts-tag xts-tag-neutral">gelöscht</span>
+                  }
+                </td>
+                <td>
+                  <select
+                    class="xts-input"
+                    [attr.aria-label]="'Kontierungsart ' + item.coIdent"
+                    [(ngModel)]="item.type"
+                    [disabled]="item.deleted"
+                  >
+                    @for (type of costObjectTypes; track type) {
+                      <option [value]="type">{{ type }}</option>
+                    }
+                  </select>
+                </td>
+                <td>
+                  <input
+                    class="xts-input wide"
+                    [attr.aria-label]="'Bezeichnung ' + item.coIdent"
+                    [(ngModel)]="item.description"
+                    [disabled]="item.deleted"
+                  />
+                </td>
+                <td>
+                  <input
+                    type="checkbox"
+                    [attr.aria-label]="'Aktiv Kontierung ' + item.coIdent"
+                    [(ngModel)]="item.active"
+                    [disabled]="item.deleted"
+                  />
+                </td>
+                <td class="stamp">{{ item.changedBy ?? "–" }}</td>
+                <td class="actions">
+                  @if (!item.deleted) {
+                    <button
+                      type="button"
+                      class="xts-btn xts-btn-primary"
+                      (click)="saveCostObject(item)"
+                      [attr.data-testid]="'save-cost-object-' + item.coIdent"
+                    >
+                      Speichern
+                    </button>
+                    <button
+                      type="button"
+                      class="xts-btn xts-btn-secondary"
+                      (click)="checkCostObject(item)"
+                      [attr.data-testid]="'check-cost-object-' + item.coIdent"
+                    >
+                      SAP CO prüfen
+                    </button>
+                    <button
+                      type="button"
+                      class="xts-btn xts-btn-secondary"
+                      (click)="deleteCostObject(item)"
+                      [attr.data-testid]="'delete-cost-object-' + item.coIdent"
+                    >
+                      Löschen
+                    </button>
+                  }
+                </td>
+              </tr>
+            }
+            <tr class="new-row">
+              <td>
+                <input
+                  class="xts-input"
+                  aria-label="Neu: Kontierung"
+                  placeholder="z. B. 600000000042"
+                  [(ngModel)]="newCostObject.coIdent"
+                />
+              </td>
+              <td>
+                <select
+                  class="xts-input"
+                  aria-label="Neu: Kontierungsart"
+                  [(ngModel)]="newCostObject.type"
+                >
+                  @for (type of costObjectTypes; track type) {
+                    <option [value]="type">{{ type }}</option>
+                  }
+                </select>
+              </td>
+              <td>
+                <input
+                  class="xts-input wide"
+                  aria-label="Neu: Bezeichnung"
+                  placeholder="Bezeichnung"
+                  [(ngModel)]="newCostObject.description"
+                />
+              </td>
+              <td>
+                <input
+                  type="checkbox"
+                  aria-label="Neu: Aktiv Kontierung"
+                  [(ngModel)]="newCostObject.active"
+                />
+              </td>
+              <td class="stamp"></td>
+              <td class="actions">
+                <button
+                  type="button"
+                  class="xts-btn xts-btn-primary"
+                  (click)="saveCostObject(newCostObject)"
+                  data-testid="create-cost-object"
+                >
+                  Anlegen
+                </button>
+                <button
+                  type="button"
+                  class="xts-btn xts-btn-secondary"
+                  (click)="checkCostObject(newCostObject)"
+                  data-testid="check-new-cost-object"
+                >
+                  SAP CO prüfen
+                </button>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </fieldset>
+  }
+</section>

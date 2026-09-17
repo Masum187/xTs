@@ -113,33 +113,40 @@ test("Archivo is served locally and applied only via opt-in class", async ({
   expect(family).toContain("Archivo");
 });
 
-test("unmigrated screens do not use the new classes or font yet", async ({
+test("every screen renders its content with the design system", async ({
   page,
 }) => {
-  // Tokens und Archivo gelten in der Shell (XTS-142) und in migrierten
-  // Screens (XTS-150, 151, 155, 152, 153); die Verwaltung bleibt bis zu
-  // ihrer Migration (XTS-154) unveraendert.
+  // Seit XTS-154 sind alle sechs Screens migriert: jeder Inhaltsbereich
+  // traegt `.xts-font` und die Bausteine, die Shell ebenfalls (XTS-142).
   await page.goto("/");
   await page
     .getByTestId("persona-select")
     .selectOption("christian.roeper@qualitytimes.de");
-  await page.getByRole("link", { name: "Verwaltung" }).click();
-  await expect(
-    page.getByRole("heading", { name: "Verwaltung", level: 1 }),
-  ).toBeVisible();
-  const usage = await page.evaluate(() => {
-    const main = document.querySelector("main")!;
-    return {
-      classes: main.querySelectorAll('[class*="xts-"]').length,
-      mainFont: getComputedStyle(main).fontFamily,
-      shellFont: getComputedStyle(
-        document.querySelector('[data-testid="sidebar"]')!,
-      ).fontFamily,
-    };
-  });
-  expect(usage.classes).toBe(0);
-  expect(usage.mainFont).toContain("Inter");
-  expect(usage.shellFont).toContain("Archivo");
+  for (const link of [
+    "Genehmigung",
+    "Reporting",
+    "Planung",
+    "Beauftragung",
+    "Einstellungen",
+    "Stundenschreibung",
+  ]) {
+    // Der Genehmigungs-Link traegt den Badge-Text ("Genehmigung 3 offen").
+    await page.getByRole("link", { name: new RegExp(`^${link}`) }).click();
+    await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
+    const usage = await page.evaluate(() => {
+      const root = document.querySelector("main .xts-font")!;
+      return {
+        classes: root.querySelectorAll('[class*="xts-"]').length,
+        font: getComputedStyle(root).fontFamily,
+        shellFont: getComputedStyle(
+          document.querySelector('[data-testid="sidebar"]')!,
+        ).fontFamily,
+      };
+    });
+    expect(usage.classes, link).toBeGreaterThan(0);
+    expect(usage.font, link).toContain("Archivo");
+    expect(usage.shellFont).toContain("Archivo");
+  }
 });
 
 test("grid columns and field bounds hold at 375, 600, 768 and 1024 px", async ({

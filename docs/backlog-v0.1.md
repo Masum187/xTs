@@ -892,7 +892,7 @@ Prioritaet: P1
 
 Rolle: xTS Administrator
 
-Jira: XTS-96 (Label `redesign`); Grundlage: `ui-redesign-bewertung.md`.
+Jira: XTS-96 (Label `redesign`); Grundlage: `ui-redesign-bewertung.md`. Status: freigegeben 2026-09-16 als PR 1, umgesetzt in PR #44 (Route `/einstellungen` mit Kindrouten je Bereich und Weiterleitung von `/admin`, Baumnavigation, neun Unterseiten mit eigenem Laden, Sperre je Unterseite plus Navigation und Routen-Guard, Reset-Rueckfrage, Lazy Loading des Einstellungs-Bundles). PR 2 (Rest Audit 15B: Lazy Loading aller Routen, OnPush, Befund 31, Warnschwelle anhand des Produktions-Builds) bekommt einen eigenen Zuschnitt.
 
 Akzeptanzkriterien:
 

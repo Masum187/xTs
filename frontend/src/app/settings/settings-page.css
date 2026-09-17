@@ -1,0 +1,220 @@
+/*
+  Gemeinsame Styles der Einstellungs-Unterseiten (XTS-154). Tabellen
+  behalten alle Spalten und scrollen seitlich im fokussierbaren Container.
+*/
+.settings-page {
+  background: var(--xts-color-neutral-100);
+  border: var(--xts-rule-fine) solid var(--xts-color-neutral-300);
+  color: var(--xts-color-text);
+  min-width: 0;
+  padding: 16px;
+}
+
+.page-head {
+  align-items: flex-start;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 16px;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+
+.page-head > div {
+  min-width: 0;
+}
+
+.page-title {
+  font-size: 17px;
+  margin: 0 0 4px;
+}
+
+.hint {
+  font-size: 13px;
+  margin: 0;
+}
+
+.hint code {
+  font-family: ui-monospace, monospace;
+  font-size: 12px;
+}
+
+.notice {
+  border-left: 3px solid var(--xts-color-divider);
+  margin: 0 0 12px;
+  overflow-wrap: anywhere;
+  padding: 12px 16px;
+}
+
+.notice-ok {
+  background: var(--xts-color-surface);
+  color: var(--xts-color-text);
+  font-weight: var(--xts-font-weight-semibold);
+}
+
+.notice-error {
+  background: var(--xts-color-accent-100);
+  border-left-color: var(--xts-color-accent-700);
+  color: var(--xts-color-accent-text);
+}
+
+fieldset.plain {
+  border: 0;
+  margin: 0;
+  min-width: 0;
+  padding: 0;
+}
+
+.filters {
+  align-items: end;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px 16px;
+  margin-bottom: 12px;
+}
+
+.filters .xts-field {
+  flex: 0 1 200px;
+  min-width: 0;
+}
+
+.filters .xts-input {
+  max-width: 100%;
+}
+
+/* Scrollbereich: fokussierbar, sichtbarer Fokus, seitlich scrollbar. */
+.table-wrap {
+  background: #ffffff;
+  max-width: 100%;
+  overflow-x: auto;
+}
+
+.table-wrap:focus-visible {
+  outline: 2px solid var(--xts-color-focus);
+  outline-offset: 2px;
+}
+
+.xts-table td {
+  vertical-align: top;
+}
+
+.xts-table .xts-input {
+  min-width: 120px;
+}
+
+.xts-table .xts-input.wide {
+  min-width: 220px;
+}
+
+.xts-table input[type="checkbox"] {
+  accent-color: var(--xts-color-accent);
+  height: 18px;
+  margin: 8px 0;
+  width: 18px;
+}
+
+.xts-table input[type="checkbox"]:focus-visible {
+  outline: 2px solid var(--xts-color-focus);
+  outline-offset: 2px;
+}
+
+.actions {
+  white-space: nowrap;
+}
+
+.actions .xts-btn + .xts-btn {
+  margin-left: 6px;
+}
+
+.new-row td {
+  background: var(--xts-color-neutral-100);
+}
+
+.deleted td {
+  color: var(--xts-color-text-muted);
+}
+
+.stamp {
+  color: var(--xts-color-text-muted);
+  font-size: 13px;
+  white-space: nowrap;
+}
+
+.sub {
+  color: var(--xts-color-text-muted);
+  display: block;
+  font-size: 12px;
+  overflow-wrap: anywhere;
+}
+
+.mono {
+  font-variant-numeric: tabular-nums;
+  overflow-wrap: anywhere;
+}
+
+.wrap {
+  min-width: 160px;
+  overflow-wrap: anywhere;
+}
+
+.error-row td {
+  background: var(--xts-color-accent-100);
+}
+
+.empty-hint {
+  color: var(--xts-color-text-muted);
+  font-size: 13px;
+}
+
+.rules {
+  display: grid;
+  gap: 12px;
+}
+
+.rule {
+  background: #ffffff;
+  border: var(--xts-rule-fine) solid var(--xts-color-neutral-300);
+  display: grid;
+  gap: 8px;
+  padding: 12px;
+}
+
+.rule header {
+  align-items: baseline;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 12px;
+}
+
+.rule-controls {
+  align-items: end;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px 16px;
+}
+
+.rule-controls .xts-field {
+  flex: 0 1 320px;
+  min-width: 0;
+}
+
+label.checkbox {
+  align-items: center;
+  color: var(--xts-color-text-muted);
+  display: flex;
+  font-size: 13px;
+  font-weight: var(--xts-font-weight-semibold);
+  gap: 8px;
+  min-height: 40px;
+}
+
+label.checkbox input {
+  accent-color: var(--xts-color-accent);
+  height: 18px;
+  margin: 0;
+  width: 18px;
+}
+
+label.checkbox input:focus-visible {
+  outline: 2px solid var(--xts-color-focus);
+  outline-offset: 2px;
+}

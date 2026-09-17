@@ -84,3 +84,26 @@ describe("AuthService profile loading", () => {
     expect(auth.profile()?.extNr).toBe("ROEPER");
   });
 });
+
+describe("AuthService identity lock (XTS-154)", () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  it("blocks persona switches and logout while a maintenance action runs", async () => {
+    const fetchMock = vi.fn();
+    vi.stubGlobal("fetch", fetchMock);
+    const auth = new AuthService();
+    auth.state.set("ready");
+    const before = auth.personaUpn();
+    auth.identityLock.set(true);
+
+    await auth.switchPersona("christian.roeper@qualitytimes.de");
+    expect(auth.personaUpn()).toBe(before);
+    expect(auth.state()).toBe("ready");
+    expect(fetchMock).not.toHaveBeenCalled();
+
+    await auth.logout();
+    expect(auth.state()).toBe("ready");
+  });
+});

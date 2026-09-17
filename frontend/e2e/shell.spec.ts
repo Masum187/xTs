@@ -14,7 +14,7 @@ const NAV = [
   "Reporting",
   "Planung",
   "Beauftragung",
-  "Verwaltung",
+  "Einstellungen",
 ];
 
 async function switchTo(page: Page, upn: string, name: string) {

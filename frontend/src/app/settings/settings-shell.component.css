@@ -1,0 +1,106 @@
+/*
+  Einstellungen (XTS-154, Baseline Abschnitt 3.6): Baumnavigation links ab
+  1280 px, darunter als kompakte Liste ueber dem Inhalt. Nur Tokens und
+  Bausteine aus design-system.css; Breakpoint screen-lokal.
+*/
+.settings {
+  color: var(--xts-color-text);
+  min-width: 0;
+}
+
+.page-header {
+  align-items: flex-end;
+  border-bottom: var(--xts-rule-strong) solid var(--xts-color-divider);
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  justify-content: space-between;
+  margin-bottom: 16px;
+  padding-bottom: 12px;
+}
+
+.xts-kicker {
+  margin: 0 0 4px;
+}
+
+.page-title {
+  font-size: 26px;
+  margin: 0;
+}
+
+.settings-layout {
+  align-items: start;
+  display: grid;
+  gap: 16px;
+  grid-template-columns: minmax(0, 1fr);
+}
+
+@media (min-width: 1280px) {
+  .settings-layout {
+    grid-template-columns: 220px minmax(0, 1fr);
+  }
+}
+
+.settings-nav {
+  background: var(--xts-color-neutral-100);
+  border: var(--xts-rule-fine) solid var(--xts-color-neutral-300);
+  min-width: 0;
+  padding: 12px 16px;
+}
+
+.settings-nav ul {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 8px;
+  list-style: none;
+  margin: 0 0 8px;
+  padding: 0;
+}
+
+@media (min-width: 1280px) {
+  .settings-nav ul {
+    display: grid;
+    gap: 2px;
+  }
+}
+
+.group-title {
+  margin: 8px 0 4px;
+}
+
+.settings-nav a {
+  border-left: 3px solid transparent;
+  color: var(--xts-color-text);
+  display: block;
+  padding: 6px 10px;
+  text-decoration: none;
+}
+
+.settings-nav a:hover {
+  background: var(--xts-color-neutral-200);
+}
+
+.settings-nav a.active {
+  background: var(--xts-color-accent-100);
+  border-left-color: var(--xts-color-accent);
+  font-weight: var(--xts-font-weight-semibold);
+}
+
+.settings-nav a:focus-visible {
+  outline: 2px solid var(--xts-color-focus);
+  outline-offset: 2px;
+}
+
+.settings-nav a[aria-disabled="true"] {
+  color: var(--xts-color-text-muted);
+  cursor: not-allowed;
+}
+
+.lock-hint {
+  font-size: 12px;
+  margin: 0 0 8px;
+}
+
+.settings-content {
+  min-width: 0;
+}

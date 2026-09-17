@@ -1,0 +1,35 @@
+<section class="settings-page">
+  <header class="page-head">
+    <div>
+      <h2 class="xts-heading page-title">Testdatenpaket UAT</h2>
+      <p class="xts-text-muted hint">
+        Setzt Stamm- und Bewegungsdaten der Mock-API auf den dokumentierten
+        Ausgangsstand zurück (docs/testdaten-uat-v0.1.md), z. B. vor einem neuen
+        UAT-Durchlauf. Vor dem Zurücksetzen erfolgt eine Rückfrage.
+      </p>
+    </div>
+  </header>
+
+  @if (message()) {
+    <p
+      class="notice"
+      [class.notice-ok]="messageKind() === 'ok'"
+      [class.notice-error]="messageKind() === 'error'"
+      data-testid="admin-message"
+      aria-live="polite"
+    >
+      {{ message() }}
+    </p>
+  }
+
+  <fieldset class="plain" [disabled]="lock.active()">
+    <button
+      type="button"
+      class="xts-btn xts-btn-primary"
+      (click)="resetTestData()"
+      data-testid="reset-test-data"
+    >
+      Testdaten zurücksetzen
+    </button>
+  </fieldset>
+</section>

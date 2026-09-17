@@ -41,7 +41,7 @@ for (const width of [375, 768, 1024]) {
       ["Reporting", "Reporting", "budget-table"],
       ["Planung", "Ressourcenplanung", "planning-grid"],
       ["Beauftragung", "Beauftragung", /candidate-list|candidates-empty/],
-      ["Verwaltung", "Verwaltung", "rules-list"],
+      ["Einstellungen", "Einstellungen", "employee-table"],
     ] as [string, string, string | RegExp][]) {
       await openNavIfNarrow(page);
       await page.getByRole("link", { name: link }).click();

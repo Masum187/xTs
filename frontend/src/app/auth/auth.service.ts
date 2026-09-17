@@ -35,6 +35,13 @@ export class AuthService {
   readonly usesEntra = environment.auth.mode === "entra";
 
   readonly personaUpn = signal<string>(MOCK_PERSONAS[0].upn);
+  /**
+   * Sperre fuer Identitaetswechsel (XTS-154): waehrend einer laufenden
+   * Pflegeaktion in den Einstellungen sind Persona-Wechsel und Abmeldung
+   * blockiert, damit kein Screen unter einer fremden Identitaet stehen
+   * bleibt. Die Einstellungen setzen und loesen die Sperre.
+   */
+  readonly identityLock = signal(false);
   readonly state = signal<AuthState>("loading");
   readonly profile = signal<AuthProfile | null>(null);
 
@@ -105,6 +112,7 @@ export class AuthService {
    * Datenaufruf laeuft mehr mit der alten Identitaet.
    */
   async switchPersona(upn: string): Promise<void> {
+    if (this.identityLock()) return;
     this.personaUpn.set(upn);
     this.state.set("loading");
     this.profile.set(null);
@@ -117,6 +125,7 @@ export class AuthService {
   }
 
   async logout(): Promise<void> {
+    if (this.identityLock()) return;
     this.accessToken.set(null);
     this.profile.set(null);
     this.accountName.set(null);
@@ -142,6 +151,20 @@ export class AuthService {
     const state = await load;
     if (run === this.profileRun) this.pending = null;
     return state;
+  }
+
+  /**
+   * Profil im Hintergrund neu laden, ohne den Zustand auf "loading" zu
+   * setzen (XTS-154, nach dem Testdaten-Reset): die Screens bleiben stehen,
+   * Rollen und Anzeige werden aus dem Serverstand aktualisiert. Ein neuerer
+   * Profil-Load gewinnt wie bei `loadProfile`.
+   */
+  async refreshProfile(): Promise<AuthState> {
+    if (this.state() !== "ready") return this.loadProfile();
+    const run = ++this.profileRun;
+    return this.usesEntra
+      ? this.fetchProfileViaEntra(run)
+      : this.fetchProfile(run);
   }
 
   /** Wendet ein Ladeergebnis nur an, wenn kein neuerer Profil-Load laeuft. */

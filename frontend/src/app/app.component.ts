@@ -113,7 +113,9 @@ const FOCUSABLE =
               <a routerLink="/orders" routerLinkActive="active">Beauftragung</a>
             }
             @if (isAdmin()) {
-              <a routerLink="/admin" routerLinkActive="active">Verwaltung</a>
+              <a routerLink="/einstellungen" routerLinkActive="active"
+                >Einstellungen</a
+              >
             }
           </nav>
           <div class="persona-block">
@@ -130,6 +132,7 @@ const FOCUSABLE =
                   <button
                     type="button"
                     class="menu-toggle"
+                    [disabled]="auth.identityLock()"
                     (click)="auth.logout()"
                     data-testid="auth-logout"
                   >
@@ -146,6 +149,7 @@ const FOCUSABLE =
                   #personaSelect
                   aria-label="Dev-Persona"
                   data-testid="persona-select"
+                  [disabled]="auth.identityLock()"
                   [ngModel]="auth.personaUpn()"
                   (ngModelChange)="switchPersona($event, personaSelect)"
                 >
@@ -413,6 +417,12 @@ export class AppComponent {
     upn: string,
     select: HTMLSelectElement,
   ): Promise<void> {
+    // Laufende Pflegeaktion in den Einstellungen (XTS-154): kein
+    // Identitaetswechsel, sonst bliebe die neue Identitaet auf der Seite.
+    if (this.auth.identityLock()) {
+      select.value = this.auth.personaUpn();
+      return;
+    }
     // Datenverlust-Schutz (Audit Nr. 19): der Wechsel zerstoert den Screen.
     if (!this.unsaved.confirmDiscard()) {
       select.value = this.auth.personaUpn();

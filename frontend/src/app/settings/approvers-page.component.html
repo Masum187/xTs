@@ -1,0 +1,175 @@
+<section class="settings-page">
+  <header class="page-head">
+    <div>
+      <h2 class="xts-heading page-title">
+        Genehmiger je Kontierung (ZXTS_KONTGEN_T)
+      </h2>
+      <p class="xts-text-muted hint">
+        Wer freigegebene Tage mit Positionen auf einer Kontierung genehmigen
+        darf (Entscheidung 19). Vertreter haben dieselben Rechte; eigene Tage
+        genehmigt niemand (Vier-Augen-Prinzip). Genehmiger sehen in Genehmigung
+        und Reporting nur ihre Kontierungen.
+      </p>
+    </div>
+  </header>
+
+  @if (message()) {
+    <p
+      class="notice"
+      [class.notice-ok]="messageKind() === 'ok'"
+      [class.notice-error]="messageKind() === 'error'"
+      data-testid="admin-message"
+      aria-live="polite"
+    >
+      {{ message() }}
+    </p>
+  }
+
+  <xts-load-status
+    [state]="loader.value()"
+    loadingText="Genehmigerzuordnungen werden geladen …"
+    (retry)="reload()"
+  />
+
+  @if (loader.ready()) {
+    <fieldset class="plain" [disabled]="lock.active()">
+      <div
+        class="table-wrap"
+        tabindex="0"
+        role="region"
+        aria-label="Tabelle Genehmiger, seitlich scrollbar"
+      >
+        <table class="xts-table" data-testid="approver-table">
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Kontierung</th>
+              <th>Genehmiger</th>
+              <th>Vertretung</th>
+              <th>Gültig von</th>
+              <th>Gültig bis</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (item of approvers(); track item.id) {
+              <tr [attr.data-testid]="'approver-' + item.id">
+                <td class="mono">{{ item.id }}</td>
+                <td>
+                  <span class="mono">{{ item.coIdent }}</span>
+                  <span class="sub">{{ item.description }}</span>
+                </td>
+                <td class="wrap">{{ item.displayName }} ({{ item.extNr }})</td>
+                <td>
+                  <input
+                    type="checkbox"
+                    [attr.aria-label]="'Vertretung Genehmiger ' + item.id"
+                    [(ngModel)]="item.deputy"
+                  />
+                </td>
+                <td>
+                  <input
+                    class="xts-input"
+                    type="date"
+                    [attr.aria-label]="'Gültig von Genehmiger ' + item.id"
+                    [(ngModel)]="item.validFrom"
+                  />
+                </td>
+                <td>
+                  <input
+                    class="xts-input"
+                    type="date"
+                    [attr.aria-label]="'Gültig bis Genehmiger ' + item.id"
+                    [(ngModel)]="item.validTo"
+                  />
+                </td>
+                <td class="actions">
+                  <button
+                    type="button"
+                    class="xts-btn xts-btn-primary"
+                    (click)="saveApprover(item)"
+                    [attr.data-testid]="'save-approver-' + item.id"
+                  >
+                    Speichern
+                  </button>
+                  <button
+                    type="button"
+                    class="xts-btn xts-btn-secondary"
+                    (click)="deleteApprover(item)"
+                    [attr.data-testid]="'delete-approver-' + item.id"
+                  >
+                    Löschen
+                  </button>
+                </td>
+              </tr>
+            }
+            <tr class="new-row">
+              <td>neu</td>
+              <td>
+                <select
+                  class="xts-input"
+                  aria-label="Neu: Genehmiger Kontierung"
+                  [(ngModel)]="newApprover.coIdent"
+                >
+                  <option value="">– wählen –</option>
+                  @for (item of availableCostObjects(); track item.coIdent) {
+                    <option [value]="item.coIdent">
+                      {{ item.coIdent }} – {{ item.description }}
+                    </option>
+                  }
+                </select>
+              </td>
+              <td>
+                <select
+                  class="xts-input"
+                  aria-label="Neu: Genehmiger Mitarbeiter"
+                  [(ngModel)]="newApprover.extNr"
+                >
+                  <option value="">– wählen –</option>
+                  @for (employee of approverEmployees(); track employee.extNr) {
+                    <option [value]="employee.extNr">
+                      {{ employee.displayName }}
+                    </option>
+                  }
+                </select>
+              </td>
+              <td>
+                <input
+                  type="checkbox"
+                  aria-label="Neu: Genehmiger Vertretung"
+                  [(ngModel)]="newApprover.deputy"
+                />
+              </td>
+              <td>
+                <input
+                  class="xts-input"
+                  type="date"
+                  aria-label="Neu: Genehmiger gültig von"
+                  [(ngModel)]="newApprover.validFrom"
+                />
+              </td>
+              <td>
+                <input
+                  class="xts-input"
+                  type="date"
+                  aria-label="Neu: Genehmiger gültig bis"
+                  [(ngModel)]="newApprover.validTo"
+                />
+              </td>
+              <td class="actions">
+                <button
+                  type="button"
+                  class="xts-btn xts-btn-primary"
+                  (click)="saveApprover(newApprover)"
+                  data-testid="create-approver"
+                >
+                  Anlegen
+                </button>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </fieldset>
+  }
+</section>

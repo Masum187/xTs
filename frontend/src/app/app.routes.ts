@@ -1,37 +1,14 @@
 import { inject } from "@angular/core";
-import type { CanActivateFn, CanDeactivateFn, Routes } from "@angular/router";
-import { Router } from "@angular/router";
+import type { CanDeactivateFn, Routes } from "@angular/router";
 
-import { AdminComponent } from "./admin/admin.component";
 import { ApprovalComponent } from "./approval/approval.component";
-import { accessDeniedMessage } from "./auth/auth.logic";
-import type { AuthRole } from "./auth/auth.models";
-import { AuthService } from "./auth/auth.service";
+import { roleGuard } from "./auth/role.guard";
 import { NotFoundComponent } from "./not-found.component";
 import { OrdersComponent } from "./orders/orders.component";
 import { PlanningComponent } from "./planning/planning.component";
 import { ReportingComponent } from "./reporting/reporting.component";
 import { UnsavedChangesService } from "./shared/unsaved-changes.service";
 import { TimesheetComponent } from "./timesheet/timesheet.component";
-
-/** Zugang, wenn das Konto mindestens eine der Rollen hat. */
-const roleGuard =
-  (role: AuthRole | AuthRole[]): CanActivateFn =>
-  async (_route, state) => {
-    const auth = inject(AuthService);
-    const router = inject(Router);
-    await auth.ensureLoaded();
-    const roles = Array.isArray(role) ? role : [role];
-    if (roles.some((item) => auth.hasRole(item))) return true;
-    // Kein stilles Umleiten: der Grund wird in der Kopfzeile angezeigt.
-    if (auth.state() === "ready") {
-      auth.showAccessNotice(
-        accessDeniedMessage(role, state.url),
-        router.currentNavigation()?.id ?? 0,
-      );
-    }
-    return router.parseUrl("/");
-  };
 
 /** Schutz vor Datenverlust (Audit Nr. 19): Verlassen nur nach Rueckfrage. */
 const unsavedChangesGuard: CanDeactivateFn<unknown> = () =>
@@ -70,10 +47,18 @@ export const routes: Routes = [
     canActivate: [roleGuard("planner")],
   },
   {
+    // XTS-154: Einstellungen als eigenes, verzoegert geladenes Bundle mit
+    // Kindrouten je Bereich; der Rollenschutz liegt in den Kindrouten.
+    path: "einstellungen",
+    loadChildren: () =>
+      import("./settings/settings.routes").then(
+        (module) => module.SETTINGS_ROUTES,
+      ),
+  },
+  {
+    // Alte Adresse der Verwaltung: Weiterleitung, der Schutz greift am Ziel.
     path: "admin",
-    component: AdminComponent,
-    title: "xTS Verwaltung",
-    canActivate: [roleGuard("admin")],
+    redirectTo: "einstellungen",
   },
   {
     path: "**",
