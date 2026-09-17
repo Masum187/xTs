@@ -144,6 +144,20 @@ export class AuthService {
     return state;
   }
 
+  /**
+   * Profil im Hintergrund neu laden, ohne den Zustand auf "loading" zu
+   * setzen (XTS-154, nach dem Testdaten-Reset): die Screens bleiben stehen,
+   * Rollen und Anzeige werden aus dem Serverstand aktualisiert. Ein neuerer
+   * Profil-Load gewinnt wie bei `loadProfile`.
+   */
+  async refreshProfile(): Promise<AuthState> {
+    if (this.state() !== "ready") return this.loadProfile();
+    const run = ++this.profileRun;
+    return this.usesEntra
+      ? this.fetchProfileViaEntra(run)
+      : this.fetchProfile(run);
+  }
+
   /** Wendet ein Ladeergebnis nur an, wenn kein neuerer Profil-Load laeuft. */
   private applyProfile(
     run: number,

@@ -1,0 +1,146 @@
+<section class="settings-page">
+  <header class="page-head">
+    <div>
+      <h2 class="xts-heading page-title">
+        Änderungs- und Fehlerprotokoll (ZXTS_LOG_T)
+      </h2>
+      <p class="xts-text-muted hint">
+        Kritische Statuswechsel (Stundenzettel, Planung, Beauftragung), Regel-
+        und Stammdatenänderungen sowie technische Fehler der Jobs (BANF,
+        Bestelldaten-Job). Neueste Einträge zuerst.
+      </p>
+    </div>
+    <button
+      type="button"
+      class="xts-btn xts-btn-secondary"
+      (click)="reload()"
+      data-testid="reload-audit-log"
+    >
+      Aktualisieren
+    </button>
+  </header>
+
+  @if (message()) {
+    <p
+      class="notice"
+      [class.notice-ok]="messageKind() === 'ok'"
+      [class.notice-error]="messageKind() === 'error'"
+      data-testid="admin-message"
+      aria-live="polite"
+    >
+      {{ message() }}
+    </p>
+  }
+
+  <div class="filters">
+    <div class="xts-field">
+      <label>
+        Kategorie
+        <select
+          class="xts-input"
+          aria-label="Protokoll Kategorie"
+          [ngModel]="auditCategory()"
+          (ngModelChange)="updateAuditFilter({ category: $event })"
+        >
+          <option value="">Alle Kategorien</option>
+          <option value="status">Statuswechsel</option>
+          <option value="job">Job</option>
+          <option value="masterdata">Stammdaten</option>
+          <option value="rule">Regelwerk</option>
+          <option value="system">System</option>
+        </select>
+      </label>
+    </div>
+    <div class="xts-field">
+      <label>
+        Schweregrad
+        <select
+          class="xts-input"
+          aria-label="Protokoll Schweregrad"
+          [ngModel]="auditSeverity()"
+          (ngModelChange)="updateAuditFilter({ severity: $event })"
+        >
+          <option value="">Alle</option>
+          <option value="info">Info</option>
+          <option value="error">Fehler</option>
+        </select>
+      </label>
+    </div>
+    <div class="xts-field">
+      <label>
+        Suche
+        <input
+          class="xts-input"
+          aria-label="Protokoll Suche"
+          placeholder="Objekt oder Meldung"
+          [ngModel]="auditSearch()"
+          (ngModelChange)="updateAuditFilter({ q: $event })"
+        />
+      </label>
+    </div>
+  </div>
+
+  <xts-load-status
+    [state]="loader.value()"
+    loadingText="Protokoll wird geladen …"
+    (retry)="reload()"
+  />
+
+  @if (loader.ready()) {
+    <div
+      class="table-wrap"
+      tabindex="0"
+      role="region"
+      aria-label="Tabelle Protokoll, seitlich scrollbar"
+    >
+      <table class="xts-table" data-testid="audit-table">
+        <thead>
+          <tr>
+            <th>Zeit</th>
+            <th>Akteur</th>
+            <th>Kategorie</th>
+            <th>Objekt</th>
+            <th>Von → Nach</th>
+            <th>Meldung</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (entry of auditEntries(); track entry.id) {
+            <tr
+              [attr.data-testid]="'audit-' + entry.id"
+              [class.error-row]="entry.severity === 'error'"
+            >
+              <td class="stamp">{{ formatTime(entry.at) }}</td>
+              <td class="mono">{{ entry.actor }}</td>
+              <td>
+                <span
+                  class="xts-tag"
+                  [class.xts-tag-accent]="entry.severity === 'error'"
+                  [class.xts-tag-neutral]="entry.severity !== 'error'"
+                >
+                  {{ categoryLabel(entry.category) }}
+                </span>
+              </td>
+              <td>
+                {{ entry.object }}
+                <span class="sub">{{ entry.objectKey }}</span>
+              </td>
+              <td class="stamp">
+                @if (entry.from || entry.to) {
+                  {{ entry.from ?? "–" }} → {{ entry.to ?? "–" }}
+                }
+              </td>
+              <td class="wrap">{{ entry.message }}</td>
+            </tr>
+          } @empty {
+            <tr>
+              <td colspan="6" class="empty-hint" data-testid="audit-empty">
+                Keine Protokolleinträge für die aktuelle Selektion.
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  }
+</section>

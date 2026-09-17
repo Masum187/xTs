@@ -113,7 +113,9 @@ const FOCUSABLE =
               <a routerLink="/orders" routerLinkActive="active">Beauftragung</a>
             }
             @if (isAdmin()) {
-              <a routerLink="/admin" routerLinkActive="active">Verwaltung</a>
+              <a routerLink="/einstellungen" routerLinkActive="active"
+                >Einstellungen</a
+              >
             }
           </nav>
           <div class="persona-block">

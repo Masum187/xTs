@@ -1,0 +1,45 @@
+<div class="settings xts-font">
+  <header class="page-header">
+    <div>
+      <p class="xts-kicker">Verwalten</p>
+      <h1 class="xts-heading page-title">Einstellungen</h1>
+    </div>
+  </header>
+
+  <div class="settings-layout">
+    <nav
+      class="settings-nav"
+      aria-label="Einstellungen"
+      data-testid="settings-nav"
+      [class.locked]="lock.active()"
+    >
+      @if (lock.active()) {
+        <p class="xts-text-muted lock-hint" data-testid="settings-nav-locked">
+          Pflegeaktion läuft, Navigation ist gesperrt.
+        </p>
+      }
+      @for (group of groups; track group.title) {
+        <p class="xts-kicker group-title">{{ group.title }}</p>
+        <ul>
+          @for (entry of group.entries; track entry.key) {
+            <li>
+              <a
+                [routerLink]="lock.active() ? null : entry.path"
+                routerLinkActive="active"
+                ariaCurrentWhenActive="page"
+                [attr.aria-disabled]="lock.active() ? 'true' : null"
+                [attr.tabindex]="lock.active() ? -1 : null"
+                [attr.data-testid]="'settings-nav-' + entry.key"
+              >
+                {{ entry.label }}
+              </a>
+            </li>
+          }
+        </ul>
+      }
+    </nav>
+    <div class="settings-content">
+      <router-outlet />
+    </div>
+  </div>
+</div>

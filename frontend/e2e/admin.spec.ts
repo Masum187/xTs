@@ -8,8 +8,12 @@ test("admin maintains the enablement rule and sees the effect", async ({
   await page
     .getByTestId("persona-select")
     .selectOption("christian.roeper@qualitytimes.de");
-  await page.getByRole("link", { name: "Verwaltung" }).click();
-  await expect(page.getByRole("heading", { name: "Verwaltung" })).toBeVisible();
+  await page.getByRole("link", { name: "Einstellungen" }).click();
+  await expect(
+    page.getByRole("heading", { name: "Einstellungen" }),
+  ).toBeVisible();
+  // XTS-154: Unterseiten der Einstellungen ueber die Baumnavigation.
+  await page.getByTestId("settings-nav-rules").click();
 
   const rule = page.getByTestId("rule-2");
   await expect(rule).toContainText("Freischaltung Stundenschreibung");
@@ -24,13 +28,15 @@ test("admin maintains the enablement rule and sees the effect", async ({
   await page.getByRole("link", { name: "Beauftragung" }).click();
   await expect(page.getByTestId("candidates-empty")).toBeVisible();
 
-  await page.getByRole("link", { name: "Verwaltung" }).click();
+  await page.getByRole("link", { name: "Einstellungen" }).click();
+  await page.getByTestId("settings-nav-rules").click();
   await page.getByTestId("rule-1").getByLabel("Aktiv Infotyp 1").check();
   await page.getByTestId("rule-1").getByTestId("save-rule-1").click();
   await page.getByRole("link", { name: "Beauftragung" }).click();
   await expect(page.getByTestId("candidate-ROEPER-600000000001")).toBeVisible();
 
-  await page.getByRole("link", { name: "Verwaltung" }).click();
+  await page.getByRole("link", { name: "Einstellungen" }).click();
+  await page.getByTestId("settings-nav-rules").click();
   await rule.getByLabel("Aktiv Infotyp 2").uncheck();
   await rule.getByTestId("save-rule-2").click();
   await expect(page.getByTestId("admin-message")).toContainText("inaktiv");
@@ -54,7 +60,8 @@ test("admin maintains the enablement rule and sees the effect", async ({
   await page
     .getByTestId("persona-select")
     .selectOption("christian.roeper@qualitytimes.de");
-  await page.getByRole("link", { name: "Verwaltung" }).click();
+  await page.getByRole("link", { name: "Einstellungen" }).click();
+  await page.getByTestId("settings-nav-rules").click();
   await page.getByTestId("rule-2").getByLabel("Aktiv Infotyp 2").check();
   await page.getByTestId("rule-2").getByTestId("save-rule-2").click();
   await expect(page.getByTestId("admin-message")).toContainText("aktiv");
@@ -72,8 +79,10 @@ test("admin maintains master data and sees the effect in planning", async ({
   await page
     .getByTestId("persona-select")
     .selectOption("christian.roeper@qualitytimes.de");
-  await page.getByRole("link", { name: "Verwaltung" }).click();
-  await expect(page.getByRole("heading", { name: "Verwaltung" })).toBeVisible();
+  await page.getByRole("link", { name: "Einstellungen" }).click();
+  await expect(
+    page.getByRole("heading", { name: "Einstellungen" }),
+  ).toBeVisible();
 
   // XTS-010: Pflichtfelder werden validiert, Aenderer wird gesetzt.
   await page.getByLabel("Neu: EXTNR").fill("tester");
@@ -86,6 +95,7 @@ test("admin maintains master data and sees the effect in planning", async ({
   await expect(page.getByTestId("employee-TESTER")).toContainText("ROEPER");
 
   // XTS-011: inaktive Teams werden in der Planung nicht angeboten.
+  await page.getByTestId("settings-nav-teams").click();
   await page.getByLabel("Neu: Team-ID").fill("qa_team");
   await page.getByLabel("Neu: Teamname").fill("QA Team");
   await page.getByTestId("create-team").click();
@@ -94,7 +104,8 @@ test("admin maintains master data and sees the effect in planning", async ({
   await expect(
     page.getByLabel("Team").locator("option", { hasText: "QA Team" }),
   ).toHaveCount(1);
-  await page.getByRole("link", { name: "Verwaltung" }).click();
+  await page.getByRole("link", { name: "Einstellungen" }).click();
+  await page.getByTestId("settings-nav-teams").click();
   await page.getByLabel("Aktiv Team QA_TEAM").uncheck();
   await page.getByTestId("save-team-QA_TEAM").click();
   await expect(page.getByTestId("admin-message")).toContainText("inaktiv");
@@ -104,7 +115,8 @@ test("admin maintains master data and sees the effect in planning", async ({
   ).toHaveCount(0);
 
   // XTS-013: Kontierung anlegen, gegen SAP CO pruefen, zuordnen, loeschen.
-  await page.getByRole("link", { name: "Verwaltung" }).click();
+  await page.getByRole("link", { name: "Einstellungen" }).click();
+  await page.getByTestId("settings-nav-cost-objects").click();
   await page
     .getByLabel("Neu: Kontierung", { exact: true })
     .fill("600000000042");
@@ -120,6 +132,7 @@ test("admin maintains master data and sees the effect in planning", async ({
   await page.getByTestId("check-cost-object-600000000042").click();
   await expect(page.getByTestId("admin-message")).toContainText("gueltig");
 
+  await page.getByTestId("settings-nav-cost-object-assignments").click();
   await page.getByLabel("Neu: Zuordnung Mitarbeiter").selectOption("SCHILZ");
   await page
     .getByLabel("Neu: Zuordnung Kontierung")
@@ -136,7 +149,8 @@ test("admin maintains master data and sees the effect in planning", async ({
     page.getByTestId("cell-SCHILZ-600000000042-2026-04"),
   ).toBeVisible();
 
-  await page.getByRole("link", { name: "Verwaltung" }).click();
+  await page.getByRole("link", { name: "Einstellungen" }).click();
+  await page.getByTestId("settings-nav-cost-objects").click();
   await page.getByTestId("delete-cost-object-600000000042").click();
   await expect(page.getByTestId("admin-message")).toContainText("gelöscht");
   await expect(page.getByTestId("cost-object-600000000042")).toContainText(
@@ -186,7 +200,8 @@ test("admin sees status changes and job errors in the audit log", async ({
   await page
     .getByTestId("persona-select")
     .selectOption("christian.roeper@qualitytimes.de");
-  await page.getByRole("link", { name: "Verwaltung" }).click();
+  await page.getByRole("link", { name: "Einstellungen" }).click();
+  await page.getByTestId("settings-nav-audit-log").click();
 
   const table = page.getByTestId("audit-table");
   await expect(table).toContainText("SCHILZ/2026-04-02");
@@ -207,7 +222,7 @@ test("admin area is not reachable without admin role", async ({ page }) => {
   await expect(
     page.getByRole("heading", { name: "Stundenschreibung" }),
   ).toBeVisible();
-  await expect(page.getByRole("link", { name: "Verwaltung" })).toBeHidden();
+  await expect(page.getByRole("link", { name: "Einstellungen" })).toBeHidden();
 });
 
 test("admin maintains approvers per cost object", async ({ page }) => {
@@ -215,7 +230,8 @@ test("admin maintains approvers per cost object", async ({ page }) => {
   await page
     .getByTestId("persona-select")
     .selectOption("christian.roeper@qualitytimes.de");
-  await page.getByRole("link", { name: "Verwaltung" }).click();
+  await page.getByRole("link", { name: "Einstellungen" }).click();
+  await page.getByTestId("settings-nav-approvers").click();
   const table = page.getByTestId("approver-table");
   await expect(table).toContainText("Maria Weber");
   // Nur aktive Mitarbeiter mit Rolle approver sind als Genehmiger waehlbar.

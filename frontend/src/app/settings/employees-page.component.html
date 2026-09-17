@@ -1,0 +1,256 @@
+<section class="settings-page">
+  <header class="page-head">
+    <div>
+      <h2 class="xts-heading page-title">Mitarbeiter (ZXTS_WIW_T)</h2>
+      <p class="xts-text-muted hint">
+        Externe Mitarbeiter mit Status, Firma, Ressourcenmanager und optionalem
+        SAP-Account. Pflichtfelder: EXTNR, Nachname, Vorname, Status. Löschen
+        ist logisch; gelöschte oder inaktive Mitarbeiter verlieren den Zugang.
+        Entra OID (Claim <code>oid</code>) ist das führende Login-Mapping, Entra
+        UPN der Fallback (XTS-050).
+      </p>
+    </div>
+  </header>
+
+  @if (message()) {
+    <p
+      class="notice"
+      [class.notice-ok]="messageKind() === 'ok'"
+      [class.notice-error]="messageKind() === 'error'"
+      data-testid="admin-message"
+      aria-live="polite"
+    >
+      {{ message() }}
+    </p>
+  }
+
+  <xts-load-status
+    [state]="loader.value()"
+    loadingText="Mitarbeiter werden geladen …"
+    (retry)="reload()"
+  />
+
+  @if (loader.ready()) {
+    <fieldset class="plain" [disabled]="lock.active()">
+      <div
+        class="table-wrap"
+        tabindex="0"
+        role="region"
+        aria-label="Tabelle Mitarbeiter, seitlich scrollbar"
+      >
+        <table class="xts-table" data-testid="employee-table">
+          <thead>
+            <tr>
+              <th>EXTNR</th>
+              <th>Vorname</th>
+              <th>Nachname</th>
+              <th>Firma</th>
+              <th>Ressourcenmanager</th>
+              <th>SAP-Account</th>
+              <th>Entra OID</th>
+              <th>Entra UPN</th>
+              <th>Aktiv</th>
+              <th>Geändert</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (employee of employees(); track employee.extNr) {
+              <tr
+                [attr.data-testid]="'employee-' + employee.extNr"
+                [class.deleted]="employee.deleted"
+              >
+                <td>
+                  <strong class="mono">{{ employee.extNr }}</strong>
+                  @if (employee.deleted) {
+                    <span class="xts-tag xts-tag-neutral">gelöscht</span>
+                  }
+                </td>
+                <td>
+                  <input
+                    class="xts-input"
+                    [attr.aria-label]="'Vorname ' + employee.extNr"
+                    [(ngModel)]="employee.firstName"
+                    [disabled]="employee.deleted"
+                  />
+                </td>
+                <td>
+                  <input
+                    class="xts-input"
+                    [attr.aria-label]="'Nachname ' + employee.extNr"
+                    [(ngModel)]="employee.lastName"
+                    [disabled]="employee.deleted"
+                  />
+                </td>
+                <td>
+                  <input
+                    class="xts-input"
+                    [attr.aria-label]="'Firma ' + employee.extNr"
+                    [(ngModel)]="employee.company"
+                    [disabled]="employee.deleted"
+                  />
+                </td>
+                <td>
+                  <select
+                    class="xts-input"
+                    [attr.aria-label]="'Ressourcenmanager ' + employee.extNr"
+                    [(ngModel)]="employee.resourceManager"
+                    [disabled]="employee.deleted"
+                  >
+                    <option [ngValue]="null">–</option>
+                    @for (manager of activeEmployees(); track manager.extNr) {
+                      <option [ngValue]="manager.extNr">
+                        {{ manager.displayName }}
+                      </option>
+                    }
+                  </select>
+                </td>
+                <td>
+                  <input
+                    class="xts-input"
+                    [attr.aria-label]="'SAP-Account ' + employee.extNr"
+                    [(ngModel)]="employee.sapAccount"
+                    [disabled]="employee.deleted"
+                  />
+                </td>
+                <td>
+                  <input
+                    class="xts-input wide"
+                    [attr.aria-label]="'Entra OID ' + employee.extNr"
+                    [(ngModel)]="employee.aadOid"
+                    [disabled]="employee.deleted"
+                  />
+                </td>
+                <td>
+                  <input
+                    class="xts-input wide"
+                    [attr.aria-label]="'Entra UPN ' + employee.extNr"
+                    [(ngModel)]="employee.aadUpn"
+                    [disabled]="employee.deleted"
+                  />
+                </td>
+                <td>
+                  <input
+                    type="checkbox"
+                    [attr.aria-label]="'Aktiv Mitarbeiter ' + employee.extNr"
+                    [(ngModel)]="employee.active"
+                    [disabled]="employee.deleted"
+                  />
+                </td>
+                <td class="stamp">{{ employee.changedBy ?? "–" }}</td>
+                <td class="actions">
+                  @if (!employee.deleted) {
+                    <button
+                      type="button"
+                      class="xts-btn xts-btn-primary"
+                      (click)="saveEmployee(employee)"
+                      [attr.data-testid]="'save-employee-' + employee.extNr"
+                    >
+                      Speichern
+                    </button>
+                    <button
+                      type="button"
+                      class="xts-btn xts-btn-secondary"
+                      (click)="deleteEmployee(employee)"
+                      [attr.data-testid]="'delete-employee-' + employee.extNr"
+                    >
+                      Löschen
+                    </button>
+                  }
+                </td>
+              </tr>
+            }
+            <tr class="new-row" data-testid="new-employee">
+              <td>
+                <input
+                  class="xts-input"
+                  aria-label="Neu: EXTNR"
+                  placeholder="EXTNR"
+                  [(ngModel)]="newEmployee.extNr"
+                />
+              </td>
+              <td>
+                <input
+                  class="xts-input"
+                  aria-label="Neu: Vorname"
+                  placeholder="Vorname"
+                  [(ngModel)]="newEmployee.firstName"
+                />
+              </td>
+              <td>
+                <input
+                  class="xts-input"
+                  aria-label="Neu: Nachname"
+                  placeholder="Nachname"
+                  [(ngModel)]="newEmployee.lastName"
+                />
+              </td>
+              <td>
+                <input
+                  class="xts-input"
+                  aria-label="Neu: Firma"
+                  [(ngModel)]="newEmployee.company"
+                />
+              </td>
+              <td>
+                <select
+                  class="xts-input"
+                  aria-label="Neu: Ressourcenmanager"
+                  [(ngModel)]="newEmployee.resourceManager"
+                >
+                  <option value="">–</option>
+                  @for (manager of activeEmployees(); track manager.extNr) {
+                    <option [value]="manager.extNr">
+                      {{ manager.displayName }}
+                    </option>
+                  }
+                </select>
+              </td>
+              <td>
+                <input
+                  class="xts-input"
+                  aria-label="Neu: SAP-Account"
+                  [(ngModel)]="newEmployee.sapAccount"
+                />
+              </td>
+              <td>
+                <input
+                  class="xts-input wide"
+                  aria-label="Neu: Entra OID"
+                  placeholder="GUID"
+                  [(ngModel)]="newEmployee.aadOid"
+                />
+              </td>
+              <td>
+                <input
+                  class="xts-input wide"
+                  aria-label="Neu: Entra UPN"
+                  placeholder="name@qualitytimes.de"
+                  [(ngModel)]="newEmployee.aadUpn"
+                />
+              </td>
+              <td>
+                <input
+                  type="checkbox"
+                  aria-label="Neu: Aktiv Mitarbeiter"
+                  [(ngModel)]="newEmployee.active"
+                />
+              </td>
+              <td class="stamp"></td>
+              <td class="actions">
+                <button
+                  type="button"
+                  class="xts-btn xts-btn-primary"
+                  (click)="saveEmployee(newEmployee)"
+                  data-testid="create-employee"
+                >
+                  Anlegen
+                </button>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </fieldset>
+  }
+</section>

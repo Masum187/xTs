@@ -102,7 +102,10 @@ test("UAT-Fall B: Rückweisung, Korrektur, erneute Rückweisung", async ({
 }) => {
   await page.goto("/");
   await switchPersona(page, ROEPER, "Christian Roeper");
-  await page.getByRole("link", { name: "Verwaltung" }).click();
+  await page.getByRole("link", { name: "Einstellungen" }).click();
+  await page.getByTestId("settings-nav-test-data").click();
+  // XTS-154: Rueckfrage vor dem Reset (Audit Nr. 23).
+  page.once("dialog", (dialog) => dialog.accept());
   await page.getByTestId("reset-test-data").click();
   await expect(page.getByTestId("admin-message")).toContainText(
     "Testdatenpaket uat-v0.1 zurückgesetzt",

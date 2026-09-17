@@ -1,0 +1,82 @@
+<section class="settings-page">
+  <header class="page-head">
+    <div>
+      <h2 class="xts-heading page-title">Regelwerk (ZXTS_REGELN_T)</h2>
+      <p class="xts-text-muted hint">
+        Infotyp 1 steuert die Zusammenfassung von Beauftragungskandidaten,
+        Infotyp 2 steuert, ab welchem Belegstatus Kontierungen für die
+        Stundenschreibung freigeschaltet werden. Infotyp 3 legt fest, bis zu
+        welchem Kalendertag des Folgemonats der Vormonat noch erfasst werden
+        darf; ist er inaktiv, bleibt der Vormonat den ganzen Monat offen.
+        Zukunftstage sind immer gesperrt.
+      </p>
+    </div>
+  </header>
+
+  @if (message()) {
+    <p
+      class="notice"
+      [class.notice-ok]="messageKind() === 'ok'"
+      [class.notice-error]="messageKind() === 'error'"
+      data-testid="admin-message"
+      aria-live="polite"
+    >
+      {{ message() }}
+    </p>
+  }
+
+  <xts-load-status
+    [state]="loader.value()"
+    loadingText="Regelwerk wird geladen …"
+    (retry)="reload()"
+  />
+
+  @if (loader.ready()) {
+    <fieldset class="plain" [disabled]="lock.active()">
+      <div class="rules" data-testid="rules-list">
+        @for (rule of rules(); track rule.infotype) {
+          <article class="rule" [attr.data-testid]="'rule-' + rule.infotype">
+            <header>
+              <strong>Infotyp {{ rule.infotype }}</strong>
+              <span class="xts-text-muted">{{ infotypeLabel(rule) }}</span>
+            </header>
+            <div class="rule-controls">
+              <div class="xts-field">
+                <label>
+                  Regelwert
+                  <select
+                    class="xts-input"
+                    [attr.aria-label]="'Regelwert Infotyp ' + rule.infotype"
+                    [ngModel]="rule.value"
+                    (ngModelChange)="updateRule(rule, { value: $event })"
+                  >
+                    @for (option of valueOptions(rule); track option.value) {
+                      <option [value]="option.value">{{ option.label }}</option>
+                    }
+                  </select>
+                </label>
+              </div>
+              <label class="checkbox">
+                <input
+                  type="checkbox"
+                  [attr.aria-label]="'Aktiv Infotyp ' + rule.infotype"
+                  [ngModel]="rule.active"
+                  (ngModelChange)="updateRule(rule, { active: $event })"
+                />
+                aktiv
+              </label>
+              <button
+                type="button"
+                class="xts-btn xts-btn-primary"
+                (click)="saveRule(rule)"
+                [attr.data-testid]="'save-rule-' + rule.infotype"
+              >
+                Speichern
+              </button>
+            </div>
+          </article>
+        }
+      </div>
+    </fieldset>
+  }
+</section>
