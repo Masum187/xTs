@@ -196,9 +196,24 @@ test("a running maintenance action locks every route change until it ends", asyn
   await expect(page).toHaveURL(/organisation\/teams$/);
   await page.getByRole("link", { name: "Planung" }).click();
   await expect(page).toHaveURL(/organisation\/teams$/);
+  // Identitaetswechsel ist gesperrt: Auswahl deaktiviert, ein erzwungener
+  // Wechsel aendert weder Identitaet noch Seite.
+  const persona = page.getByTestId("persona-select");
+  await expect(persona).toBeDisabled();
+  await persona.evaluate((element) => {
+    const select = element as HTMLSelectElement;
+    select.value = "stephan.schilz@qualitytimes.de";
+    select.dispatchEvent(new Event("change", { bubbles: true }));
+  });
+  await expect(page.getByTestId("nav-persona-name")).toContainText(
+    "Christian Roeper",
+  );
+  await expect(persona).toHaveValue(ROEPER);
+  await expect(page).toHaveURL(/organisation\/teams$/);
   await expect(page.getByTestId("admin-message")).toContainText("gespeichert");
   await expect(page.getByTestId("settings-nav-locked")).toHaveCount(0);
   await expect(page.getByTestId("team-LOCK_TEAM")).toBeVisible();
+  await expect(persona).toBeEnabled();
 
   // Nach einem Fehler ist die Sperre ebenfalls aufgehoben.
   state.delay = 0;
@@ -214,6 +229,11 @@ test("a running maintenance action locks every route change until it ends", asyn
   await expect(page).toHaveURL(/organisation\/mitarbeiter$/);
   await page.goBack();
   await expect(page).toHaveURL(/organisation\/teams$/);
+
+  // Nach dem Ende der Aktion funktioniert der Wechsel samt Weiterleitung.
+  await persona.selectOption("stephan.schilz@qualitytimes.de");
+  await expect(page).toHaveURL(/\/$/);
+  await expect(page.getByTestId("profile")).toContainText("Stephan Schilz");
 });
 
 test("dependent selections load per page, errors never look like empty lists, failed saves keep inputs", async ({
