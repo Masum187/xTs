@@ -23,7 +23,7 @@ function emptyEmployee(): EmployeeDraft {
   selector: "xts-employees-page",
   imports: [FormsModule, LoadStatusComponent],
   templateUrl: "./employees-page.component.html",
-  changeDetection: ChangeDetectionStrategy.Eager,
+  changeDetection: ChangeDetectionStrategy.OnPush,
   styleUrl: "./settings-page.css",
 })
 export class EmployeesPageComponent extends SettingsPage {

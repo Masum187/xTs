@@ -11,12 +11,13 @@
       <label>
         Startmonat
         <input
+          #startField
           class="xts-input"
           aria-label="Startmonat"
           placeholder="MM.JJJJ"
           [ngModel]="startInput()"
           [disabled]="busy.active()"
-          (change)="onStartInput($any($event.target))"
+          (change)="onStartInput(startField)"
         />
       </label>
     </div>
@@ -24,11 +25,12 @@
       <label>
         Mitarbeiter
         <select
+          #extNrField
           class="xts-input"
           aria-label="Mitarbeiter"
           [ngModel]="filterExtNr()"
           [disabled]="busy.active()"
-          (change)="onFilterInput('extNr', $any($event.target))"
+          (change)="onFilterInput('extNr', extNrField)"
         >
           <option value="">Alle Mitarbeiter</option>
           @for (option of employeeOptions(); track option.value) {
@@ -41,11 +43,12 @@
       <label>
         Team
         <select
+          #teamField
           class="xts-input"
           aria-label="Team"
           [ngModel]="filterTeam()"
           [disabled]="busy.active()"
-          (change)="onFilterInput('team', $any($event.target))"
+          (change)="onFilterInput('team', teamField)"
         >
           <option value="">Alle Teams</option>
           @for (team of teams(); track team.id) {
@@ -58,11 +61,12 @@
       <label>
         Kontierung
         <select
+          #coIdentField
           class="xts-input"
           aria-label="Kontierung"
           [ngModel]="filterCoIdent()"
           [disabled]="busy.active()"
-          (change)="onFilterInput('coIdent', $any($event.target))"
+          (change)="onFilterInput('coIdent', coIdentField)"
         >
           <option value="">Alle Kontierungen</option>
           @for (option of coIdentOptions(); track option.value) {
@@ -248,6 +252,7 @@
               <label>
                 Planstunden
                 <input
+                  #editorField
                   class="xts-input"
                   type="number"
                   min="0"
@@ -269,8 +274,8 @@
                   "
                   [disabled]="busy.active()"
                   [value]="editorValue()"
-                  (input)="draft.set($any($event.target).value)"
-                  (change)="commitDraft($any($event.target).value)"
+                  (input)="draft.set(editorField.value)"
+                  (change)="commitDraft(editorField.value)"
                 />
               </label>
             </div>

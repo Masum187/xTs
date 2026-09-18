@@ -15,7 +15,7 @@ function emptyCostObject(): CostObjectDraft {
   selector: "xts-cost-objects-page",
   imports: [FormsModule, LoadStatusComponent],
   templateUrl: "./cost-objects-page.component.html",
-  changeDetection: ChangeDetectionStrategy.Eager,
+  changeDetection: ChangeDetectionStrategy.OnPush,
   styleUrl: "./settings-page.css",
 })
 export class CostObjectsPageComponent extends SettingsPage {

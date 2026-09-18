@@ -25,7 +25,7 @@ import type { LoadStateValue } from "./async-state";
       </div>
     }
   `,
-  changeDetection: ChangeDetectionStrategy.Eager,
+  changeDetection: ChangeDetectionStrategy.OnPush,
   styles: `
     .load-status {
       border-radius: 8px;

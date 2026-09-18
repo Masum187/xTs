@@ -322,3 +322,31 @@ describe("timesheet logic", () => {
     ).toBe(false);
   });
 });
+
+describe("defaultTimesheetDate", () => {
+  it("uses the server date of the profile, never the browser date", async () => {
+    const { defaultTimesheetDate } = await import("./timesheet.logic");
+    const browserNow = new Date("2026-09-18T10:00:00Z");
+    expect(defaultTimesheetDate({ today: "2026-05-05" }, browserNow)).toBe(
+      "2026-05-05",
+    );
+  });
+
+  it("falls back to the local calendar day without a profile", async () => {
+    const { defaultTimesheetDate } = await import("./timesheet.logic");
+    const now = new Date(2026, 8, 18, 10, 0, 0);
+    expect(defaultTimesheetDate(null, now)).toBe("2026-09-18");
+    expect(defaultTimesheetDate({ today: "" }, now)).toBe("2026-09-18");
+  });
+});
+
+describe("numberFieldValue", () => {
+  it("maps an empty number field to 0 and keeps numbers", async () => {
+    const { numberFieldValue } = await import("./timesheet.logic");
+    expect(numberFieldValue(null)).toBe(0);
+    expect(numberFieldValue("")).toBe(0);
+    expect(numberFieldValue(7.25)).toBe(7.25);
+    expect(numberFieldValue("30")).toBe(30);
+    expect(Number.isNaN(numberFieldValue("abc"))).toBe(true);
+  });
+});

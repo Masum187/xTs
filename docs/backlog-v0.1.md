@@ -892,7 +892,7 @@ Prioritaet: P1
 
 Rolle: xTS Administrator
 
-Jira: XTS-96 (Label `redesign`); Grundlage: `ui-redesign-bewertung.md`. Status: freigegeben 2026-09-16 als PR 1, umgesetzt in PR #44 (Route `/einstellungen` mit Kindrouten je Bereich und Weiterleitung von `/admin`, Baumnavigation, neun Unterseiten mit eigenem Laden, Sperre je Unterseite plus Navigation und Routen-Guard, Reset-Rueckfrage, Lazy Loading des Einstellungs-Bundles). PR 2 (Rest Audit 15B: Lazy Loading aller Routen, OnPush, Befund 31, Warnschwelle anhand des Produktions-Builds) bekommt einen eigenen Zuschnitt.
+Jira: XTS-96 (Label `redesign`); Grundlage: `ui-redesign-bewertung.md`. Status: freigegeben 2026-09-16 als PR 1, umgesetzt in PR #44 (Route `/einstellungen` mit Kindrouten je Bereich und Weiterleitung von `/admin`, Baumnavigation, neun Unterseiten mit eigenem Laden, Sperre je Unterseite plus Navigation und Routen-Guard, Reset-Rueckfrage, Lazy Loading des Einstellungs-Bundles). PR 2 (Rest Audit 15B) freigegeben 2026-09-18 mit Zuschnitt: Lazy Loading fuer Genehmigung, Reporting, Planung und Beauftragung (Stundenschreibung bewusst im Initial-Bundle, Rollenschutz vor dem Nachladen), `ChangeDetectionStrategy.OnPush` auf allen Komponenten ohne Eager-Ausnahme (kein Formularumbau der Einstellungsseiten noetig), Befund 31 (`TimesheetDayStore` je Screen-Instanz mit Identitaetsbindung, `defaultTimesheetDate`, `TextBuffer` und `banfBlockedReason` fuer die Beauftragung, typisierte Handler statt `$any`/`+$event`), Warnschwelle 600 kB -> 500 kB anhand des Produktions-Builds (Initial 499,00 kB -> 419,67 kB). Ausgeklammert und nicht freigegeben: Mock-API-Zerlegung (XTS-158) und struktureller Umbau der App-Shell (XTS-159).
 
 Akzeptanzkriterien:
 
@@ -929,6 +929,34 @@ Akzeptanzkriterien:
 - Der Auslastungsbalken zeigt Summe und verfuegbare Stunden des Werkkalenders; ein aktiver Kontierungsfilter darf keine scheinbare Gesamtauslastung erzeugen (Summe bleibt die des Mitarbeiters, Filter wird als Hinweis genannt).
 - Ueberplanung wird als Text und Farbe markiert; Kontrast nach Baseline.
 - E2E `planning.spec.ts` und `planning-layout.spec.ts` gruen.
+
+### XTS-158 - Mock-API in Module zerlegen (Rest Audit 15 Teil B)
+
+Prioritaet: P3
+
+Rolle: Entwicklung
+
+Jira: noch nicht angelegt; Grundlage: Audit 2026-09-03 Befund 32, Entscheidung 2026-09-18 zu XTS-154 PR 2 (ausgeklammert). Status: nicht freigegeben.
+
+Akzeptanzkriterien:
+
+- `mock-api/src/routes.js` (787 Zeilen) in Router-Dateien je Domaene (Stammdaten, Planung, Beauftragung, Stundenschreibung, Genehmigung, Reporting, System) zerlegt; `masterdata.js` (484 Zeilen) nach Stammdatenart geschnitten.
+- `routes.test.js` (2.240 Zeilen) entlang derselben Domaenen aufgeteilt; Contract-Tests bleiben vollstaendig und gruen.
+- Beide Antwortformen (`mock`, `v2`) und der Fehlerkontrakt unveraendert; beide Smoke-Varianten gruen.
+
+### XTS-159 - App-Shell strukturell zerlegen (Rest Audit 15 Teil B)
+
+Prioritaet: P3
+
+Rolle: Entwicklung
+
+Jira: noch nicht angelegt; Grundlage: Audit 2026-09-03 Befund 32, Entscheidung 2026-09-18 zu XTS-154 PR 2 (ausgeklammert). Status: nicht freigegeben.
+
+Akzeptanzkriterien:
+
+- `app.component.ts` (Inline-Template mit Seitenleiste, modalem Menue, Persona-Umschalter und Auth-Zustaenden) in Teilkomponenten zerlegt (z. B. Navigation, Menue mit Fokusfalle, Auth-Panels); Verhalten aus Abschnitt 2 der Baseline unveraendert.
+- Test-IDs und Labels der Shell bleiben erhalten; `shell.spec.ts`, `responsive.spec.ts`, `auth.spec.ts` gruen ohne Aenderung der Erwartungen.
+- Kein neuer Zustand und keine neue Route.
 
 ### XTS-156 - Visuelle und funktionale Abnahme (fortlaufend je Screen)
 
