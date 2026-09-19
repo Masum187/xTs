@@ -127,3 +127,49 @@ Diese Punkte müssen geklärt sein, bevor der OData-Kontrakt (XTS-6) und die Moc
 - [xTS Master Concept](https://heri-jean-masum.atlassian.net/wiki/spaces/xTs/pages/111214593)
 - [xTS Backlog-Register v6](https://heri-jean-masum.atlassian.net/wiki/spaces/xTs/pages/110985498)
 - [Confluence-Version dieser ADR](https://heri-jean-masum.atlassian.net/wiki/spaces/xTs/pages/120291336)
+
+---
+
+## Repo-Review-Ergänzung (2026-09-19, xTS-Entwicklung)
+
+Der Originaltext oben bleibt unverändert (Stand der Confluence-Seite). Die folgenden Punkte stammen aus dem Repo-Review zu PR #47 und sind **vor einem Wechsel auf `Accepted` aufzulösen**. Sie ändern die Entscheidung nicht, grenzen aber ein, was mit Option A tatsächlich entschieden ist, und ergänzen die offenen Fragen an die SAP-Seite.
+
+### R1 Entscheidung 14 bleibt: Arbeitszeit wird serverseitig berechnet
+
+Der Absatz „K4 Planungsarithmetik" schließt aus dem Speicherformat `CHAR(6)`, dass SAP-seitig keine Minutenrechnung stattfindet und das Frontend rechnen muss. Diese Folgerung ist nicht haltbar: ein Zeichenformat für die Ablage sagt nichts darüber aus, wo gerechnet wird. Entscheidung 14 in `entscheidungen-v0.1.md` bleibt verbindlich: Arbeitszeit = Geht − Kommt − Pause, **serverseitig berechnet**; Abweichungen der Positionssumme brauchen eine Begründung. Der Kontrakt liefert `workHours` bereits als servergeführten Wert. Zu klären sind daher nur Format und Konvertierung (Frage 1: `HHMMSS`, leere Werte, Rundung auf ganze Minuten nach Entscheidung 15), nicht der Ort der Berechnung. Der Hinweis auf XTS-89 (Design-Baseline) ist damit auf „Zeitfeld-Format und Konvertierung" zu beschränken; die Verantwortung für die Berechnung wechselt nicht ins Frontend.
+
+### R2 Fehlende Option: ZPOT-Tabellen übernehmen, Fachkontrakt per Mapping erhalten
+
+Option A koppelt die Übernahme der Tabellen mit einer Umbenennung der OData- und Mock-JSON-Felder auf die DDIC-Namen. Das ist eine eigenständige Schnittstellenänderung, keine zwingende Folge anderer Tabellennamen. Es fehlt die Option:
+
+**Option D — ZPOT-Tabellen übernehmen, bestehenden Fachkontrakt durch Mapping im Gateway bzw. Adapter erhalten.** Die Persistenz folgt SAP (`ZPOT_TIME_T`, `ZPOT_PTIME_T`), der OData-Service mappt auf die fachlichen Feldnamen aus `docs/odata-contracts.md` (`extNr`, `date`, `startTime`, `endTime`, `breakMinutes`, `location`, `lines[{ coIdent, description, hours }]`, `status`, `workHours`, `varianceReason`, `rejectionReason`, `approvedBy`, `approvedAt`, `weDocument`). Für den WebClient und die Mock-API ändert sich nichts; das OData-V2-Format ist bereits ein Adapter (`mock-api/src/odata-v2.js`, Entscheidung 17).
+
+| Kriterium                      | A (Felder umbenennen)                                                                              | D (Mapping im Service)                                                                       |
+| ------------------------------ | -------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------- |
+| Aufwand xTS                    | Kontrakt, Mock, Decoder, Frontend-Modelle, Specs, UAT-Drehbuch anfassen (XTS-6, XTS-19, XTS-30/31) | keiner im Client; Mapping-Tabelle im Service und in `odata-contracts.md` dokumentieren       |
+| Aufwand SAP                    | keiner                                                                                             | gering: Feldzuordnung im Gateway-Modell (ohnehin nötig, weil DDIC-Namen nicht 1:1 JSON sind) |
+| Stabilität des Kontrakts       | bricht bei jeder DDIC-Änderung erneut                                                              | DDIC-Änderungen bleiben im Service gekapselt                                                 |
+| Nachvollziehbarkeit SAP ↔ JSON | direkt                                                                                             | über die Mapping-Tabelle                                                                     |
+
+Die Umbenennung der Mock-JSON-Felder ist daher **separat** zu bewerten und nicht Teil der Tabellenentscheidung. Empfehlung der xTS-Entwicklung: Tabellen nach Option A übernehmen, Kontrakt nach Option D erhalten; die Mapping-Tabelle wird Bestandteil von XTS-6.
+
+### R3 Persistenz ist mit den sieben Fragen nicht vollständig geklärt
+
+Die Feldstruktur deckt den umgesetzten Fachkontrakt nicht ab. Zusätzlich zu den Fragen 1 bis 7 sind vor `Accepted` zu klären:
+
+8. **Tagesstatus:** `ZPOT_TIME_T` hat kein Statusfeld; `STATUS` liegt nur an den Positionen (`ZPOT_PTIME_T`). Der Kontrakt führt den Status am Tag (`E`, `F`, `G`, `A`), und Entscheidung 19 legt fest, dass Genehmigung und Rückweisung **gesamthaft für den Tag** wirken. Wie wird der Tagesstatus abgelegt, und wie wird sichergestellt, dass alle Positionen eines Tages denselben Status tragen (ein Kopffeld, oder Positionsstatus mit serverseitiger Konsistenzregel)?
+9. **Rückweisungsgrund:** Pflichtfeld bei Status `A` (Kontrakt `rejectionReason`, Entscheidung 11/12). Kein Feld vorhanden.
+10. **Abweichungsbegründung:** Pflicht bei Abweichung zwischen Positionssumme und Arbeitszeit (Kontrakt `varianceReason`, Entscheidung 14). Kein Feld vorhanden.
+11. **Genehmiger und Genehmigungszeitpunkt:** Kontrakt `approvedBy`, `approvedAt`; Konzept §7.3 sah `GENEHMIGER` und `GENEHMIGT_AM` im Tageskopf vor. `MODBE`/`AEDAT`/`AEZEIT` sind Änderungsstempel und kein Ersatz, weil sie bei jeder Änderung überschrieben werden.
+12. **Wareneingangsbeleg:** Kontrakt `weDocument` bzw. die in der O4-Vorlage vorgeschlagene WE-Referenz je Tag und Kontierung (`docs/entscheidungsvorlage-we-bestellposition.md`, Abschnitt 4). Ablage am Tag, an der Position oder in einer eigenen Tabelle?
+13. **Sperren und Nebenläufigkeit:** Der Kontrakt fordert eine Sperre je Mitarbeiter und Kontierung für die Kontingentprüfung (`enablement.js`, Kommentar zu `validateTimesheetEnablement`). Welches Sperrobjekt ist vorgesehen?
+
+### R4 Bereits genannte Konflikte (aus dem PR-Text, weiterhin offen)
+
+- **Namen:** Die ADR nennt `ZXTS_TIME_H`/`ZXTS_TIME_P` als ursprüngliche Konzeptnamen; das Entwicklungskonzept §7.3 führt `ZXTS_TIME_T` und `ZXTS_PTIME_T`. Confluence und Repo angleichen.
+- **Schlüssel:** Konzept §7.3 sieht für die Positionstabelle den Schlüssel Mitarbeiter, Tagesdatum, Positionsnummer vor. Ohne Tagesdatum und Positionsnummer im Schlüssel von `ZPOT_PTIME_T` sind weder mehrere Positionen je Tag noch die Kontingentprüfung je Kontierung abbildbar (Frage 2, zuerst zu klären).
+- **Längen:** `ZLBESCHREIBUNG` CHAR(20) gegen die heutige Grenze von 255 Zeichen für die Leistungsbeschreibung (Kontrakt, Audit Nr. 42, Fixtures und Specs mit Langtext). `KONTIERUNG` CHAR(40) gegen `CO_IDENT` CHAR(30) im Konzept; `LEISTUNGSORT` CHAR(10) reicht für `remote`/`on-site`.
+
+### Bedingungen für `Accepted`
+
+Die ADR kann erst auf `Accepted` gesetzt werden, wenn die Fragen 1 bis 13 beantwortet sind, R1 im Text korrigiert ist (Berechnung bleibt serverseitig), Option D bewertet und die Entscheidung zur Kontraktumbenennung getrennt festgehalten ist, und die Namens-, Schlüssel- und Längenkonflikte aus R4 aufgelöst sind. Bis dahin bleibt O13 im Entscheidungslog offen.
