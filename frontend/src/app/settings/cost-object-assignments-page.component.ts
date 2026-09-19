@@ -18,7 +18,7 @@ function emptyCostObjectAssignment(): CostObjectAssignmentDraft {
   selector: "xts-cost-object-assignments-page",
   imports: [FormsModule, LoadStatusComponent],
   templateUrl: "./cost-object-assignments-page.component.html",
-  changeDetection: ChangeDetectionStrategy.Eager,
+  changeDetection: ChangeDetectionStrategy.OnPush,
   styleUrl: "./settings-page.css",
 })
 export class CostObjectAssignmentsPageComponent extends SettingsPage {

@@ -14,6 +14,14 @@ import { LoadStatusComponent } from "../shared/load-status.component";
 import { formatHours } from "../shared/hours";
 
 import { formatMonthLabel, parseStartMonth } from "../planning/planning.logic";
+import {
+  TextBuffer,
+  banfBlockedReason,
+  candidateKey,
+  defaultCandidateText,
+  editableOrderIds,
+  hasUnsavedOrderText,
+} from "./orders.logic";
 import type {
   Order,
   OrderCandidate,
@@ -32,13 +40,14 @@ const STATUS_LABELS: Record<OrderStatus, string> = {
   selector: "xts-orders",
   imports: [DecimalPipe, FormsModule, LoadStatusComponent, NgTemplateOutlet],
   templateUrl: "./orders.component.html",
-  changeDetection: ChangeDetectionStrategy.Eager,
+  changeDetection: ChangeDetectionStrategy.OnPush,
   styleUrl: "./orders.component.css",
 })
 export class OrdersComponent {
   private readonly ordersService = inject(OrdersService);
-  private readonly candidateTexts = new Map<string, string>();
-  private readonly orderTexts = new Map<string, string>();
+  /** Textpuffer (Audit Nr. 31): Eingaben ueberleben Speicherfehler. */
+  private readonly candidateTexts = new TextBuffer();
+  private readonly orderTexts = new TextBuffer();
 
   protected readonly loader = new LoadState();
   /** Eigener Zustand fuer die Kandidatenliste, die auch per Filter neu laedt. */
@@ -67,8 +76,9 @@ export class OrdersComponent {
     void this.load();
   }
 
+  /** Stabiler Schluessel fuer `track` in der Kandidatenliste. */
   protected candidateKey(candidate: OrderCandidate): string {
-    return `${candidate.extNr}|${candidate.coIdent}`;
+    return candidateKey(candidate);
   }
 
   protected statusLabel(status: OrderStatus): string {
@@ -82,18 +92,18 @@ export class OrdersComponent {
   }
 
   protected textFor(candidate: OrderCandidate): string {
-    return (
-      this.candidateTexts.get(this.candidateKey(candidate)) ??
-      `Beauftragung ${candidate.displayName} ${candidate.coIdent}`
+    return this.candidateTexts.get(
+      candidateKey(candidate),
+      defaultCandidateText(candidate),
     );
   }
 
   protected setText(candidate: OrderCandidate, text: string): void {
-    this.candidateTexts.set(this.candidateKey(candidate), text);
+    this.candidateTexts.set(candidateKey(candidate), text);
   }
 
   protected orderTextFor(order: Order): string {
-    return this.orderTexts.get(order.orderId) ?? order.text;
+    return this.orderTexts.get(order.orderId, order.text);
   }
 
   protected setOrderText(order: Order, text: string): void {
@@ -102,7 +112,7 @@ export class OrdersComponent {
 
   /** Karte zeigt einen Text, der nicht dem gespeicherten Servertext entspricht. */
   protected hasUnsavedOrderText(order: Order): boolean {
-    return this.orderTextFor(order) !== order.text;
+    return hasUnsavedOrderText(order, this.orderTexts);
   }
 
   protected async updateFilter(
@@ -128,7 +138,7 @@ export class OrdersComponent {
           candidate,
           this.textFor(candidate),
         );
-        this.candidateTexts.delete(this.candidateKey(candidate));
+        this.candidateTexts.clear(candidateKey(candidate));
         this.message.set(
           `Beauftragung ${order.orderId} für ${order.displayName} angelegt (${formatHours(order.hours)} Std.).`,
         );
@@ -144,7 +154,7 @@ export class OrdersComponent {
           order.orderId,
           this.orderTextFor(order),
         );
-        this.orderTexts.delete(order.orderId);
+        this.orderTexts.clear(order.orderId);
         this.message.set(
           `BANF-Positionstext für ${updated.orderId} gespeichert.`,
         );
@@ -155,10 +165,9 @@ export class OrdersComponent {
   protected async createBanf(order: Order): Promise<void> {
     // Die BANF nutzt den gespeicherten Text: ein ungespeicherter Text auf der
     // Karte muss zuerst gespeichert werden (XTS-153).
-    if (this.hasUnsavedOrderText(order)) {
-      this.message.set(
-        `Bitte den BANF-Positionstext für ${order.orderId} zuerst speichern, bevor die BANF angelegt wird.`,
-      );
+    const blocked = banfBlockedReason(order, this.orderTexts);
+    if (blocked !== null) {
+      this.message.set(blocked);
       return;
     }
     await this.guarded("BANF konnte nicht angelegt werden.", async () => {
@@ -228,22 +237,11 @@ export class OrdersComponent {
           ]),
         "Beauftragungen konnten nicht geladen werden.",
         ([orders, protocol]) => {
-          this.pruneOrderTexts(orders);
+          this.orderTexts.retainOnly(editableOrderIds(orders));
           this.orders.set(orders);
           this.protocol.set(protocol);
         },
       ),
     ]);
-  }
-
-  private pruneOrderTexts(orders: Order[]): void {
-    const editableOrderIds = new Set(
-      orders
-        .filter((order) => order.status === "created")
-        .map((order) => order.orderId),
-    );
-    for (const orderId of this.orderTexts.keys()) {
-      if (!editableOrderIds.has(orderId)) this.orderTexts.delete(orderId);
-    }
   }
 }

@@ -11,7 +11,7 @@ import {
 import { FormsModule } from "@angular/forms";
 
 import { describeApiError } from "../shared/api-error";
-import { BusyState, LoadState } from "../shared/async-state";
+import { BusyState } from "../shared/async-state";
 import { LoadStatusComponent } from "../shared/load-status.component";
 import { formatSignedHours } from "../shared/hours";
 import { ApprovalBadgeService } from "../shared/approval-badge.service";
@@ -22,20 +22,20 @@ import {
   canSubmitTimesheet,
   createEmptyDay,
   dayVariance,
+  defaultTimesheetDate,
   isCostObjectBookable,
   isSameTimesheet,
   isWeekend,
   isWithinPeriod,
-  periodAround,
+  numberFieldValue,
   quotaProblems,
   shiftDate,
   sumLineHours,
-  todayIso,
   validateTimesheetDay,
   workHoursOf,
 } from "./timesheet.logic";
-import type { DatePeriod } from "./timesheet.logic";
 import { AuthService } from "../auth/auth.service";
+import { TimesheetDayStore } from "./timesheet-day.store";
 import type {
   EnabledCostObject,
   TimesheetDay,
@@ -54,31 +54,25 @@ const STATUS_LABELS: Record<TimesheetStatus, string> = {
   selector: "xts-timesheet",
   imports: [DatePipe, DecimalPipe, FormsModule, LoadStatusComponent],
   templateUrl: "./timesheet.component.html",
-  changeDetection: ChangeDetectionStrategy.Eager,
+  changeDetection: ChangeDetectionStrategy.OnPush,
   styleUrl: "./timesheet.component.css",
 })
 export class TimesheetComponent {
-  private readonly timesheetService = inject(TimesheetService);
   private readonly auth = inject(AuthService);
   private readonly unsaved = inject(UnsavedChangesService);
   private readonly badge = inject(ApprovalBadgeService);
-  /** Version des Tages-Caches, damit `isDirty` nach dem Laden neu rechnet. */
-  private readonly cacheVersion = signal(0);
-  /** Gespeicherte Tage des geladenen Zeitfensters (Audit Nr. 16). */
-  private readonly savedDays = new Map<string, TimesheetDay>();
-  private loadedPeriod: DatePeriod | null = null;
-  protected readonly profile = this.auth.profile;
   /**
-   * Zuletzt angefordertes Datum. Startwert ist das Systemdatum des Servers
-   * (Entscheidung 18), nicht das Browserdatum; Basis fuer `reload()`:
-   * scheitert ein Fensterwechsel, zeigt `day()` noch den alten Tag, der
-   * Retry muss aber das angeforderte Fenster laden.
+   * Tages-Cache und Ladezustand (Audit Nr. 31): eigene Instanz je Screen,
+   * stirbt mit ihm beim Identitaetswechsel; der Entwurf `day` bleibt in der
+   * Komponente. Scheitert ein Fensterwechsel, zeigt `day()` noch den alten
+   * Tag, der Retry laedt aber das zuletzt angeforderte Fenster.
    */
-  private requestedDate = this.profile()?.today ?? todayIso();
+  private readonly store = new TimesheetDayStore(inject(TimesheetService));
+  protected readonly profile = this.auth.profile;
 
-  protected readonly loader = new LoadState();
+  protected readonly loader = this.store.loader;
   protected readonly busy = new BusyState();
-  protected readonly costObjects = signal<EnabledCostObject[]>([]);
+  protected readonly costObjects = this.store.costObjects;
   protected readonly selectedCostObject = signal<string>("");
   protected readonly message = signal<string>("");
   protected readonly day = signal<TimesheetDay>(createEmptyDay("", ""));
@@ -106,11 +100,10 @@ export class TimesheetComponent {
   protected readonly weekend = computed(() => isWeekend(this.day().date));
   /** Ungespeicherte Aenderungen gegenueber dem gespeicherten bzw. leeren Tag (Audit Nr. 19). */
   protected readonly isDirty = computed(() => {
-    this.cacheVersion();
     const day = this.day();
     if (!day.date || !this.loader.ready()) return false;
     const baseline =
-      this.savedDays.get(day.date) ?? createEmptyDay(day.extNr, day.date);
+      this.store.savedDay(day.date) ?? createEmptyDay(day.extNr, day.date);
     return !isSameTimesheet(day, baseline);
   });
   /** Bearbeitbar nur im Status E/A, im Zeitraum und solange keine Anfrage laeuft. */
@@ -121,7 +114,7 @@ export class TimesheetComponent {
   protected readonly quotaIssues = computed(() =>
     quotaProblems(
       this.day(),
-      this.savedDays.get(this.day().date),
+      this.store.savedDay(this.day().date),
       this.costObjects(),
     ),
   );
@@ -215,8 +208,7 @@ export class TimesheetComponent {
       return;
     }
     this.message.set("");
-    this.requestedDate = date;
-    if (!isWithinPeriod(this.loadedPeriod, date)) {
+    if (!this.store.covers(date)) {
       void this.loadPeriod(date);
       return;
     }
@@ -224,7 +216,7 @@ export class TimesheetComponent {
   }
 
   private showDay(date: string): void {
-    const saved = this.savedDays.get(date);
+    const saved = this.store.savedDay(date);
     this.day.set(saved ?? createEmptyDay(this.currentExtNr(), date));
     this.ensureSelectableCostObject();
   }
@@ -268,6 +260,15 @@ export class TimesheetComponent {
     this.day.update((day) => ({ ...day, ...patch }));
   }
 
+  /** Zahlenfelder liefern bei leerer Eingabe null (typisiert statt `+$event`). */
+  protected setBreakMinutes(value: number | null): void {
+    this.updateDay({ breakMinutes: numberFieldValue(value) });
+  }
+
+  protected setLineHours(index: number, value: number | null): void {
+    this.updateLine(index, { hours: numberFieldValue(value) });
+  }
+
   protected updateLine(
     index: number,
     patch: Partial<TimesheetDay["lines"][number]>,
@@ -281,7 +282,9 @@ export class TimesheetComponent {
   }
 
   protected reload(): void {
-    void this.loadPeriod(this.requestedDate);
+    void this.loadPeriod(
+      this.store.requestedDate() ?? defaultTimesheetDate(this.profile()),
+    );
   }
 
   protected async save(): Promise<void> {
@@ -334,14 +337,8 @@ export class TimesheetComponent {
     });
   }
 
-  private async persist(day: TimesheetDay): Promise<TimesheetDay> {
-    const saved = await this.timesheetService.saveTimesheet(day);
-    this.savedDays.set(saved.date, saved);
-    this.cacheVersion.update((version) => version + 1);
-    // Reststunden neu laden, sonst zeigt das Kontingent-Panel alte Werte
-    // (Audit Nr. 21) und die Kontingentpruefung rechnet mit ihnen.
-    this.costObjects.set(await this.timesheetService.getEnabledCostObjects());
-    return saved;
+  private persist(day: TimesheetDay): Promise<TimesheetDay> {
+    return this.store.persist(day);
   }
 
   private currentExtNr(): string {
@@ -367,31 +364,18 @@ export class TimesheetComponent {
 
   /** Standardtag ist das Server-Heute (Audit Nr. 16), nicht der zuletzt gespeicherte Tag. */
   private loadInitialData(): Promise<void> {
-    return this.loadPeriod(this.requestedDate);
+    return this.loadPeriod(defaultTimesheetDate(this.profile()));
   }
 
-  /** Laedt Freischaltungen und die Tage des Fensters um `date`, oeffnet `date`. */
+  /**
+   * Laedt Freischaltungen und die Tage des Fensters um `date` und oeffnet
+   * `date`; eine ueberholte oder gescheiterte Antwort oeffnet nichts.
+   */
   private async loadPeriod(date: string): Promise<void> {
-    const period = periodAround(date);
-    await this.loader.track(
-      () =>
-        Promise.all([
-          this.timesheetService.getEnabledCostObjects(),
-          this.timesheetService.getMyTimesheets(period),
-        ]),
-      "Stundenzettel konnten nicht geladen werden.",
-      ([costObjects, timesheets]) => {
-        this.costObjects.set(costObjects);
-        this.savedDays.clear();
-        for (const day of timesheets) {
-          this.savedDays.set(day.date, day);
-        }
-        this.loadedPeriod = period;
-        this.cacheVersion.update((version) => version + 1);
-        this.showDay(date);
-        const extNr = this.currentExtNr();
-        this.day.update((day) => ({ ...day, extNr }));
-      },
-    );
+    const applied = await this.store.loadAround(this.currentExtNr(), date);
+    if (!applied) return;
+    this.showDay(date);
+    const extNr = this.currentExtNr();
+    this.day.update((day) => ({ ...day, extNr }));
   }
 }

@@ -28,7 +28,7 @@ const VALUE_OPTIONS: Record<number, { value: string; label: string }[]> = {
   selector: "xts-rules-page",
   imports: [FormsModule, LoadStatusComponent],
   templateUrl: "./rules-page.component.html",
-  changeDetection: ChangeDetectionStrategy.Eager,
+  changeDetection: ChangeDetectionStrategy.OnPush,
   styleUrl: "./settings-page.css",
 })
 export class RulesPageComponent extends SettingsPage {

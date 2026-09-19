@@ -11,7 +11,7 @@ import { RouterLink } from "@angular/router";
       <p><a routerLink="/">Zur Stundenschreibung</a></p>
     </section>
   `,
-  changeDetection: ChangeDetectionStrategy.Eager,
+  changeDetection: ChangeDetectionStrategy.OnPush,
   styles: `
     .auth-panel {
       background: #ffffff;

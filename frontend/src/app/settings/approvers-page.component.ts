@@ -18,7 +18,7 @@ function emptyCostObjectApprover(): CostObjectApproverDraft {
   selector: "xts-approvers-page",
   imports: [FormsModule, LoadStatusComponent],
   templateUrl: "./approvers-page.component.html",
-  changeDetection: ChangeDetectionStrategy.Eager,
+  changeDetection: ChangeDetectionStrategy.OnPush,
   styleUrl: "./settings-page.css",
 })
 export class ApproversPageComponent extends SettingsPage {

@@ -57,7 +57,7 @@ export const DISCARD_PLAN_MESSAGE =
   selector: "xts-planning",
   imports: [DecimalPipe, FormsModule, LoadStatusComponent],
   templateUrl: "./planning.component.html",
-  changeDetection: ChangeDetectionStrategy.Eager,
+  changeDetection: ChangeDetectionStrategy.OnPush,
   styleUrl: "./planning.component.css",
 })
 export class PlanningComponent {

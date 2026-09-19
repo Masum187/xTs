@@ -11,7 +11,7 @@ export const RESET_TEST_DATA_MESSAGE =
   selector: "xts-test-data-page",
   imports: [],
   templateUrl: "./test-data-page.component.html",
-  changeDetection: ChangeDetectionStrategy.Eager,
+  changeDetection: ChangeDetectionStrategy.OnPush,
   styleUrl: "./settings-page.css",
 })
 export class TestDataPageComponent extends SettingsPage {

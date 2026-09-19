@@ -378,3 +378,25 @@ export function createEmptyDay(extNr: string, date: string): TimesheetDay {
     lines: [],
   };
 }
+
+/**
+ * Standardtag der Stundenschreibung (Audit Nr. 16, 31): das Systemdatum des
+ * Servers (Entscheidung 18), nicht das Browserdatum; ohne Profil faellt der
+ * Client auf den lokalen Kalendertag zurueck.
+ */
+export function defaultTimesheetDate(
+  profile: { today?: string } | null | undefined,
+  now: Date = new Date(),
+): string {
+  return profile?.today || todayIso(now);
+}
+
+/**
+ * Wert eines Zahlenfelds aus `ngModelChange`: der Zahl-Accessor liefert bei
+ * leerem Feld `null`, das der Tag als 0 fuehrt (vorher `+$event` im
+ * Template, Audit Nr. 31). Ungueltige Eingaben bleiben NaN und laufen in
+ * die Fachpruefung.
+ */
+export function numberFieldValue(value: number | string | null): number {
+  return value === null || value === "" ? 0 : Number(value);
+}

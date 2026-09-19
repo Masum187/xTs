@@ -17,7 +17,7 @@ const CATEGORY_LABELS: Record<string, string> = {
   selector: "xts-audit-log-page",
   imports: [FormsModule, LoadStatusComponent],
   templateUrl: "./audit-log-page.component.html",
-  changeDetection: ChangeDetectionStrategy.Eager,
+  changeDetection: ChangeDetectionStrategy.OnPush,
   styleUrl: "./settings-page.css",
 })
 export class AuditLogPageComponent extends SettingsPage {

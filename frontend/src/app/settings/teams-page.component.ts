@@ -13,7 +13,7 @@ function emptyTeam(): TeamDraft {
   selector: "xts-teams-page",
   imports: [FormsModule, LoadStatusComponent],
   templateUrl: "./teams-page.component.html",
-  changeDetection: ChangeDetectionStrategy.Eager,
+  changeDetection: ChangeDetectionStrategy.OnPush,
   styleUrl: "./settings-page.css",
 })
 export class TeamsPageComponent extends SettingsPage {

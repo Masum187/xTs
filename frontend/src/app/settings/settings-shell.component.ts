@@ -69,7 +69,7 @@ export const SETTINGS_GROUPS: SettingsGroup[] = [
   selector: "xts-settings-shell",
   imports: [RouterLink, RouterLinkActive, RouterOutlet],
   templateUrl: "./settings-shell.component.html",
-  changeDetection: ChangeDetectionStrategy.Eager,
+  changeDetection: ChangeDetectionStrategy.OnPush,
   styleUrl: "./settings-shell.component.css",
 })
 export class SettingsShellComponent {

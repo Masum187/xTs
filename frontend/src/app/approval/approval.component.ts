@@ -37,7 +37,7 @@ import { ApprovalService } from "./approval.service";
   selector: "xts-approval",
   imports: [DatePipe, DecimalPipe, FormsModule, LoadStatusComponent],
   templateUrl: "./approval.component.html",
-  changeDetection: ChangeDetectionStrategy.Eager,
+  changeDetection: ChangeDetectionStrategy.OnPush,
   styleUrl: "./approval.component.css",
 })
 export class ApprovalComponent {

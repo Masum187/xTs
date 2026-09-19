@@ -159,7 +159,7 @@
             [attr.aria-invalid]="describedBy('breakMinutes') ? true : null"
             [disabled]="!canEdit()"
             [ngModel]="day().breakMinutes"
-            (ngModelChange)="updateDay({ breakMinutes: +$event })"
+            (ngModelChange)="setBreakMinutes($event)"
           />
         </label>
       </div>
@@ -264,7 +264,7 @@
                 "
                 [disabled]="!canEdit()"
                 [ngModel]="line.hours"
-                (ngModelChange)="updateLine($index, { hours: +$event })"
+                (ngModelChange)="setLineHours($index, $event)"
               />
               <button
                 type="button"
