@@ -395,6 +395,8 @@ Akzeptanzkriterien:
 Prioritaet: P0  
 Rolle: System
 
+Status: offen (O4). Entscheidungsvorlage `entscheidungsvorlage-we-bestellposition.md` (2026-09-19) mit Optionen und Empfehlungen je Punkt; Umsetzung erst nach fachlicher Bestaetigung durch SAP-MM und Einkauf mit eigenem Zuschnitt. Im Mock heute nur ein laufender WE-Zaehler (Audit-Befund 34).
+
 Akzeptanzkriterien:
 
 - Nach Genehmigung eines Tages mit Status `G` wird synchron ein Wareneingang zur zugehoerigen Bestellposition gebucht.
