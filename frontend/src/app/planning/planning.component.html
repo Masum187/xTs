@@ -150,6 +150,74 @@
               </span>
             }
           </div>
+          <div class="utilization" data-testid="utilization">
+            <h3 class="utilization-title">Auslastung über alle Kontierungen</h3>
+            @if (coIdentFilterActive()) {
+              <p
+                class="xts-text-muted utilization-hint"
+                data-testid="utilization-filter-hint"
+              >
+                Kontierungsfilter aktiv: die Auslastung bleibt die Summe über
+                alle Kontierungen des Mitarbeiters.
+              </p>
+            }
+            @for (employee of utilization(); track employee.extNr) {
+              <div
+                class="utilization-row"
+                [attr.data-testid]="'utilization-' + employee.extNr"
+              >
+                <div class="row-head">
+                  <strong class="wrap-anywhere">{{
+                    employee.displayName
+                  }}</strong>
+                </div>
+                <div class="tiles">
+                  @for (
+                    month of visibleUtilization(employee);
+                    track month.month
+                  ) {
+                    <div
+                      class="utilization-cell"
+                      [class.overbooked]="
+                        utilizationState(month) === 'overbooked'
+                      "
+                      [class.unavailable]="
+                        utilizationState(month) === 'unavailable'
+                      "
+                      [attr.data-testid]="
+                        'utilization-' + employee.extNr + '-' + month.month
+                      "
+                    >
+                      <span class="tile-month">{{
+                        formatMonth(month.month)
+                      }}</span>
+                      <span class="utilization-text">
+                        @if (utilizationState(month) === "unavailable") {
+                          {{ month.plannedHours | number: "1.0-2" }} Std.
+                          geplant · keine verfügbaren Stunden
+                        } @else {
+                          {{ month.plannedHours | number: "1.0-2" }} von
+                          {{ month.availableHours | number: "1.0-2" }} Std. ·
+                          {{ month.utilizationPercent | number: "1.0-1" }} %
+                        }
+                      </span>
+                      <span class="utilization-bar" aria-hidden="true">
+                        <span
+                          class="utilization-fill"
+                          [style.width.%]="utilizationBar(month)"
+                        ></span>
+                      </span>
+                      @if (month.overbooked) {
+                        <span class="xts-tag xts-tag-accent tile-flag">
+                          Überplanung
+                        </span>
+                      }
+                    </div>
+                  }
+                </div>
+              </div>
+            }
+          </div>
           @for (row of overview()?.rows ?? []; track row.extNr + row.coIdent) {
             <div class="plan-row">
               <div class="row-head">
@@ -208,7 +276,8 @@
         <p class="xts-text-muted legend">
           Status: V = Vorschlag (editierbar), F = für BANF freigegeben, P = BANF
           erstellt, B = Bestellung. Zellen mit „Überplanung" liegen über den
-          verfügbaren Stunden des Werkkalenders.
+          verfügbaren Stunden des Werkkalenders. Die Auslastung summiert alle
+          Planstunden des Mitarbeiters (V, F, P, B) über alle Kontierungen.
         </p>
       </section>
 

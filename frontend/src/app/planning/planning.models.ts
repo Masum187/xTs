@@ -27,8 +27,28 @@ export interface PlanningRow {
   cells: PlanningCell[];
 }
 
+/**
+ * Auslastung je Mitarbeiter und Monat (XTS-157), serverseitig ueber alle
+ * Kontierungen des Mitarbeiters summiert; `utilizationPercent` ist null,
+ * wenn der Werkkalender keine verfuegbaren Stunden hat.
+ */
+export interface PlanningUtilizationMonth {
+  month: string;
+  plannedHours: number;
+  availableHours: number;
+  utilizationPercent: number | null;
+  overbooked: boolean;
+}
+
+export interface PlanningUtilization {
+  extNr: string;
+  displayName: string;
+  months: PlanningUtilizationMonth[];
+}
+
 export interface PlanningOverview {
   months: PlanningMonth[];
+  utilization: PlanningUtilization[];
   rows: PlanningRow[];
 }
 

@@ -59,3 +59,47 @@ describe("matrix pages (XTS-152)", () => {
     );
   });
 });
+
+describe("utilization (XTS-157)", () => {
+  it("reads the real value above 100 % while the bar stops at 100", async () => {
+    const { utilizationBarPercent, utilizationState } =
+      await import("./planning.logic");
+    const over = {
+      plannedHours: 200,
+      availableHours: 160,
+      utilizationPercent: 125,
+      overbooked: true,
+    };
+    expect(utilizationState(over)).toBe("overbooked");
+    expect(utilizationBarPercent(over)).toBe(100);
+    const planned = {
+      plannedHours: 60,
+      availableHours: 168,
+      utilizationPercent: 35.7,
+      overbooked: false,
+    };
+    expect(utilizationState(planned)).toBe("planned");
+    expect(utilizationBarPercent(planned)).toBe(35.7);
+  });
+
+  it("shows no percentage and an empty bar without available hours", async () => {
+    const { utilizationBarPercent, utilizationState } =
+      await import("./planning.logic");
+    const none = {
+      plannedHours: 40,
+      availableHours: 0,
+      utilizationPercent: null,
+      overbooked: true,
+    };
+    expect(utilizationState(none)).toBe("unavailable");
+    expect(utilizationBarPercent(none)).toBe(0);
+    expect(
+      utilizationBarPercent({
+        plannedHours: 0,
+        availableHours: 160,
+        utilizationPercent: 0,
+        overbooked: false,
+      }),
+    ).toBe(0);
+  });
+});

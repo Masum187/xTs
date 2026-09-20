@@ -64,3 +64,30 @@ export function pageSlice<T>(
 ): T[] {
   return items.slice(page * perPage, page * perPage + perPage);
 }
+
+/** Darstellungszustand einer Auslastungszelle (XTS-157). */
+export type UtilizationState = "unavailable" | "overbooked" | "planned";
+
+export interface UtilizationValue {
+  plannedHours: number;
+  availableHours: number;
+  utilizationPercent: number | null;
+  overbooked: boolean;
+}
+
+/**
+ * Ohne verfuegbare Stunden gibt es keinen Prozentwert und keine Division;
+ * Ueberplanung bleibt eine Warnung mit lesbarem Wert ueber 100 %.
+ */
+export function utilizationState(value: UtilizationValue): UtilizationState {
+  if (value.availableHours <= 0 || value.utilizationPercent === null) {
+    return "unavailable";
+  }
+  return value.overbooked ? "overbooked" : "planned";
+}
+
+/** Balkenbreite in Prozent: bei 100 endet der Balken, der Text zeigt den echten Wert. */
+export function utilizationBarPercent(value: UtilizationValue): number {
+  if (utilizationState(value) === "unavailable") return 0;
+  return Math.min(100, Math.max(0, value.utilizationPercent ?? 0));
+}
