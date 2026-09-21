@@ -923,7 +923,7 @@ Prioritaet: P3
 
 Rolle: Ressourcenmanager
 
-Jira: noch nicht angelegt (Label `redesign`); Grundlage: Handoff Planung (K4), Entscheidung 2026-09-14 zu XTS-152. Status: nicht freigegeben.
+Jira: noch nicht angelegt (Label `redesign`); Grundlage: Handoff Planung (K4), Entscheidung 2026-09-14 zu XTS-152. Status: freigegeben 2026-09-20 mit vier Praezisierungen (Kennzahl Planstunden je Mitarbeiter und Monat ueber alle Kontierungen geteilt durch Werkkalenderstunden, einbezogene Status im Kontrakt; Kontierungsfilter aendert die Summe nicht, Beschriftung "Auslastung ueber alle Kontierungen"; ueber 100 % lesbar bei Balken-Ende 100 %, null verfuegbare Stunden ohne Division und ohne 0 %, Ueberplanung bleibt Warnung; Tests fuer mehrere Kontierungen, Filterunabhaengigkeit, Ueberplanung, null Stunden, Ladefehler, ueberholte Antworten, Identitaetswechsel), umgesetzt als eigener PR ohne Selbst-Merge; keine Abhaengigkeit zu O4, WE-Semantik unveraendert.
 
 Akzeptanzkriterien:
 

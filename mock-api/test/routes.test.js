@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { Readable } from "node:stream";
 import test from "node:test";
 
+import { workCalendar } from "../src/fixtures.js";
 import { store as masterData } from "../src/masterdata.js";
 import {
   InvalidJsonError,
@@ -785,6 +786,173 @@ test("planning overview shows 12 months with valid combinations", async () => {
     .cells.find((cell) => cell.month === "2026-04");
   assert.equal(releasedCell.status, "F");
   assert.equal(releasedCell.locked, true);
+});
+
+test("planning overview reports utilization per employee across all cost objects", async () => {
+  const response = await routeRequest(
+    approverRequest("GET", "/odata/PlanningOverview?start=2026-03"),
+  );
+  const body = JSON.parse(response.body);
+  assert.equal(response.status, 200);
+  const schilz = body.utilization.find((item) => item.extNr === "SCHILZ");
+  const roeper = body.utilization.find((item) => item.extNr === "ROEPER");
+  // XTS-157: Summe ueber alle Kontierungen (Status V, F, P, B) je Monat.
+  assert.deepEqual(
+    schilz.months
+      .slice(0, 3)
+      .map((m) => [
+        m.month,
+        m.plannedHours,
+        m.availableHours,
+        m.utilizationPercent,
+        m.overbooked,
+      ]),
+    [
+      ["2026-03", 30, 176, 17, false],
+      ["2026-04", 60, 168, 35.7, false],
+      ["2026-05", 80, 160, 50, false],
+    ],
+  );
+  assert.equal(roeper.months[1].month, "2026-04");
+  assert.equal(roeper.months[1].plannedHours, 20);
+  assert.equal(roeper.months[1].utilizationPercent, 11.9);
+
+  // Der Kontierungsfilter aendert die Summe nicht: die 30 Std. im Maerz
+  // liegen auf 600000000001, gefiltert wird auf 700000000004.
+  const filtered = JSON.parse(
+    (
+      await routeRequest(
+        approverRequest(
+          "GET",
+          "/odata/PlanningOverview?start=2026-03&coIdent=700000000004",
+        ),
+      )
+    ).body,
+  );
+  assert.deepEqual(
+    filtered.utilization.map((item) => item.extNr),
+    ["SCHILZ"],
+  );
+  assert.equal(filtered.utilization[0].months[0].plannedHours, 30);
+  assert.equal(filtered.utilization[0].months[1].plannedHours, 60);
+
+  // Mitarbeiter- und Teamfilter bleiben wirksam.
+  const byEmployee = JSON.parse(
+    (
+      await routeRequest(
+        approverRequest("GET", "/odata/PlanningOverview?extNr=ROEPER"),
+      )
+    ).body,
+  );
+  assert.deepEqual(
+    byEmployee.utilization.map((item) => item.extNr),
+    ["ROEPER"],
+  );
+});
+
+test("utilization sums several cost objects of the same month, including status B", async () => {
+  // 700000000004 im April: 60 Std. ueber Freigabe, Beauftragung, BANF und
+  // Bestelldaten-Job bis Status B; 600000000001 im selben Monat: 40 Std. V.
+  await seedReleasedRow("SCHILZ", "700000000004", "2026-04", 60);
+  await routeRequest(
+    approverRequest("POST", "/odata/Orders", {
+      extNr: "SCHILZ",
+      coIdent: "700000000004",
+      months: ["2026-04"],
+    }),
+  );
+  await routeRequest(
+    approverRequest("POST", "/odata/OrderBanfs", { orderId: "BEAUF-000001" }),
+  );
+  await routeRequest(approverRequest("POST", "/odata/PurchaseOrderSyncRuns"));
+  const saved = await routeRequest(
+    approverRequest("POST", "/odata/PlanningEntries", {
+      extNr: "SCHILZ",
+      coIdent: "600000000001",
+      month: "2026-04",
+      hours: 40,
+    }),
+  );
+  assert.equal(saved.status, 201);
+
+  const overview = JSON.parse(
+    (
+      await routeRequest(
+        approverRequest("GET", "/odata/PlanningOverview?start=2026-03"),
+      )
+    ).body,
+  );
+  const cell = overview.rows
+    .find((row) => row.extNr === "SCHILZ" && row.coIdent === "700000000004")
+    .cells.find((c) => c.month === "2026-04");
+  assert.equal(cell.status, "B");
+  const april = overview.utilization
+    .find((item) => item.extNr === "SCHILZ")
+    .months.find((m) => m.month === "2026-04");
+  assert.equal(april.plannedHours, 100);
+  assert.equal(april.utilizationPercent, 59.5);
+  assert.equal(april.overbooked, false);
+
+  // Unveraendert nach Kontierungsfilter auf eine der beiden Kontierungen.
+  for (const coIdent of ["600000000001", "700000000004"]) {
+    const filtered = JSON.parse(
+      (
+        await routeRequest(
+          approverRequest(
+            "GET",
+            `/odata/PlanningOverview?start=2026-03&coIdent=${coIdent}`,
+          ),
+        )
+      ).body,
+    );
+    const month = filtered.utilization
+      .find((item) => item.extNr === "SCHILZ")
+      .months.find((m) => m.month === "2026-04");
+    assert.equal(month.plannedHours, 100);
+    assert.equal(month.utilizationPercent, 59.5);
+  }
+});
+
+test("utilization has no percentage without available hours and flags overplanning", async () => {
+  const previous = workCalendar.months["2026-06"];
+  workCalendar.months["2026-06"] = 0;
+  try {
+    const response = await routeRequest(
+      approverRequest("GET", "/odata/PlanningOverview?start=2026-03"),
+    );
+    const schilz = JSON.parse(response.body).utilization.find(
+      (item) => item.extNr === "SCHILZ",
+    );
+    const june = schilz.months.find((m) => m.month === "2026-06");
+    assert.equal(june.availableHours, 0);
+    assert.equal(june.plannedHours, 0);
+    assert.equal(june.utilizationPercent, null);
+    assert.equal(june.overbooked, false);
+  } finally {
+    if (previous === undefined) delete workCalendar.months["2026-06"];
+    else workCalendar.months["2026-06"] = previous;
+  }
+
+  const saved = await routeRequest(
+    approverRequest("POST", "/odata/PlanningEntries", {
+      extNr: "SCHILZ",
+      coIdent: "700000000004",
+      month: "2026-05",
+      hours: 200,
+    }),
+  );
+  assert.equal(saved.status, 201);
+  const after = JSON.parse(
+    (
+      await routeRequest(
+        approverRequest("GET", "/odata/PlanningOverview?start=2026-03"),
+      )
+    ).body,
+  ).utilization.find((item) => item.extNr === "SCHILZ");
+  const may = after.months.find((m) => m.month === "2026-05");
+  assert.equal(may.plannedHours, 200);
+  assert.equal(may.utilizationPercent, 125);
+  assert.equal(may.overbooked, true);
 });
 
 test("planning overview locks months outside the cost object validity", async () => {

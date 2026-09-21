@@ -1,5 +1,5 @@
 import { workCalendar } from "./fixtures.js";
-import { roundHours, sumHours } from "./hours.js";
+import { percentOf, roundHours, sumHours, toMinutes } from "./hours.js";
 import {
   availableAssignments,
   findEmployee,
@@ -106,6 +106,61 @@ export function planningCombinations(months = null) {
     .filter(Boolean);
 }
 
+/**
+ * Auslastung je Mitarbeiter und Monat (XTS-157): Summe der Planstunden
+ * ueber ALLE Kontierungen des Mitarbeiters in den Status V, F, P und B
+ * (dieselbe Basis wie die Ueberplanungspruefung), geteilt durch die
+ * verfuegbaren Stunden des Werkkalenders. Der Kontierungsfilter aendert die
+ * Summe nicht; Mitarbeiter- und Teamfilter wirken ueber die Zeilenauswahl.
+ * Ohne verfuegbare Stunden gibt es keinen Prozentwert (null), keine
+ * Division und keine scheinbaren 0 %.
+ */
+export const UTILIZATION_STATUSES = ["V", "F", "P", "B"];
+
+export function buildUtilization(rows, entries, months) {
+  const employees = new Map();
+  for (const row of rows) {
+    if (!employees.has(row.extNr)) {
+      employees.set(row.extNr, {
+        extNr: row.extNr,
+        displayName: row.displayName,
+      });
+    }
+  }
+  return [...employees.values()]
+    .sort(
+      (a, b) =>
+        a.displayName.localeCompare(b.displayName) ||
+        a.extNr.localeCompare(b.extNr),
+    )
+    .map((employee) => ({
+      ...employee,
+      months: months.map((month) => {
+        const plannedHours = sumHours(
+          entries
+            .filter(
+              (entry) =>
+                entry.extNr === employee.extNr &&
+                entry.month === month &&
+                UTILIZATION_STATUSES.includes(entry.status),
+            )
+            .map((entry) => entry.hours),
+        );
+        const availableHours = availableHoursFor(month);
+        const hasCapacity = toMinutes(availableHours) > 0;
+        return {
+          month,
+          plannedHours,
+          availableHours,
+          utilizationPercent: hasCapacity
+            ? percentOf(plannedHours, availableHours)
+            : null,
+          overbooked: toMinutes(plannedHours) > toMinutes(availableHours),
+        };
+      }),
+    }));
+}
+
 export function buildPlanningOverview(entries, filters) {
   const { start, extNr, team, coIdent } = filters;
   const months = monthsFrom(start);
@@ -133,6 +188,7 @@ export function buildPlanningOverview(entries, filters) {
       month,
       availableHours: availableHoursFor(month),
     })),
+    utilization: buildUtilization(rows, entries, months),
     rows: rows.map((combo) => ({
       ...combo,
       cells: months.map((month) => {

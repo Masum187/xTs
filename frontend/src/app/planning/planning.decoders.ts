@@ -4,6 +4,8 @@ import type {
   PlanningMonth,
   PlanningOverview,
   PlanningRow,
+  PlanningUtilization,
+  PlanningUtilizationMonth,
   SaveEntryResult,
 } from "./planning.models";
 
@@ -35,9 +37,26 @@ export const planningRow: Decoder<PlanningRow> = D.object<PlanningRow>({
   cells: D.array(planningCell),
 });
 
+export const planningUtilizationMonth: Decoder<PlanningUtilizationMonth> =
+  D.object<PlanningUtilizationMonth>({
+    month: D.string,
+    plannedHours: D.number,
+    availableHours: D.number,
+    utilizationPercent: D.nullable(D.number),
+    overbooked: D.boolean,
+  });
+
+export const planningUtilization: Decoder<PlanningUtilization> =
+  D.object<PlanningUtilization>({
+    extNr: D.string,
+    displayName: D.string,
+    months: D.array(planningUtilizationMonth),
+  });
+
 export const planningOverview: Decoder<PlanningOverview> =
   D.object<PlanningOverview>({
     months: D.array(planningMonth),
+    utilization: D.array(planningUtilization),
     rows: D.array(planningRow),
   });
 
