@@ -3,7 +3,7 @@
 Stand: 2026-09-21 (Repo-Kopie der Gesprächsgrundlage „xTS — Fachmodell Tag und Monat", Word-Dokument vom 21.09.2026)  
 Zweck: Gesprächsgrundlage für die Abstimmung der ZPOT-Tabellen mit der SAP-Seite. Die zwei fachlichen Ebenen und ihre Objekte werden so gezeigt, dass die physischen Tabellen daran geprüft werden können. Physische Tabellen dürfen anders geschnitten sein; der fachliche Tag und der fachliche Monat müssen widerspruchsfrei abbildbar bleiben.  
 Grundlage: `odata-contracts.md`, Entscheidungen 14, 18, 19 in `entscheidungen-v0.1.md`. Bezug: ADR-0012 (`adr/0012-sap-zieltabellen-zpot-time.md`, Status Proposed), O4 (`entscheidungsvorlage-we-bestellposition.md`), Klärungsliste (`klaerungsliste-o4-adr-0012.md`).  
-Status: reine Dokumentation. Keine Kontraktänderung, keine Fachentscheidung. ADR-0012 bleibt Proposed, O4 und O13 bleiben offen. Die in Abschnitt 6 genannten SAP-Feldstände sind **laut Rückmeldung bzw. Screenshot vom 21.09.2026** wiedergegeben und **keine bestätigte Zielstruktur**.
+Status: **ausdrücklich vorläufige Gesprächsgrundlage**, reine Dokumentation. Das Dokument beschreibt den **bisher implementierten Stand** (Kontrakt und Mock-API), **kein abschließend bestätigtes Zielmodell**, insbesondere nicht für die Erfassung externer Leistungen (siehe Abschnitt 3a). Keine Kontraktänderung, keine Fachentscheidung. ADR-0012 bleibt Proposed, O4 und O13 bleiben offen. Die in Abschnitt 6 genannten SAP-Feldstände sind **laut Rückmeldung bzw. Screenshot vom 21.09.2026** wiedergegeben und **keine bestätigte Zielstruktur**.
 
 ## 1. Zwei Ebenen, zwei Genehmigungen
 
@@ -27,6 +27,8 @@ Hinweis zu Planungs-Kommentar, Planungs-Absage und Planungsgenehmiger: Diese Fel
 
 ## 3. Was der Tageskopf tragen muss
 
+Die folgende Tabelle gibt den **heute umgesetzten Stand** wieder (Kontrakt `odata-contracts.md`, Entscheidungen 14 und 19). Sie ist **kein bestätigtes Zielbild für Externe**: nach dem Feedback von Stephan und Feyzi zur Erfassung externer Leistungen stehen die Anwesenheitsfelder und die daran hängenden Regeln zur Prüfung (Abschnitt 3a). Bis zu einer Entscheidung bleiben die bestehenden Regeln unverändert in Kraft.
+
 | Feld (fachlich)          | Kontrakt                     | Bemerkung                                                                   |
 | ------------------------ | ---------------------------- | --------------------------------------------------------------------------- |
 | Mitarbeiter, Kalendertag | `extNr`, `date`              | Schlüssel des Tages: genau eine fachliche Tageszeile je Mitarbeiter und Tag |
@@ -41,6 +43,16 @@ Hinweis zu Planungs-Kommentar, Planungs-Absage und Planungsgenehmiger: Diese Fel
 | WE-Referenz              | `weDocument` (Übergangsform) | Ablage im Kopf oder in einer eindeutig zugeordneten Referenzstruktur: O4    |
 
 Positionen: je Tag n Zeilen mit Kontierung, laufender Nummer, Beschreibung (≤ 255) und Dauer. Mehrere Positionen auf derselben Kontierung bleiben getrennt.
+
+### 3a. Offener Punkt: Anwesenheitsfelder bei externen Leistungen
+
+Nach dem Feedback von Stephan und Feyzi zur Erfassung externer Leistungen (nach dem Stand vom 21.09. eingegangen) stehen die folgenden Punkte zur **fachlichen und rechtlichen Prüfung** und sind in diesem Dokument **nicht als Zielbild bestätigt**:
+
+- **Anwesenheitsfelder** Kommt, Geht und Pause (`startTime`, `endTime`, `breakMinutes`): heute Pflichtangaben je Tag. Ob die Erfassung von Anwesenheitszeiten für externe Dienstleister fachlich erforderlich und rechtlich zulässig ist, ist offen; bei Werk- oder Dienstleistungsverträgen kann die Erfassung von Anwesenheit statt erbrachter Leistung problematisch sein.
+- **Arbeitszeitvergleich**: die serverseitig berechnete Arbeitszeit `workHours` = Geht − Kommt − Pause (Entscheidung 14) setzt die Anwesenheitsfelder voraus.
+- **Abweichungsbegründung** `varianceReason`: heute Pflicht bei Freigabe, wenn die Positionssumme von der Arbeitszeit abweicht. Entfällt der Arbeitszeitvergleich für eine Nutzergruppe, entfällt auch die Grundlage dieser Pflichtbegründung.
+
+Die heutigen Regeln bleiben bis zu einer ausdrücklichen Entscheidung unverändert in Kraft; dieses Dokument nimmt das Ergebnis der Prüfung nicht vorweg. Die zugehörige Klärungsfrage steht als K30 in der Klärungsliste (`klaerungsliste-o4-adr-0012.md`).
 
 ## 4. Präzision
 
@@ -90,3 +102,4 @@ Geprüft gegen `odata-contracts.md`, `timesheet.logic.ts`, `enablement.js` und d
 - Präzision (Abschnitt 4): Der Kontrakt sagt heute „SAP-seitig entspricht das QUAN mit Stunden auf zwei Nachkommastellen; Rundung auf ganze Minuten ist zu vereinbaren". Die Vereinbarung fehlt noch; nach der Entscheidung ist der Kontraktsatz nachzuziehen (keine Änderung in diesem Dokument).
 - Tageskopf-Schlüssel (Abschnitt 6): Ein zusammengesetzter Kopfschlüssel mit `KONT_ID` und `LFDNR` macht die gesamthafte Tagesfreigabe nicht unmöglich; er garantiert lediglich keine eindeutige Tageszeile. SAP muss deshalb entweder einen eindeutigen Tageskopf oder eine gleichwertige, atomar konsistente Tagesstruktur vorsehen, in der mehrere widersprüchliche Tagesstatus oder Genehmiger nicht entstehen können (Klärungsliste K15).
 - Planungsfelder (Abschnitte 1 und 6): Planungs-Kommentar, Planungs-Absage und Planungsgenehmiger sind nicht beauftragt (Klärungsliste K29).
+- Anwesenheitsfelder (Abschnitt 3a): Der Repo-Abgleich bestätigt nur, dass Abschnitt 3 den **implementierten** Stand korrekt wiedergibt. Ob dieser Stand das Zielmodell für externe Leistungen ist, ist durch das Feedback von Stephan und Feyzi offen (Klärungsliste K30).
