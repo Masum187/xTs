@@ -281,3 +281,69 @@ test("zero available hours show planned hours without a percentage, load errors 
     "60 von 168 Std.",
   );
 });
+
+// XTS-024 (erster Teil): Monatskapazitaet aus der Uebersichtsantwort, rein
+// lesend, ohne erfundene Arbeitstage und ohne zweite Anfrage.
+test("shows monthly capacity with its origin and never invents workdays", async ({
+  page,
+}) => {
+  const capacityRequests: string[] = [];
+  page.on("request", (request) => {
+    if (request.url().includes("/odata/MonthlyCapacity")) {
+      capacityRequests.push(request.url());
+    }
+  });
+  await openPlanningAsPlanner(page);
+
+  // Erst nach dem Aufklappen sichtbar; keine Pflegeelemente.
+  const block = page.getByTestId("capacity");
+  await expect(page.getByTestId("capacity-2026-03")).toBeHidden();
+  await page.getByTestId("capacity-toggle").click();
+  const march = page.getByTestId("capacity-2026-03");
+  await expect(march).toContainText("176");
+  await expect(march).toContainText("Expliziter Mock-Monatswert");
+  await expect(march).toContainText("Arbeitstage");
+  await expect(march).toContainText("nicht verfügbar");
+  await expect(block.locator("input, select, button")).toHaveCount(0);
+
+  // Die Zahl stimmt mit Monatskopf und Auslastung ueberein (eine Quelle).
+  await expect(page.getByTestId("month-head")).toContainText(
+    "176 Std. verfügbar",
+  );
+  await expect(page.getByTestId("utilization-SCHILZ-2026-03")).toContainText(
+    "von 176 Std.",
+  );
+
+  // Vorgabewert-Monat ueber den Pager, Herkunft entsprechend benannt.
+  await page.getByTestId("months-next").click();
+  await page.getByTestId("capacity-toggle").click();
+  const july = page.getByTestId("capacity-2026-07");
+  await expect(july).toContainText("160");
+  await expect(july).toContainText("Mock-Vorgabewert");
+
+  // Die Ansicht laedt nichts nach: keine eigene Kapazitaetsanfrage.
+  expect(capacityRequests).toEqual([]);
+});
+
+test("capacity stays hidden while the overview is loading or failed", async ({
+  page,
+}) => {
+  let fail = true;
+  await page.route(`${API}/PlanningOverview*`, async (route) => {
+    if (fail) {
+      await route.fulfill({
+        status: 500,
+        contentType: "application/json",
+        body: JSON.stringify({ error: "SERVER_ERROR" }),
+      });
+      return;
+    }
+    await route.continue();
+  });
+  await openPlanningAsPlanner(page);
+  await expect(page.getByTestId("load-error")).toBeVisible();
+  await expect(page.getByTestId("capacity")).toHaveCount(0);
+  fail = false;
+  await page.getByTestId("retry").click();
+  await expect(page.getByTestId("capacity")).toBeVisible();
+});

@@ -183,6 +183,60 @@
   }
 }
 
+/* Monatskapazitaet (XTS-024): aufklappbar, rein lesend, nur Tokens. */
+.capacity {
+  border-top: var(--xts-rule-fine) solid var(--xts-color-neutral-300);
+  padding-top: 10px;
+}
+
+.capacity > summary {
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: var(--xts-font-weight-semibold);
+}
+
+.capacity > summary:focus-visible {
+  outline: 2px solid var(--xts-color-focus);
+  outline-offset: 2px;
+}
+
+.capacity-note {
+  font-size: 12px;
+  margin: 6px 0 10px;
+}
+
+.capacity-cell {
+  background: var(--xts-color-surface);
+  border: var(--xts-rule-fine) solid var(--xts-color-neutral-300);
+  display: grid;
+  gap: 4px;
+  margin: 0;
+  min-width: 0;
+  padding: 8px 10px;
+}
+
+.capacity-cell > div {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+.capacity-cell dt {
+  color: var(--xts-color-text-muted);
+  font-size: 12px;
+}
+
+.capacity-cell dd {
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.capacity-head dd {
+  font-weight: var(--xts-font-weight-semibold);
+}
+
 /* Auslastung je Mitarbeiter (XTS-157): Textwert plus Balken; der Balken
    endet bei 100 %, der Text zeigt den echten Wert. Farben nur ueber Tokens;
    Ueberplanung nutzt den Akzent-Textwert mit Baseline-Kontrast. */

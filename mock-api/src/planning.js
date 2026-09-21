@@ -44,6 +44,31 @@ export function availableHoursFor(month) {
   return workCalendar.months[month] ?? workCalendar.defaultHours;
 }
 
+/**
+ * Monatskapazitaet (XTS-024). Der Mock fuehrt ausschliesslich Monatsstunden:
+ * einige Monate explizit, alle uebrigen ueber einen Vorgabewert. Arbeitstage
+ * und Feiertage gibt es nicht; sie werden als `null` = nicht verfuegbar
+ * gemeldet und duerfen weder abgeleitet noch als 0 dargestellt werden.
+ * `availableHours` kommt aus `availableHoursFor`, damit Kapazitaetsansicht,
+ * verfuegbare Stunden der Matrix und Auslastung (XTS-157) dieselbe Quelle
+ * haben. Ob die hinterlegten Monatswerte Feiertage beruecksichtigen, ist
+ * ohne Herkunftsnachweis aus SAP nicht belegt.
+ */
+export function monthCapacity(month) {
+  const explicit = Object.hasOwn(workCalendar.months, month);
+  return {
+    month,
+    availableHours: availableHoursFor(month),
+    source: explicit ? "explicit" : "fallback",
+    workdays: null,
+    holidays: null,
+  };
+}
+
+export function buildMonthlyCapacity(start, count) {
+  return monthsFrom(start, count).map((month) => monthCapacity(month));
+}
+
 export function monthsFrom(start, count = 12) {
   const [year, month] = start.split("-").map(Number);
   return Array.from({ length: count }, (_unused, index) => {
@@ -184,10 +209,10 @@ export function buildPlanningOverview(entries, filters) {
   }
 
   return {
-    months: months.map((month) => ({
-      month,
-      availableHours: availableHoursFor(month),
-    })),
+    // Additiv (XTS-024): Herkunft und Datenverfuegbarkeit direkt am Monat,
+    // damit die Planungsansicht die Kapazitaet ohne zweite Anfrage und ohne
+    // Ableitung aus dem Zahlenwert zeigen kann.
+    months: months.map((month) => monthCapacity(month)),
     utilization: buildUtilization(rows, entries, months),
     rows: rows.map((combo) => ({
       ...combo,

@@ -171,7 +171,7 @@ Prioritaet: P2
 
 Rolle: Ressourcenmanager
 
-Jira: XTS-103 (Label `redesign`); Grundlage: `ui-redesign-bewertung.md`.
+Jira: XTS-103 (Label `redesign`); Grundlage: `ui-redesign-bewertung.md`. Status: erster Teil freigegeben 2026-09-21 mit vier Entscheidungen (Arbeitstage und Feiertage nicht erfinden, sondern als "nicht verfuegbar" ausweisen, keine Fixture-Erweiterung; Herkunftsangabe als "Expliziter Mock-Monatswert" bzw. "Mock-Vorgabewert", nicht "Kalenderwert"; Ansicht heisst "Monatskapazitaet (Mock)"; Herkunft additiv in der Planungsantwort statt Ableitung im Client oder doppelter Fixture) und umgesetzt als eigener PR. **Nicht abgeschlossen**: die Unterseite in den Einstellungen fuer `admin` bleibt offen und ist nicht freigegeben. Hinweis: Der Mock fuehrt nur Monatsstunden; ob diese Feiertage beruecksichtigen, ist ohne Herkunftsnachweis aus SAP nicht belegt.
 
 Akzeptanzkriterien:
 

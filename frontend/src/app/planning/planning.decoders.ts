@@ -11,9 +11,14 @@ import type {
 
 const planningStatus = D.literal("V", "F", "P", "B");
 
+const capacitySource = D.literal("explicit", "fallback");
+
 export const planningMonth: Decoder<PlanningMonth> = D.object<PlanningMonth>({
   month: D.string,
   availableHours: D.number,
+  source: capacitySource,
+  workdays: D.nullable(D.number),
+  holidays: D.nullable(D.number),
 });
 
 export const planningCell: Decoder<PlanningCell> = D.object<PlanningCell>({
