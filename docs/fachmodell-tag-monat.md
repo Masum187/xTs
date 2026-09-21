@@ -51,9 +51,23 @@ Kontrakt: Uhrzeiten `HH:MM`, Pause in ganzen Minuten, Stunden in Dezimalstunden 
 
 ## 5. Kontingent und gleichzeitiges Speichern
 
-Offene Stunden je Mitarbeiter und Kontierung = beauftragte Stunden qualifizierender Beauftragungen (Regel Infotyp 2, Gültigkeit zum Tagesdatum) − gebuchte Stunden in Status `E`/`F`/`G`, wobei die bisherige Fassung desselben Tages herausgerechnet wird (Upsert). Zurückgewiesene Tage (`A`) geben ihr Kontingent frei.
+Die Kontingentlogik besteht aus zwei getrennten Berechnungen, die im Mock (`mock-api/src/enablement.js`) so umgesetzt sind und die SAP genau so nachbilden muss, solange keine periodenbezogene Neuregelung entschieden ist:
 
-Zwei Speichervorgänge desselben Mitarbeiters auf derselben Kontierung, auch für verschiedene Tage, dürfen nicht beide gegen denselben Reststand prüfen und dann gemeinsam das Kontingent überschreiten. Restermittlung, Prüfung und Speichern gehören zusammen in einen geschützten Abschnitt. Sperrumfang, Transaktionsgrenze, Fehlerverhalten und der Fall mehrerer betroffener Kontierungen in einem Tag sind SAP-seitig festzulegen (Klärungsliste K19).
+**(a) Freischaltung und Reststunden (Anzeige, `MyEnabledCostObjects`):**
+
+- Je Mitarbeiter und Kontierung werden **alle statusqualifizierenden Beauftragungen** (Regel Infotyp 2: `P` = Status `banf` und `bestellt`, `B` = nur `bestellt`) zu **einer** Freischaltung zusammengefasst: beauftragte Stunden = Summe der Stunden dieser Beauftragungen; Freischaltungszeitraum = Hülle der Beauftragungszeiträume (frühester Beginn bis spätestes Ende).
+- Gebuchte Stunden = alle Positionen des Mitarbeiters auf dieser Kontierung in Tagen mit Status `E`, `F` oder `G`, **über alle Kalendertage hinweg**, ohne Einschränkung auf den Freischaltungszeitraum. Zurückgewiesene Tage (`A`) zählen nicht und geben ihr Kontingent frei.
+- Offene Stunden = beauftragte Stunden − gebuchte Stunden. In dieser Anzeige ist die gespeicherte Fassung des gerade geöffneten Tages **enthalten**; sie wird nicht herausgerechnet.
+- Die Datumsgültigkeit eines Tages wird gegen den **zusammengefassten Freischaltungszeitraum** geprüft, nicht je einzelner Beauftragung. Eine Position ist buchbar, wenn das Tagesdatum in der Hülle liegt.
+
+**(b) Kontingentprüfung beim Speichern (Upsert, `validateTimesheetEnablement`):**
+
+- Für den zu speichernden Tag wird die Freischaltung wie in (a) berechnet, aber **ohne die bisher gespeicherte Fassung desselben Tages** (andere Tage bleiben enthalten). Gegen diese offenen Stunden wird je Kontierung die Tagessumme der neuen Positionen geprüft; Überschreitung ergibt `COST_OBJECT_QUOTA_EXCEEDED`, fehlende oder abgelaufene Freischaltung `COST_OBJECT_NOT_ENABLED`.
+- Das Herausrechnen der Tagesfassung gilt **nur** für diese Speicherprüfung, nicht für die Reststundenanzeige aus (a).
+
+Beide Berechnungen sind nicht periodenbezogen: weder die beauftragten noch die gebuchten Stunden werden auf Monate oder auf den Zeitraum einer einzelnen Beauftragung aufgeteilt. Eine periodenbezogene Neuregelung (z. B. Kontingent je Beauftragungszeitraum oder je Monat) wäre eine eigene, separat zu entscheidende Fachänderung und ist nicht Gegenstand dieses Fachmodells.
+
+Gleichzeitiges Speichern: Zwei Speichervorgänge desselben Mitarbeiters auf derselben Kontierung, auch für verschiedene Tage, dürfen nicht beide gegen denselben Reststand aus (b) prüfen und dann gemeinsam das Kontingent überschreiten. Restermittlung, Prüfung und Speichern gehören zusammen in einen geschützten Abschnitt. Sperrumfang, Transaktionsgrenze, Fehlerverhalten und der Fall mehrerer betroffener Kontierungen in einem Tag sind SAP-seitig festzulegen (Klärungsliste K19).
 
 ## 6. Abgleich mit dem Stand vom 21.09. (laut Rückmeldung/Screenshot, nicht bestätigt)
 
@@ -72,7 +86,7 @@ Diese Feldstände weichen von der Feldstruktur in ADR-0012 v5 (Stand 07.09.) ab.
 
 Geprüft gegen `odata-contracts.md`, `timesheet.logic.ts`, `enablement.js` und die Entscheidungen 14, 18, 19:
 
-- Abschnitte 2, 3 und 5 entsprechen dem umgesetzten Kontrakt (Statusregeln, Pflichtfelder bei `F`, servergeführte Felder, Leeren des Rückweisungsgrunds beim erneuten Speichern, Kontingentformel mit Upsert und Freigabe durch `A`). Viertelstundenraster bei der Erfassung (`HOURS_STEP = 0.25`) und beliebige Minutenwerte in der Planung stimmen.
+- Abschnitte 2 und 3 entsprechen dem umgesetzten Kontrakt (Statusregeln, Pflichtfelder bei `F`, servergeführte Felder, Leeren des Rückweisungsgrunds beim erneuten Speichern). Abschnitt 5 beschreibt die Kontingentlogik in der Trennung, wie sie `enablement.js` umsetzt: (a) Freischaltung als Zusammenfassung aller statusqualifizierenden Beauftragungen mit Hülle als Gültigkeitszeitraum und gebuchten Stunden über alle Kalendertage, Tagesfassung in der Anzeige enthalten; (b) Herausrechnen der Tagesfassung nur in der Upsert-Prüfung. Viertelstundenraster bei der Erfassung (`HOURS_STEP = 0.25`) und beliebige Minutenwerte in der Planung stimmen.
 - Präzision (Abschnitt 4): Der Kontrakt sagt heute „SAP-seitig entspricht das QUAN mit Stunden auf zwei Nachkommastellen; Rundung auf ganze Minuten ist zu vereinbaren". Die Vereinbarung fehlt noch; nach der Entscheidung ist der Kontraktsatz nachzuziehen (keine Änderung in diesem Dokument).
 - Tageskopf-Schlüssel (Abschnitt 6): Ein zusammengesetzter Kopfschlüssel mit `KONT_ID` und `LFDNR` macht die gesamthafte Tagesfreigabe nicht unmöglich; er garantiert lediglich keine eindeutige Tageszeile. SAP muss deshalb entweder einen eindeutigen Tageskopf oder eine gleichwertige, atomar konsistente Tagesstruktur vorsehen, in der mehrere widersprüchliche Tagesstatus oder Genehmiger nicht entstehen können (Klärungsliste K15).
 - Planungsfelder (Abschnitte 1 und 6): Planungs-Kommentar, Planungs-Absage und Planungsgenehmiger sind nicht beauftragt (Klärungsliste K29).
