@@ -850,6 +850,69 @@ test("planning overview reports utilization per employee across all cost objects
   );
 });
 
+test("utilization sums several cost objects of the same month, including status B", async () => {
+  // 700000000004 im April: 60 Std. ueber Freigabe, Beauftragung, BANF und
+  // Bestelldaten-Job bis Status B; 600000000001 im selben Monat: 40 Std. V.
+  await seedReleasedRow("SCHILZ", "700000000004", "2026-04", 60);
+  await routeRequest(
+    approverRequest("POST", "/odata/Orders", {
+      extNr: "SCHILZ",
+      coIdent: "700000000004",
+      months: ["2026-04"],
+    }),
+  );
+  await routeRequest(
+    approverRequest("POST", "/odata/OrderBanfs", { orderId: "BEAUF-000001" }),
+  );
+  await routeRequest(approverRequest("POST", "/odata/PurchaseOrderSyncRuns"));
+  const saved = await routeRequest(
+    approverRequest("POST", "/odata/PlanningEntries", {
+      extNr: "SCHILZ",
+      coIdent: "600000000001",
+      month: "2026-04",
+      hours: 40,
+    }),
+  );
+  assert.equal(saved.status, 201);
+
+  const overview = JSON.parse(
+    (
+      await routeRequest(
+        approverRequest("GET", "/odata/PlanningOverview?start=2026-03"),
+      )
+    ).body,
+  );
+  const cell = overview.rows
+    .find((row) => row.extNr === "SCHILZ" && row.coIdent === "700000000004")
+    .cells.find((c) => c.month === "2026-04");
+  assert.equal(cell.status, "B");
+  const april = overview.utilization
+    .find((item) => item.extNr === "SCHILZ")
+    .months.find((m) => m.month === "2026-04");
+  assert.equal(april.plannedHours, 100);
+  assert.equal(april.utilizationPercent, 59.5);
+  assert.equal(april.overbooked, false);
+
+  // Unveraendert nach Kontierungsfilter auf eine der beiden Kontierungen.
+  for (const coIdent of ["600000000001", "700000000004"]) {
+    const filtered = JSON.parse(
+      (
+        await routeRequest(
+          approverRequest(
+            "GET",
+            `/odata/PlanningOverview?start=2026-03&coIdent=${coIdent}`,
+          ),
+        )
+      ).body,
+    );
+    const month = filtered.utilization
+      .find((item) => item.extNr === "SCHILZ")
+      .months.find((m) => m.month === "2026-04");
+    assert.equal(month.plannedHours, 100);
+    assert.equal(month.utilizationPercent, 59.5);
+  }
+});
+
 test("utilization has no percentage without available hours and flags overplanning", async () => {
   const previous = workCalendar.months["2026-06"];
   workCalendar.months["2026-06"] = 0;

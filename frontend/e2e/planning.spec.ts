@@ -176,6 +176,24 @@ test("shows utilization per employee across all cost objects, independent of the
   await page.getByLabel("Mitarbeiter").selectOption("ROEPER");
   await expect(page.getByTestId("utilization-ROEPER-2026-04")).toBeVisible();
   await expect(page.getByTestId("utilization-SCHILZ")).toHaveCount(0);
+
+  // Aggregation: zweite Kontierung im selben Monat, 60 + 40 = 100 Std.,
+  // unveraendert nach Kontierungsfilter.
+  await page.getByLabel("Mitarbeiter").selectOption("");
+  await page.getByTestId("cell-SCHILZ-600000000001-2026-04").click();
+  const input = page.getByTestId("input-SCHILZ-600000000001-2026-04");
+  await input.fill("40");
+  await input.press("Tab");
+  await expect(page.getByTestId("planning-message")).toContainText(
+    "gespeichert",
+  );
+  await expect(page.getByTestId("utilization-SCHILZ-2026-04")).toContainText(
+    "100 von 168 Std. · 59,5 %",
+  );
+  await page.getByLabel("Kontierung").selectOption("700000000004");
+  await expect(page.getByTestId("utilization-SCHILZ-2026-04")).toContainText(
+    "100 von 168 Std. · 59,5 %",
+  );
 });
 
 test("overplanning keeps the real percentage readable while the bar stops at 100 %", async ({
