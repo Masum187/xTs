@@ -29,11 +29,15 @@ import {
   pageSlice,
   parseStartMonth,
   planningHoursProblem,
+  utilizationBarPercent,
+  utilizationState,
 } from "./planning.logic";
 import type {
   PlanningCell,
   PlanningOverview,
   PlanningRow,
+  PlanningUtilization,
+  PlanningUtilizationMonth,
 } from "./planning.models";
 import { PlanningService } from "./planning.service";
 
@@ -100,6 +104,17 @@ export class PlanningComponent {
     pageSlice(this.monthLabels(), this.page()),
   );
   /**
+   * Auslastung je Mitarbeiter (XTS-157) aus derselben Serverantwort wie die
+   * Matrix: Summe ueber alle Kontierungen, unabhaengig vom Kontierungsfilter;
+   * Ladefehler und ueberholte Antworten teilen den Schutz der Uebersicht.
+   */
+  protected readonly utilization = computed(
+    () => this.overview()?.utilization ?? [],
+  );
+  protected readonly coIdentFilterActive = computed(
+    () => this.filterCoIdent() !== "",
+  );
+  /**
    * Ausgewaehlte Zelle, Schluessel aus Mitarbeiter, Kontierung und Monat.
    * Verschwindet die Zelle durch Filter, Seite oder Nachladen, ist die
    * Auswahl aufgehoben; nach Speichern oder Freigeben bleibt sie bestehen.
@@ -164,6 +179,20 @@ export class PlanningComponent {
 
   protected visibleCells(row: PlanningRow): PlanningCell[] {
     return pageSlice(row.cells, this.page());
+  }
+
+  protected visibleUtilization(
+    employee: PlanningUtilization,
+  ): PlanningUtilizationMonth[] {
+    return pageSlice(employee.months, this.page());
+  }
+
+  protected utilizationState(month: PlanningUtilizationMonth) {
+    return utilizationState(month);
+  }
+
+  protected utilizationBar(month: PlanningUtilizationMonth): number {
+    return utilizationBarPercent(month);
   }
 
   protected isSelected(row: PlanningRow, cell: PlanningCell): boolean {

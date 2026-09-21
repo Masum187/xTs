@@ -183,6 +183,81 @@
   }
 }
 
+/* Auslastung je Mitarbeiter (XTS-157): Textwert plus Balken; der Balken
+   endet bei 100 %, der Text zeigt den echten Wert. Farben nur ueber Tokens;
+   Ueberplanung nutzt den Akzent-Textwert mit Baseline-Kontrast. */
+.utilization {
+  border-top: var(--xts-rule-fine) solid var(--xts-color-neutral-300);
+  display: grid;
+  gap: 8px;
+  padding-top: 10px;
+}
+
+.utilization-title {
+  font-size: 14px;
+  margin: 0;
+}
+
+.utilization-hint {
+  font-size: 12px;
+  margin: 0;
+}
+
+.utilization-row {
+  display: grid;
+  gap: 6px;
+}
+
+.utilization-cell {
+  background: var(--xts-color-surface);
+  border: var(--xts-rule-fine) solid var(--xts-color-neutral-300);
+  border-left: 3px solid var(--xts-color-neutral-600);
+  display: grid;
+  gap: 4px;
+  justify-items: start;
+  min-width: 0;
+  padding: 8px 10px;
+}
+
+.utilization-cell.overbooked {
+  border-left-color: var(--xts-color-accent-600);
+}
+
+.utilization-cell.overbooked .utilization-text {
+  color: var(--xts-color-accent-text);
+  font-weight: var(--xts-font-weight-semibold);
+}
+
+.utilization-cell.unavailable {
+  border-left-color: var(--xts-color-neutral-300);
+  color: var(--xts-color-text-muted);
+}
+
+.utilization-text {
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
+  overflow-wrap: anywhere;
+}
+
+.utilization-bar {
+  background: var(--xts-color-neutral-200);
+  display: block;
+  height: 6px;
+  overflow: hidden;
+  width: 100%;
+}
+
+.utilization-fill {
+  background: var(--xts-color-neutral-600);
+  display: block;
+  height: 100%;
+  max-width: 100%;
+}
+
+.utilization-cell.overbooked .utilization-fill {
+  background: var(--xts-color-accent-600);
+}
+
 /* Kachel: Auswahlbutton mit Monat, Wert und Zustand; Fokus sichtbar. */
 .tile {
   align-content: start;

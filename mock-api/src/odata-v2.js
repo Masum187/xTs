@@ -18,6 +18,7 @@ export const DECIMAL_FIELDS = new Set([
   "budgetHours",
   "consumedHours",
   "consumedPercent",
+  "utilizationPercent",
   "plannedHours",
   "purchaseOrderHours",
   "purchaseOrderPrice",
