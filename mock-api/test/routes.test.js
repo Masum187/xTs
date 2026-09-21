@@ -871,17 +871,49 @@ test("monthly capacity reports hours with their origin and no invented workdays"
 });
 
 test("monthly capacity is readable for planner, admin and controller only", async () => {
-  for (const upn of [APPROVER_UPN, CONTROLLER_UPN]) {
-    const response = await routeRequest(
-      request("GET", "/odata/MonthlyCapacity", undefined, {
-        "x-mock-oauth-upn": upn,
-      }),
+  // Jede Rolle einzeln: die Standard-Persona ROEPER traegt mehrere Rollen,
+  // deshalb wird sie je Fall auf genau eine geprueft. resetMasterData im
+  // beforeEach stellt die Fixture-Rollen wieder her.
+  const roeper = masterData.employees.find((item) => item.extNr === "ROEPER");
+  const original = [...roeper.roles];
+  try {
+    for (const role of ["planner", "admin"]) {
+      roeper.roles = ["user", role];
+      const response = await routeRequest(
+        approverRequest("GET", "/odata/MonthlyCapacity"),
+      );
+      assert.equal(response.status, 200, role);
+    }
+    // Reiner Approver ist kein Lesefall.
+    roeper.roles = ["user", "approver"];
+    const approverOnly = await routeRequest(
+      approverRequest("GET", "/odata/MonthlyCapacity"),
     );
-    assert.equal(response.status, 200, upn);
+    assert.equal(approverOnly.status, 403);
+  } finally {
+    roeper.roles = original;
   }
-  const denied = await routeRequest(request("GET", "/odata/MonthlyCapacity"));
-  assert.equal(denied.status, 403);
-  assert.equal(JSON.parse(denied.body).error, "NOT_AUTHORIZED");
+
+  // Reiner Controller aus der Fixture.
+  const controller = await routeRequest(
+    request("GET", "/odata/MonthlyCapacity", undefined, {
+      "x-mock-oauth-upn": CONTROLLER_UPN,
+    }),
+  );
+  assert.equal(controller.status, 200);
+
+  // Reiner Approver aus der Fixture (WEBER) und Mitarbeiter ohne Rolle.
+  for (const upn of ["maria.weber@qualitytimes.de", undefined]) {
+    const denied = await routeRequest(
+      upn
+        ? request("GET", "/odata/MonthlyCapacity", undefined, {
+            "x-mock-oauth-upn": upn,
+          })
+        : request("GET", "/odata/MonthlyCapacity"),
+    );
+    assert.equal(denied.status, 403, upn ?? "ohne Rolle");
+    assert.equal(JSON.parse(denied.body).error, "NOT_AUTHORIZED");
+  }
 });
 
 test("planning overview carries the same capacity data as the endpoint", async () => {

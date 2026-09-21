@@ -314,10 +314,11 @@ test("shows monthly capacity with its origin and never invents workdays", async 
     "von 176 Std.",
   );
 
-  // Vorgabewert-Monat ueber den Pager, Herkunft entsprechend benannt.
+  // Vorgabewert-Monat ueber den Pager: der Bereich bleibt aufgeklappt,
+  // der Eintrag muss sichtbar sein (nicht nur im DOM stehen).
   await page.getByTestId("months-next").click();
-  await page.getByTestId("capacity-toggle").click();
   const july = page.getByTestId("capacity-2026-07");
+  await expect(july).toBeVisible();
   await expect(july).toContainText("160");
   await expect(july).toContainText("Mock-Vorgabewert");
 
