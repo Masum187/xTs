@@ -1,8 +1,18 @@
 export type PlanningStatus = "V" | "F" | "P" | "B";
 
+/**
+ * Monatskapazitaet (XTS-024). `source` nennt die Herkunft des Stundenwerts
+ * im Mock; `workdays` und `holidays` sind `null`, weil der Mock keine
+ * Arbeitstage und Feiertage fuehrt (nicht verfuegbar, nicht null Tage).
+ */
+export type CapacitySource = "explicit" | "fallback";
+
 export interface PlanningMonth {
   month: string;
   availableHours: number;
+  source: CapacitySource;
+  workdays: number | null;
+  holidays: number | null;
 }
 
 export interface PlanningCell {

@@ -91,3 +91,19 @@ export function utilizationBarPercent(value: UtilizationValue): number {
   if (utilizationState(value) === "unavailable") return 0;
   return Math.min(100, Math.max(0, value.utilizationPercent ?? 0));
 }
+
+/**
+ * Herkunft des Monatswerts (XTS-024). Bewusst "Mock", weil der Mock keinen
+ * Werkkalender fuehrt, sondern Monatsstunden; ein echter Werkkalender kommt
+ * erst mit der SAP-Anbindung.
+ */
+export function capacitySourceLabel(source: "explicit" | "fallback"): string {
+  return source === "explicit"
+    ? "Expliziter Mock-Monatswert"
+    : "Mock-Vorgabewert";
+}
+
+/** Arbeitstage und Feiertage fuehrt der Mock nicht: nie 0 anzeigen. */
+export function capacityCountLabel(value: number | null): string {
+  return value === null ? "nicht verfügbar" : String(value);
+}

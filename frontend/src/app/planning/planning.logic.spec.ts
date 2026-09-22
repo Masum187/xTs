@@ -103,3 +103,18 @@ describe("utilization (XTS-157)", () => {
     ).toBe(0);
   });
 });
+
+describe("Monatskapazitaet (XTS-024)", () => {
+  it("names the origin of the hours without suggesting a real work calendar", async () => {
+    const { capacitySourceLabel } = await import("./planning.logic");
+    expect(capacitySourceLabel("explicit")).toBe("Expliziter Mock-Monatswert");
+    expect(capacitySourceLabel("fallback")).toBe("Mock-Vorgabewert");
+  });
+
+  it("shows missing workdays and holidays as not available, never as zero", async () => {
+    const { capacityCountLabel } = await import("./planning.logic");
+    expect(capacityCountLabel(null)).toBe("nicht verfügbar");
+    expect(capacityCountLabel(0)).toBe("0");
+    expect(capacityCountLabel(21)).toBe("21");
+  });
+});

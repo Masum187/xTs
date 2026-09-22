@@ -28,6 +28,8 @@ import {
   pageRange,
   pageSlice,
   parseStartMonth,
+  capacityCountLabel,
+  capacitySourceLabel,
   planningHoursProblem,
   utilizationBarPercent,
   utilizationState,
@@ -193,6 +195,15 @@ export class PlanningComponent {
 
   protected utilizationBar(month: PlanningUtilizationMonth): number {
     return utilizationBarPercent(month);
+  }
+
+  /** XTS-024: Herkunft und fehlende Angaben aus der Uebersichtsantwort. */
+  protected sourceLabel(month: { source: "explicit" | "fallback" }): string {
+    return capacitySourceLabel(month.source);
+  }
+
+  protected countLabel(value: number | null): string {
+    return capacityCountLabel(value);
   }
 
   protected isSelected(row: PlanningRow, cell: PlanningCell): boolean {

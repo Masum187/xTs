@@ -11,6 +11,7 @@ import {
 } from "../src/routes.js";
 
 const APPROVER_UPN = "christian.roeper@qualitytimes.de";
+const CONTROLLER_UPN = "jonas.krause@qualitytimes.de";
 
 // Systemdatum der Contract-Tests (Entscheidung 18): das Testdatenpaket liegt
 // im April/Mai 2026, erfassbar ist damit 2026-04-01 bis 2026-05-05.
@@ -786,6 +787,157 @@ test("planning overview shows 12 months with valid combinations", async () => {
     .cells.find((cell) => cell.month === "2026-04");
   assert.equal(releasedCell.status, "F");
   assert.equal(releasedCell.locked, true);
+});
+
+test("monthly capacity reports hours with their origin and no invented workdays", async () => {
+  const response = await routeRequest(
+    approverRequest("GET", "/odata/MonthlyCapacity?start=2026-03&months=4"),
+  );
+  const rows = JSON.parse(response.body).value;
+  assert.equal(response.status, 200);
+  assert.deepEqual(rows, [
+    {
+      month: "2026-03",
+      availableHours: 176,
+      source: "explicit",
+      workdays: null,
+      holidays: null,
+    },
+    {
+      month: "2026-04",
+      availableHours: 168,
+      source: "explicit",
+      workdays: null,
+      holidays: null,
+    },
+    {
+      month: "2026-05",
+      availableHours: 160,
+      source: "explicit",
+      workdays: null,
+      holidays: null,
+    },
+    {
+      month: "2026-06",
+      availableHours: 160,
+      source: "fallback",
+      workdays: null,
+      holidays: null,
+    },
+  ]);
+
+  // Monatswechsel ueber die Jahresgrenze.
+  const turn = JSON.parse(
+    (
+      await routeRequest(
+        approverRequest("GET", "/odata/MonthlyCapacity?start=2026-12&months=2"),
+      )
+    ).body,
+  ).value;
+  assert.deepEqual(
+    turn.map((row) => row.month),
+    ["2026-12", "2027-01"],
+  );
+
+  // Null verfuegbare Stunden bleiben 0 und werden nicht zum Vorgabewert.
+  const previous = workCalendar.months["2026-06"];
+  workCalendar.months["2026-06"] = 0;
+  try {
+    const zero = JSON.parse(
+      (
+        await routeRequest(
+          approverRequest(
+            "GET",
+            "/odata/MonthlyCapacity?start=2026-06&months=1",
+          ),
+        )
+      ).body,
+    ).value[0];
+    assert.equal(zero.availableHours, 0);
+    assert.equal(zero.source, "explicit");
+  } finally {
+    if (previous === undefined) delete workCalendar.months["2026-06"];
+    else workCalendar.months["2026-06"] = previous;
+  }
+
+  const badStart = await routeRequest(
+    approverRequest("GET", "/odata/MonthlyCapacity?start=2026-13"),
+  );
+  assert.equal(badStart.status, 400);
+  const badCount = await routeRequest(
+    approverRequest("GET", "/odata/MonthlyCapacity?months=0"),
+  );
+  assert.equal(badCount.status, 400);
+});
+
+test("monthly capacity is readable for planner, admin and controller only", async () => {
+  // Jede Rolle einzeln: die Standard-Persona ROEPER traegt mehrere Rollen,
+  // deshalb wird sie je Fall auf genau eine geprueft. resetMasterData im
+  // beforeEach stellt die Fixture-Rollen wieder her.
+  const roeper = masterData.employees.find((item) => item.extNr === "ROEPER");
+  const original = [...roeper.roles];
+  try {
+    for (const role of ["planner", "admin"]) {
+      roeper.roles = ["user", role];
+      const response = await routeRequest(
+        approverRequest("GET", "/odata/MonthlyCapacity"),
+      );
+      assert.equal(response.status, 200, role);
+    }
+    // Reiner Approver ist kein Lesefall.
+    roeper.roles = ["user", "approver"];
+    const approverOnly = await routeRequest(
+      approverRequest("GET", "/odata/MonthlyCapacity"),
+    );
+    assert.equal(approverOnly.status, 403);
+  } finally {
+    roeper.roles = original;
+  }
+
+  // Reiner Controller aus der Fixture.
+  const controller = await routeRequest(
+    request("GET", "/odata/MonthlyCapacity", undefined, {
+      "x-mock-oauth-upn": CONTROLLER_UPN,
+    }),
+  );
+  assert.equal(controller.status, 200);
+
+  // Reiner Approver aus der Fixture (WEBER) und Mitarbeiter ohne Rolle.
+  for (const upn of ["maria.weber@qualitytimes.de", undefined]) {
+    const denied = await routeRequest(
+      upn
+        ? request("GET", "/odata/MonthlyCapacity", undefined, {
+            "x-mock-oauth-upn": upn,
+          })
+        : request("GET", "/odata/MonthlyCapacity"),
+    );
+    assert.equal(denied.status, 403, upn ?? "ohne Rolle");
+    assert.equal(JSON.parse(denied.body).error, "NOT_AUTHORIZED");
+  }
+});
+
+test("planning overview carries the same capacity data as the endpoint", async () => {
+  const overview = JSON.parse(
+    (
+      await routeRequest(
+        approverRequest("GET", "/odata/PlanningOverview?start=2026-03"),
+      )
+    ).body,
+  );
+  const capacity = JSON.parse(
+    (
+      await routeRequest(
+        approverRequest(
+          "GET",
+          "/odata/MonthlyCapacity?start=2026-03&months=12",
+        ),
+      )
+    ).body,
+  ).value;
+  assert.deepEqual(overview.months, capacity);
+  // Dieselbe Quelle wie die Auslastung (XTS-157).
+  const march = overview.utilization[0].months[0];
+  assert.equal(march.availableHours, overview.months[0].availableHours);
 });
 
 test("planning overview reports utilization per employee across all cost objects", async () => {

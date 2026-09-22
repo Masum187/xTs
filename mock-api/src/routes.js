@@ -30,6 +30,7 @@ import {
   updateOrderText,
 } from "./orders.js";
 import {
+  buildMonthlyCapacity,
   buildPlanningOverview,
   isValidMonth,
   releasePlanningEntry,
@@ -604,6 +605,28 @@ export async function routeRequest(request) {
           a.date.localeCompare(b.date) || a.extNr.localeCompare(b.extNr),
       );
     return json({ value });
+  }
+
+  if (request.method === "GET" && path === "/odata/MonthlyCapacity") {
+    const persona = resolvePersona(request);
+    if (persona.error) return persona.error;
+    // Lesend fuer Planung, Verwaltung und Controlling (XTS-024).
+    const roleError = requireAnyRole(persona, [
+      "planner",
+      "admin",
+      "controller",
+    ]);
+    if (roleError) return roleError;
+    const start = url.searchParams.get("start") ?? systemToday().slice(0, 7);
+    if (!isValidMonth(start)) {
+      return json({ error: "INVALID_START_MONTH", start }, 400);
+    }
+    const raw = url.searchParams.get("months");
+    const count = raw === null ? 12 : Number(raw);
+    if (!Number.isInteger(count) || count < 1 || count > 24) {
+      return json({ error: "INVALID_MONTH_COUNT", months: raw }, 400);
+    }
+    return json({ value: buildMonthlyCapacity(start, count) });
   }
 
   if (request.method === "GET" && path === "/odata/PlanningOverview") {

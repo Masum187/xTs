@@ -150,6 +150,48 @@
               </span>
             }
           </div>
+
+          <details class="capacity" data-testid="capacity">
+            <summary data-testid="capacity-toggle">
+              Monatskapazität (Mock)
+            </summary>
+            <p class="xts-text-muted capacity-note">
+              Der Mock führt nur Monatsstunden; sie speisen auch die Spalte
+              „verfügbar" und die Auslastung. Arbeitstage und Feiertage sind
+              nicht hinterlegt und werden nicht abgeleitet. Ob die hinterlegten
+              Monatswerte Feiertage berücksichtigen, ist nicht nachgewiesen. Ein
+              echter Werkkalender kommt erst mit der SAP-Anbindung.
+            </p>
+            <div class="tiles">
+              @for (month of visibleMonths(); track month.month) {
+                <dl
+                  class="capacity-cell"
+                  [attr.data-testid]="'capacity-' + month.month"
+                >
+                  <div class="capacity-head">
+                    <dt class="tile-month">Monat</dt>
+                    <dd>{{ month.label }}</dd>
+                  </div>
+                  <div>
+                    <dt>Verfügbare Stunden</dt>
+                    <dd>{{ month.availableHours | number: "1.0-2" }}</dd>
+                  </div>
+                  <div>
+                    <dt>Herkunft</dt>
+                    <dd>{{ sourceLabel(month) }}</dd>
+                  </div>
+                  <div>
+                    <dt>Arbeitstage</dt>
+                    <dd>{{ countLabel(month.workdays) }}</dd>
+                  </div>
+                  <div>
+                    <dt>Feiertage</dt>
+                    <dd>{{ countLabel(month.holidays) }}</dd>
+                  </div>
+                </dl>
+              }
+            </div>
+          </details>
           <div class="utilization" data-testid="utilization">
             <h3 class="utilization-title">Auslastung über alle Kontierungen</h3>
             @if (coIdentFilterActive()) {
