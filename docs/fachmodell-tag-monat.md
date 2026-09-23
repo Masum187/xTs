@@ -52,7 +52,7 @@ Nach dem Feedback von Stephan und Feyzi zur Erfassung externer Leistungen (nach 
 - **Arbeitszeitvergleich**: die serverseitig berechnete Arbeitszeit `workHours` = Geht − Kommt − Pause (Entscheidung 14) setzt die Anwesenheitsfelder voraus.
 - **Abweichungsbegründung** `varianceReason`: heute Pflicht bei Freigabe, wenn die Positionssumme von der Arbeitszeit abweicht. Entfällt der Arbeitszeitvergleich für eine Nutzergruppe, entfällt auch die Grundlage dieser Pflichtbegründung.
 
-Die heutigen Regeln bleiben bis zu einer ausdrücklichen Entscheidung unverändert in Kraft; dieses Dokument nimmt das Ergebnis der Prüfung nicht vorweg. Die zugehörige Klärungsfrage steht als K30 in der Klärungsliste (`klaerungsliste-o4-adr-0012.md`).
+Die heutigen Regeln bleiben bis zu einer ausdrücklichen Entscheidung unverändert in Kraft; dieses Dokument nimmt das Ergebnis der Prüfung nicht vorweg. Die zugehörige Klärungsfrage steht als K30 in der Klärungsliste (`klaerungsliste-o4-adr-0012.md`). Sie wird nicht im Kreis SAP-MM und Einkauf entschieden: die fachliche und rechtliche Abstimmung erfolgt unter Beteiligung von Fachbereich, Recht und HR, Datenschutz bei Bedarf.
 
 ## 4. Präzision
 
