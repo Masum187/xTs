@@ -209,3 +209,22 @@ Alle Fragen sind Bedingung für `Accepted`. Fragen 2, 8–13 sind persistenzkrit
 ## Repo-Abgleich (2026-09-19, xTS-Entwicklung)
 
 Der Text oben ist die unveränderte v5 der Confluence-Fassung. Die Repo-Verweise wurden gegen den Stand von `main` geprüft: die Abschnitte „Timesheet-Verhalten", „Genehmigungs-Verhalten" und „Freischaltung Stundenschreibung" in `docs/odata-contracts.md`, der Verweis auf `ZXTS_TIME_T-ARBEITSZEIT`, die Fehlercodes `DESCRIPTION_TOO_LONG` und `VARIANCE_REASON_REQUIRED`, die Sperre je Mitarbeiter und Kontierung, der Punkt ETag/`If-Match` und die Ausbaustufe XTS-064 im Backlog existieren wie zitiert. Die Mapping-Tabelle verwendet die umgesetzten Kontraktnamen. Die Ergänzungen früherer Repo-Reviews (Berechnung serverseitig, Option D, Fragen 12 und 13, gesamthafte Tagesfreigabe, Konzeptnamen, Datierung) sind in v5 enthalten; eine gesonderte Repo-Ergänzung entfällt. Die Bedingungen für `Accepted` stehen in der ADR selbst; O13 im Entscheidungslog bleibt bis dahin offen.
+
+---
+
+## Nachtrag (2026-09-24, xTS-Entwicklung): Protokollstand zu Status und Genehmigungsfeldern
+
+Die Protokolle vom 23.09. und 24.09.2026 zum Leistungsnachweis für externe Dienstleister (`../leistungsnachweis-externe-protokolle.md`) beantworten mehrere Fragen dieser ADR **fachlich**. Der Status der ADR bleibt **`Proposed`**, die Feldstruktur in den Abschnitten oben bleibt unverändert.
+
+| Frage                                      | Fachliche Antwort laut Protokoll 24.09.2026                                                                                                                                                          | Stand                                                                 |
+| ------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------- |
+| Frage 8 (Tagesstatus)                      | Der Status wird physisch nur auf Tagesebene gesetzt; die Positionen leiten ihn ab. Die Bestätigung eines Tages schließt alle Kontierungen dieses Tages, die Rückweisung wirft den ganzen Tag zurück. | fachlich beantwortet, Bestätigung und technische Zuordnung ausstehend |
+| Frage 3 (Positions-`STATUS`)               | Positionsbezogene Freigabe wird bewusst nicht umgesetzt; Positionen erhalten keinen unabhängig änderbaren Status (Ausbaustufe XTS-064 entfällt).                                                     | fachlich beantwortet, Bestätigung und technische Zuordnung ausstehend |
+| Frage 9 (Rückweisungsgrund)                | Am Tageskopf benötigt (offener Punkt 6 des Protokolls).                                                                                                                                              | fachlich beantwortet, Bestätigung und technische Zuordnung ausstehend |
+| Frage 11 (Genehmiger, Zeitpunkt)           | Bestätiger als EXTNR und Zeitstempel am Tageskopf benötigt (offener Punkt 6).                                                                                                                        | fachlich beantwortet, Bestätigung und technische Zuordnung ausstehend |
+| Frage 10 (Abweichungsbegründung)           | **Nicht** in gleicher Weise beantwortet: sie hängt an der berechneten Arbeitszeit, die für diesen Erfassungsmodus neu zu bewerten ist.                                                               | offen                                                                 |
+| Frage 12 (Wareneingang), Frage 13 (Sperre) | unverändert offen; die Sperre ist laut beiden Protokollen unabhängig von der Freigabefrage erforderlich.                                                                                             | offen                                                                 |
+
+**Diese Felder gelten dadurch nicht als in den SAP-Tabellen nachgewiesen.** Ob sie im Tageskopf oder in einem eigenen Objekt liegen, ist laut Protokoll Teil der Klärung; die Tabellen werden bis zur Klärung der offenen Punkte nicht umgebaut, und die ADR wird erst danach neu geschnitten. Die Annahmekriterien oben bleiben unverändert in Kraft; O13 bleibt offen.
+
+Zusätzlich offen aus dem Folgeprotokoll: die Bestätigung der Tabellennamen (`Z_POT_TIME`/`Z_POT_PAYTIME` gegen `ZPOT_TIME_T`/`ZPOT_PTIME_T`) und die Einordnung der Bezeichnung „S/4-Portal", die Entscheidung 17 für sich genommen nicht ersetzt.
