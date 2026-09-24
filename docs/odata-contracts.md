@@ -158,6 +158,10 @@ Regeln:
 - Unerwartete Serverfehler liefert die Mock-API als HTTP 500 `INTERNAL_ERROR` mit `message`.
 - Mit dem ersten echten Gateway-Service zu vereinbaren (aendert nur die Adapterschicht): CSRF-Token-Handshake (`x-csrf-token: fetch` vor `POST`), ETag/`If-Match` fuer optimistisches Sperren, Abbildung der benannten Filterparameter (`?month=`, `?extNr=`, `?from=`/`?to=`, `?detail=`) auf `$filter` oder Funktionsimporte. `$batch` wird nicht benoetigt.
 
+## Anstehende, noch nicht freigegebene Aenderungen (Hinweis, nicht geltend)
+
+Die Protokolle vom 23.09. und 24.09.2026 zum Leistungsnachweis fuer externe Dienstleister (`leistungsnachweis-externe-protokolle.md`) halten Aenderungen fest, die **diesen Kontrakt noch nicht aendern**. Alles unten Beschriebene gilt unveraendert weiter, bis die Aenderung ausdruecklich entschieden und freigegeben ist. Betroffen sind nach Protokollstand: das Sperrverhalten bei Status `F`, die Finalitaet von Status `G`, die Anwesenheitsfelder (`startTime`, `endTime`, `breakMinutes`) mit der daraus berechneten `workHours` und der Abweichungsbegruendung `varianceReason`, eine moegliche zweite Freigabestufe, die Fuehrung des Status am Tag oder an einem Nachweis sowie die serverseitig erzwungene Monatsabschlussregel aus Entscheidung 18 (Protokollstand 24.09.: vorerst keine Fristsperre; bis zur Bestaetigung gilt die Regel unveraendert weiter). O4, O13 und K30 sind offen; ADR-0012 bleibt `Proposed`.
+
 ## Offener technischer Punkt
 
 Das AD/OAuth-Attribut ist entschieden (Option B, `oid` mit UPN-Fallback) und in `GET /odata/MyProfile` umgesetzt. SAP-seitig offen: DDIC-Felder `AAD_OID`/`AAD_UPN` und die Token-Validierung im OData-Service, siehe [entra-anbindung.md](entra-anbindung.md).

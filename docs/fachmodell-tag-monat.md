@@ -3,7 +3,7 @@
 Stand: 2026-09-21 (Repo-Kopie der Gesprächsgrundlage „xTS — Fachmodell Tag und Monat", Word-Dokument vom 21.09.2026)  
 Zweck: Gesprächsgrundlage für die Abstimmung der ZPOT-Tabellen mit der SAP-Seite. Die zwei fachlichen Ebenen und ihre Objekte werden so gezeigt, dass die physischen Tabellen daran geprüft werden können. Physische Tabellen dürfen anders geschnitten sein; der fachliche Tag und der fachliche Monat müssen widerspruchsfrei abbildbar bleiben.  
 Grundlage: `odata-contracts.md`, Entscheidungen 14, 18, 19 in `entscheidungen-v0.1.md`. Bezug: ADR-0012 (`adr/0012-sap-zieltabellen-zpot-time.md`, Status Proposed), O4 (`entscheidungsvorlage-we-bestellposition.md`), Klärungsliste (`klaerungsliste-o4-adr-0012.md`).  
-Status: **ausdrücklich vorläufige Gesprächsgrundlage**, reine Dokumentation. Das Dokument beschreibt den **bisher implementierten Stand** (Kontrakt und Mock-API), **kein abschließend bestätigtes Zielmodell**, insbesondere nicht für die Erfassung externer Leistungen (siehe Abschnitt 3a). Keine Kontraktänderung, keine Fachentscheidung. ADR-0012 bleibt Proposed, O4 und O13 bleiben offen. Die in Abschnitt 6 genannten SAP-Feldstände sind **laut Rückmeldung bzw. Screenshot vom 21.09.2026** wiedergegeben und **keine bestätigte Zielstruktur**.
+Status: **ausdrücklich vorläufige Gesprächsgrundlage**, reine Dokumentation. Die Protokolle vom 23.09. und 24.09.2026 (`leistungsnachweis-externe-protokolle.md`) enthalten neuere Protokollstände zu Statuslogik, Freigabe und Anwesenheitsfeldern; dieses Dokument ist dadurch nicht überholt, aber auch nicht bestätigt. Das Dokument beschreibt den **bisher implementierten Stand** (Kontrakt und Mock-API), **kein abschließend bestätigtes Zielmodell**, insbesondere nicht für die Erfassung externer Leistungen (siehe Abschnitt 3a). Keine Kontraktänderung, keine Fachentscheidung. ADR-0012 bleibt Proposed, O4 und O13 bleiben offen. Die in Abschnitt 6 genannten SAP-Feldstände sind **laut Rückmeldung bzw. Screenshot vom 21.09.2026** wiedergegeben und **keine bestätigte Zielstruktur**.
 
 ## 1. Zwei Ebenen, zwei Genehmigungen
 
@@ -52,7 +52,7 @@ Nach dem Feedback von Stephan und Feyzi zur Erfassung externer Leistungen (nach 
 - **Arbeitszeitvergleich**: die serverseitig berechnete Arbeitszeit `workHours` = Geht − Kommt − Pause (Entscheidung 14) setzt die Anwesenheitsfelder voraus.
 - **Abweichungsbegründung** `varianceReason`: heute Pflicht bei Freigabe, wenn die Positionssumme von der Arbeitszeit abweicht. Entfällt der Arbeitszeitvergleich für eine Nutzergruppe, entfällt auch die Grundlage dieser Pflichtbegründung.
 
-Die heutigen Regeln bleiben bis zu einer ausdrücklichen Entscheidung unverändert in Kraft; dieses Dokument nimmt das Ergebnis der Prüfung nicht vorweg. Die zugehörige Klärungsfrage steht als K30 in der Klärungsliste (`klaerungsliste-o4-adr-0012.md`). Sie wird nicht im Kreis SAP-MM und Einkauf entschieden: die fachliche und rechtliche Abstimmung erfolgt unter Beteiligung von Fachbereich, Recht und HR, Datenschutz bei Bedarf.
+Die heutigen Regeln bleiben bis zu einer ausdrücklichen Entscheidung unverändert in Kraft; dieses Dokument nimmt das Ergebnis der Prüfung nicht vorweg. Die zugehörige Klärungsfrage steht als K30 in der Klärungsliste (`klaerungsliste-o4-adr-0012.md`); die Protokollstände dazu stehen in `leistungsnachweis-externe-protokolle.md`. Sie wird nicht im Kreis SAP-MM und Einkauf entschieden: die fachliche und rechtliche Abstimmung erfolgt unter Beteiligung von Fachbereich, Recht und HR, Datenschutz bei Bedarf.
 
 ## 4. Präzision
 
