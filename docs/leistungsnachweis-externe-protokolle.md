@@ -32,7 +32,15 @@ Die Dateien liegen außerhalb des Repositorys. Abschnitte 3 und 4 enthalten die 
 Das ist keine Präzisierung, sondern eine Gegenaussage zur Frage, ob eine vertragliche Regelung besteht. Die Fassung vom **24.09. ist der neuere Protokollstand**. Getrennt davon zu behandeln sind:
 
 - **Bestätigung**: E5 bleibt in beiden Fassungen ein Vorschlag; die Bestätigung durch Einkauf und Recht/HR steht aus.
-- **Ablösung der bisherigen Regel**: Dass keine technische Fristsperre bestehen soll und Kulanzfrist sowie Erinnerung in eine zweite Ausbaustufe gehören, ist im Entscheidungslog als Ablösung auszuweisen, sobald bestätigt. Entscheidung 18 (Erfassungszeitraum, Monatsabschluss nach Regelwerk Infotyp 3) bleibt laut beiden Protokollen erhalten und trägt die Einreichfrist.
+- **Ablösung der bisherigen Regel**: Dass keine technische Fristsperre bestehen soll und Kulanzfrist sowie Erinnerung in eine zweite Ausbaustufe gehören, ist im Entscheidungslog als Ablösung auszuweisen, sobald bestätigt.
+
+Zu Entscheidung 18 (Erfassungszeitraum, Monatsabschluss nach Regelwerk Infotyp 3) sind drei Ebenen zu unterscheiden:
+
+| Ebene                            | Stand                                                                                                                                                                                                                                                                                     |
+| -------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Protokoll 23.09.2026             | Entscheidung 18 bleibt laut damaligem Protokoll erhalten und trägt die Einreichfrist.                                                                                                                                                                                                     |
+| Protokoll Folgetermin 24.09.2026 | Die Ablösungstabelle sieht vor, dass die serverseitig erzwungene Monatsabschlussregel entfällt: „Vorerst keine Fristsperre". Bestätigung und Eintrag im Entscheidungslog stehen aus; Kulanzfrist bis zum 3. des Folgemonats und E-Mail-Erinnerung sind als zweite Ausbaustufe vorgesehen. |
+| Geltender Stand                  | Bis zur Bestätigung und zum Eintrag im Entscheidungslog **gilt Entscheidung 18 unverändert weiter**, einschließlich der serverseitig erzwungenen Monatsabschlussregel.                                                                                                                    |
 
 ### 2.2 Entscheidung 19: Protokollbewertung, nicht die Entscheidung selbst
 

@@ -160,7 +160,7 @@ Regeln:
 
 ## Anstehende, noch nicht freigegebene Aenderungen (Hinweis, nicht geltend)
 
-Die Protokolle vom 23.09. und 24.09.2026 zum Leistungsnachweis fuer externe Dienstleister (`leistungsnachweis-externe-protokolle.md`) halten Aenderungen fest, die **diesen Kontrakt noch nicht aendern**. Alles unten Beschriebene gilt unveraendert weiter, bis die Aenderung ausdruecklich entschieden und freigegeben ist. Betroffen sind nach Protokollstand: das Sperrverhalten bei Status `F`, die Finalitaet von Status `G`, die Anwesenheitsfelder (`startTime`, `endTime`, `breakMinutes`) mit der daraus berechneten `workHours` und der Abweichungsbegruendung `varianceReason`, eine moegliche zweite Freigabestufe sowie die Fuehrung des Status am Tag oder an einem Nachweis. O4, O13 und K30 sind offen; ADR-0012 bleibt `Proposed`.
+Die Protokolle vom 23.09. und 24.09.2026 zum Leistungsnachweis fuer externe Dienstleister (`leistungsnachweis-externe-protokolle.md`) halten Aenderungen fest, die **diesen Kontrakt noch nicht aendern**. Alles unten Beschriebene gilt unveraendert weiter, bis die Aenderung ausdruecklich entschieden und freigegeben ist. Betroffen sind nach Protokollstand: das Sperrverhalten bei Status `F`, die Finalitaet von Status `G`, die Anwesenheitsfelder (`startTime`, `endTime`, `breakMinutes`) mit der daraus berechneten `workHours` und der Abweichungsbegruendung `varianceReason`, eine moegliche zweite Freigabestufe, die Fuehrung des Status am Tag oder an einem Nachweis sowie die serverseitig erzwungene Monatsabschlussregel aus Entscheidung 18 (Protokollstand 24.09.: vorerst keine Fristsperre; bis zur Bestaetigung gilt die Regel unveraendert weiter). O4, O13 und K30 sind offen; ADR-0012 bleibt `Proposed`.
 
 ## Offener technischer Punkt
 
