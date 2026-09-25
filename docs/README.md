@@ -26,6 +26,8 @@ Dieser Ordner enthaelt die Konzept-Baseline (v0.1, Stand 2026-05-08) und die sei
 
 ## Empfohlene Reihenfolge fuer neue Beteiligte
 
+Fuer die Entwickler-Uebergabe zuerst [Entwickler-Uebergabe](entwickler-uebergabe.md) lesen: aktueller Stand, lokale Umgebung, Architektur, geltende Regeln, offene Entscheidungen, Zugangsliste und Abnahmecheckliste (Stand 2026-09-25).
+
 1. `README.md` im Repository-Root fuer Stand und Stack.
 2. `odata-contracts.md` fuer das umgesetzte Verhalten der Services (fuehrend fuer die SAP-Implementierung).
 3. `entscheidungen-v0.1.md` fuer getroffene und offene Entscheidungen.
