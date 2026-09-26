@@ -1,5 +1,7 @@
 # xTS UI-Redesign (Modernist): Bewertung und Einordnung
 
+> **Release-Abgrenzung 26.09.2026 (Entscheidung 23):** Im aktuellen Release erfasst xTS Leistungsstunden und zeigt SAP-Planung, Belege und Genehmigungsstatus nur lesend. Planung, Genehmigung/Rueckweisung, Beauftragung/BANF/Bestellung und WE erfolgen ausschliesslich in SAP. Die vorhandenen weitergehenden Frontend-Funktionen bleiben fuer spaeter erhalten, sind fuer diesen Release aber in UI und schreibenden API-Pfaden zu deaktivieren. **Noch nicht technisch umgesetzt.** Nachfolgende Beschreibungen des bisherigen Vollumfangs sind keine aktuelle Release-Freigabe. Massgeblich ist der [Release-Zuschnitt](release-zuschnitt.md); offene Fachfragen bleiben offen.
+
 Stand: 2026-09-11. Status: Vorschlag zur Freigabe, keine beauftragte Umsetzung. Grundlage: Handoff-Paket `UI-Redesign für localhost.zip` (README, `styles.css`, klickbarer Prototyp, Explorations-Canvas), abgeglichen mit dem Repo-Stand nach PR #31 (Audit-Schritte 1 bis 14 gemergt, Review-Findings behoben, Regressionstests fuer Breiten, Konsolenfehler und Feldbezug erhalten). Die konsolidierte Fassung mit Jira-Verlinkung liegt in Confluence ("xTS - UI-Redesign, Konsolidierte Bewertung"); dieses Dokument ist die Repo-Referenz dazu.
 
 ## Entscheidung in einem Satz

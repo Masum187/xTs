@@ -1,5 +1,7 @@
 # Design-Tokens und UI-Bausteine (XTS-141)
 
+> **Release-Abgrenzung 26.09.2026 (Entscheidung 23):** Im aktuellen Release erfasst xTS Leistungsstunden und zeigt SAP-Planung, Belege und Genehmigungsstatus nur lesend. Planung, Genehmigung/Rueckweisung, Beauftragung/BANF/Bestellung und WE erfolgen ausschliesslich in SAP. Die vorhandenen weitergehenden Frontend-Funktionen bleiben fuer spaeter erhalten, sind fuer diesen Release aber in UI und schreibenden API-Pfaden zu deaktivieren. **Noch nicht technisch umgesetzt.** Nachfolgende Beschreibungen des bisherigen Vollumfangs sind keine aktuelle Release-Freigabe. Massgeblich ist der [Release-Zuschnitt](release-zuschnitt.md); offene Fachfragen bleiben offen.
+
 Stand: 2026-09-12. Grundlage: Handoff "Modernist", Baseline `design-baseline-xts-140.md` (Abschnitt 4), Entscheidungen 20 und 21. Quelle im Code: `frontend/src/design-system.css`. Pruefung: `frontend/e2e/design-system.spec.ts` auf der isolierten Testseite `/assets/design-system/index.html` (Dev-Server).
 
 ## Bereitstellung ohne Anwendung

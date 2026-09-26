@@ -1,8 +1,12 @@
 # xTS Dokumentation
 
+> **Release-Abgrenzung 26.09.2026 (Entscheidung 23):** Im aktuellen Release erfasst xTS Leistungsstunden und zeigt SAP-Planung, Belege und Genehmigungsstatus nur lesend. Planung, Genehmigung/Rueckweisung, Beauftragung/BANF/Bestellung und WE erfolgen ausschliesslich in SAP. Die vorhandenen weitergehenden Frontend-Funktionen bleiben fuer spaeter erhalten, sind fuer diesen Release aber in UI und schreibenden API-Pfaden zu deaktivieren. **Noch nicht technisch umgesetzt.** Nachfolgende Beschreibungen des bisherigen Vollumfangs sind keine aktuelle Release-Freigabe. Massgeblich ist der [Release-Zuschnitt](release-zuschnitt.md); offene Fachfragen bleiben offen.
+
 Dieser Ordner enthaelt die Konzept-Baseline (v0.1, Stand 2026-05-08) und die seitdem gepflegte Umsetzungsdokumentation. Bei Widerspruechen gilt: `odata-contracts.md` und `entscheidungen-v0.1.md` beschreiben den umgesetzten Stand, `entwicklungskonzept-v0.1.md` und `backlog-v0.1.md` sind die fachliche Baseline mit Hinweisen auf Abweichungen.
 
 ## Dateien
+
+Neu fuehrend fuer den auszuliefernden Funktionsumfang: [Release-Zuschnitt](release-zuschnitt.md), beschlossen am 26.09.2026. Der implementierte Kontrakt bleibt als Ist-Beschreibung erhalten; sein Vollumfang darf nicht ungeprueft in den aktuellen Release uebernommen werden.
 
 | Datei                                        | Zweck                                                                                                                                                                                                                                                                                                                                                                                                                |
 | -------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -39,7 +43,7 @@ Fuer die Entwickler-Uebergabe zuerst [Entwickler-Uebergabe](entwickler-uebergabe
 
 - SAP bleibt fuehrend fuer Kontierung, BANF, Bestellung und Wertefluss.
 - Der MVP fokussiert Planung, Beauftragung, Stundenschreibung, Genehmigung und Reporting.
-- xTS legt MM-BANF aktiv an, liest MM-Bestellungen per Job nach und bucht nach Genehmigung synchron den Wareneingang.
+- Fuer den aktuellen Release erfolgen Planung, Genehmigung und Belegverarbeitung ausschliesslich in SAP. xTS erfasst Leistungsstunden und zeigt SAP-Daten; der bisherige schreibende Vollumfang bleibt fuer spaeter erhalten und ist aktuell zu deaktivieren.
 - Die BANF-Anlage nutzt das im Konzept definierte EBAN/EBKN/COBL-Feldmapping.
 - WebClient-Authentifizierung erfolgt ueber Microsoft Entra ID (Entscheidung 6, Option B: `AAD_OID`, Fallback `AAD_UPN`).
 - Vollautomatische Rechnung, Zahllauf, Gutschriftsverfahren und Obligobereinigung sind nicht Teil des MVP.

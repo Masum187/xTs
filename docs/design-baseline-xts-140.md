@@ -1,5 +1,7 @@
 # XTS-140 Design-Baseline und Funktionsabgleich
 
+> **Release-Abgrenzung 26.09.2026 (Entscheidung 23):** Im aktuellen Release erfasst xTS Leistungsstunden und zeigt SAP-Planung, Belege und Genehmigungsstatus nur lesend. Planung, Genehmigung/Rueckweisung, Beauftragung/BANF/Bestellung und WE erfolgen ausschliesslich in SAP. Die vorhandenen weitergehenden Frontend-Funktionen bleiben fuer spaeter erhalten, sind fuer diesen Release aber in UI und schreibenden API-Pfaden zu deaktivieren. **Noch nicht technisch umgesetzt.** Nachfolgende Beschreibungen des bisherigen Vollumfangs sind keine aktuelle Release-Freigabe. Massgeblich ist der [Release-Zuschnitt](release-zuschnitt.md); offene Fachfragen bleiben offen.
+
 Stand: 2026-09-12. Status: zur Abnahme (Entscheidung 20). Grundlage: `ui-redesign-bewertung.md`, Handoff "Modernist" (README, `styles.css`, Prototyp), Repo-Stand nach PR #33 (Audit-Schritte 1 bis 15 Teil A).
 
 Zweck: Dieses Dokument ist die Abnahmegrundlage fuer jede Story der Epics 15 und 16. Ein Screen gilt als fertig migriert, wenn alle Punkte seiner Checkliste im neuen Layout erhalten sind und die genannten Tests gruen bleiben. Der Abgleich erfolgt gegen diese Liste, nicht gegen einen Eindruck. Abweichungen vom Handoff werden mit Fachregel begruendet und hier nachgetragen.

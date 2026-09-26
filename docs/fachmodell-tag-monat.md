@@ -1,5 +1,7 @@
 # xTS Fachmodell Tag und Monat
 
+> **Release-Abgrenzung 26.09.2026 (Entscheidung 23):** Im aktuellen Release erfasst xTS Leistungsstunden und zeigt SAP-Planung, Belege und Genehmigungsstatus nur lesend. Planung, Genehmigung/Rueckweisung, Beauftragung/BANF/Bestellung und WE erfolgen ausschliesslich in SAP. Die vorhandenen weitergehenden Frontend-Funktionen bleiben fuer spaeter erhalten, sind fuer diesen Release aber in UI und schreibenden API-Pfaden zu deaktivieren. **Noch nicht technisch umgesetzt.** Nachfolgende Beschreibungen des bisherigen Vollumfangs sind keine aktuelle Release-Freigabe. Massgeblich ist der [Release-Zuschnitt](release-zuschnitt.md); offene Fachfragen bleiben offen.
+
 Stand: 2026-09-21 (Repo-Kopie der Gesprächsgrundlage „xTS — Fachmodell Tag und Monat", Word-Dokument vom 21.09.2026)  
 Zweck: Gesprächsgrundlage für die Abstimmung der ZPOT-Tabellen mit der SAP-Seite. Die zwei fachlichen Ebenen und ihre Objekte werden so gezeigt, dass die physischen Tabellen daran geprüft werden können. Physische Tabellen dürfen anders geschnitten sein; der fachliche Tag und der fachliche Monat müssen widerspruchsfrei abbildbar bleiben.  
 Grundlage: `odata-contracts.md`, Entscheidungen 14, 18, 19 in `entscheidungen-v0.1.md`. Bezug: ADR-0012 (`adr/0012-sap-zieltabellen-zpot-time.md`, Status Proposed), O4 (`entscheidungsvorlage-we-bestellposition.md`), Klärungsliste (`klaerungsliste-o4-adr-0012.md`).  

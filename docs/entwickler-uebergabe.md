@@ -1,10 +1,18 @@
 # xTS: Entwickler-Uebergabe
 
+> **Release-Abgrenzung 26.09.2026 (Entscheidung 23):** Im aktuellen Release erfasst xTS Leistungsstunden und zeigt SAP-Planung, Belege und Genehmigungsstatus nur lesend. Planung, Genehmigung/Rueckweisung, Beauftragung/BANF/Bestellung und WE erfolgen ausschliesslich in SAP. Die vorhandenen weitergehenden Frontend-Funktionen bleiben fuer spaeter erhalten, sind fuer diesen Release aber in UI und schreibenden API-Pfaden zu deaktivieren. **Noch nicht technisch umgesetzt.** Nachfolgende Beschreibungen des bisherigen Vollumfangs sind keine aktuelle Release-Freigabe. Massgeblich ist der [Release-Zuschnitt](release-zuschnitt.md); offene Fachfragen bleiben offen.
+
 Stand: 2026-09-25. Gepruefter lokaler Ausgangsstand: `main`, Commit `4a3eb78a822d2972a81d6b3264684061a4ecc212` (Squash-Merge PR #53). Vor Erstellung dieser Uebergabe war der Arbeitsbaum sauber. Diese Angaben sind eine Momentaufnahme, keine Aussage ueber spaetere Commits.
 
 **Wichtig:** Implementierter Stand, Protokollstand und freigegebene Arbeit sind unterschiedliche Dinge. Diese Uebergabe erteilt keine Freigabe fuer neue Fachfunktionen, SAP-Implementierung oder die unten genannten offenen Stories.
 
 ## 1. Projekt in Kurzform
+
+### Aktualisierung 26.09.2026: vor jeder Codearbeit lesen
+
+Der Auftraggeber hat den [Release-Zuschnitt](release-zuschnitt.md) als Entscheidung 23 bestaetigt. **Jetzt**: xTS erfasst Leistungsstunden und zeigt SAP-Planung, Belege und Genehmigungsstatus. **Spaeter**: die heute implementierten Planungs-, Genehmigungs- und Beauftragungsaktionen bleiben erhalten, sind aktuell aber in UI und schreibenden API-Pfaden zu deaktivieren. Der Code ist noch nicht umgestellt. Diese Priorisierung ersetzt gegenteilige Annahmen der urspruenglichen Uebergabe; sie ist keine Anweisung, vorhandenen Code zu loeschen.
+
+Die folgenden Architektur- und Regelbeschreibungen betreffen den vorhandenen Vollumfang. Entscheidungen 14/18 und offene Fachfragen bleiben davon getrennt. Als erster Implementierungsschritt ist ein technischer Zuschnitt fuer RLS-01 bis RLS-05 abzustimmen, nicht die bisher unfreigegebenen Zusatzfunktionen zu aktivieren. Die lokale Anwendung und Mock-API laufen nach Nutzerangabe auf 4200/4010 und duerfen ohne Abstimmung weder gestoppt noch durch Smoke-Tests zurueckgesetzt werden.
 
 xTS unterstuetzt Ressourcenplanung, Beauftragung, Stundenschreibung, Genehmigung und Reporting externer Ressourcen. Die Prozesskette im Mock lautet: Planung -> Planfreigabe -> Beauftragung -> BANF -> Bestellung -> Stundenschreibung -> Tagesgenehmigung -> simulierter Wareneingang.
 

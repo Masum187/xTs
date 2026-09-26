@@ -1,5 +1,7 @@
 # xTS Testdatenpaket und UAT-Drehbuch v0.1
 
+> **Release-Abgrenzung 26.09.2026 (Entscheidung 23):** Im aktuellen Release erfasst xTS Leistungsstunden und zeigt SAP-Planung, Belege und Genehmigungsstatus nur lesend. Planung, Genehmigung/Rueckweisung, Beauftragung/BANF/Bestellung und WE erfolgen ausschliesslich in SAP. Die vorhandenen weitergehenden Frontend-Funktionen bleiben fuer spaeter erhalten, sind fuer diesen Release aber in UI und schreibenden API-Pfaden zu deaktivieren. **Noch nicht technisch umgesetzt.** Nachfolgende Beschreibungen des bisherigen Vollumfangs sind keine aktuelle Release-Freigabe. Massgeblich ist der [Release-Zuschnitt](release-zuschnitt.md); offene Fachfragen bleiben offen.
+
 Story: XTS-082 (Epic 9). Das Paket ist die Fixture-Basis der Mock-API (`mock-api/src/fixtures.js`) und wird von den Contract-Tests, den Playwright-Smoke-Tests und dem UAT gemeinsam genutzt. Jeder Durchlauf kann ueber **Verwaltung -> "Testdaten zuruecksetzen"** (oder `POST /odata/TestDataResets`, Rolle `admin`) auf diesen Ausgangsstand zurueckgesetzt werden.
 
 Stichtag der Daten: Fruehjahr 2026. Datumsangaben im Drehbuch beziehen sich darauf, nicht auf das reale Tagesdatum.

@@ -1,5 +1,7 @@
 # xTS Entscheidungen v0.1
 
+> **Release-Abgrenzung 26.09.2026 (Entscheidung 23):** Im aktuellen Release erfasst xTS Leistungsstunden und zeigt SAP-Planung, Belege und Genehmigungsstatus nur lesend. Planung, Genehmigung/Rueckweisung, Beauftragung/BANF/Bestellung und WE erfolgen ausschliesslich in SAP. Die vorhandenen weitergehenden Frontend-Funktionen bleiben fuer spaeter erhalten, sind fuer diesen Release aber in UI und schreibenden API-Pfaden zu deaktivieren. **Noch nicht technisch umgesetzt.** Nachfolgende Beschreibungen des bisherigen Vollumfangs sind keine aktuelle Release-Freigabe. Massgeblich ist der [Release-Zuschnitt](release-zuschnitt.md); offene Fachfragen bleiben offen.
+
 Stand: 2026-09-12 (Grundsatzentscheidungen 1 bis 10 vom 2026-05-08, Ergaenzungen aus der Stabilisierung im September 2026, Fachentscheidungen 18 und 19 vom 2026-09-09, Entscheidungen 20 und 21 zum UI-Redesign vom 2026-09-12)
 
 Quelle der Antworten: `xTS Offene Entscheidungen v0.docx`, `xTS Entwicklungskonzept v0.docx`, Reviews der Pull Requests #15 bis #26, Entscheidungsrunde O2/O3 vom 2026-09-09
@@ -270,7 +272,19 @@ Entscheidung:
 
 Folgen: Umsetzung in XTS-142 (O10) und XTS-141 (O11), sobald die erste Etappe nach Entscheidung 20 ausdruecklich freigegeben ist. Bis dahin bleiben XTS-141, XTS-142 und XTS-150 ungestartet.
 
-## Offene Entscheidungen
+## Entscheidung 23 - Release-Schnitt: xTS erfasst, SAP verarbeitet
+
+Status: entschieden am 2026-09-26 durch ausdrueckliche Bestaetigung des Auftraggebers im Projektgespraech. Technische Umsetzung ausstehend. Nummer 22 bleibt fuer die noch offene O4-Entscheidung reserviert.
+
+Im aktuellen Release werden Leistungsstunden in xTS erfasst und eingereicht. Planung, Genehmigung/Rueckweisung, Beauftragung, BANF, Bestellung und Wareneingang werden ausschliesslich in SAP gepflegt beziehungsweise ausgefuehrt. SAP liefert den verbindlichen Genehmigungsstatus; xTS zeigt Status, berechtigte Plan-/Belegdaten und verfuegbare Rueckweisungsgruende lesend an.
+
+Vorhandene Frontend-Funktionen des erweiterten Umfangs bleiben fuer einen spaeteren Release erhalten, sind aktuell aber nicht verfuegbar. Auch schreibende API-Pfade und indirekte Buchungsausloeser muessen serverseitig gesperrt werden. Kein UI-only-Schutz und keine automatische Freischaltung durch eine Admin-Rolle. Der spaetere Release braucht eigene Freigabe.
+
+Dieser Beschluss ersetzt fuer den aktuellen Release die Prozesszuordnung aus Entscheidungen 5 und 9 (WE-Ausloesung durch xTS) und begrenzt die Frontend-Anwendung der Entscheidungen 2, 3, 10 und 19 sowie der bisherigen Planungs-/Beauftragungs-Stories. Ihre fachlichen Details und die Implementierungshistorie bleiben erhalten. Entscheidungen 14, 17 und 18 werden nicht geaendert. Der genaue SAP-Statusabgleich und die Release-Steuerung sind noch zu spezifizieren; der bisherige Kontrakt beschreibt bis dahin den implementierten, nicht releasekonformen Vollumfang.
+
+O4, O13 und K30 bleiben offen, ADR-0012 bleibt Proposed. Die Fachfragen zu Feldern, Fristen, Statusuebergaengen, Wiederoeffnung und kaufmaennischer Freigabe werden nicht durch diesen Systemzuschnitt beantwortet. Dokumentation ist beauftragt; konkrete Code-Pakete sind noch abzustimmen. Siehe [Release-Zuschnitt](release-zuschnitt.md) fuer Matrix, Grenzen und Abnahme.
+
+## Weiterhin offene Entscheidungen
 
 | Nr. | Thema                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    | Bezug                                                            | Wer                                   |
 | --- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ---------------------------------------------------------------- | ------------------------------------- |
