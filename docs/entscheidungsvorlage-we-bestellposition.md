@@ -1,5 +1,7 @@
 # Entscheidungsvorlage: Bestellpositionsbezug, Fehlerfall und Wiederholung der WE-Buchung (O4, XTS-061A)
 
+> **Release-Abgrenzung 26.09.2026 (Entscheidung 23):** Im aktuellen Release erfasst xTS Leistungsstunden und zeigt SAP-Planung, Belege und Genehmigungsstatus nur lesend. Planung, Genehmigung/Rueckweisung, Beauftragung/BANF/Bestellung und WE erfolgen ausschliesslich in SAP. Die vorhandenen weitergehenden Frontend-Funktionen bleiben fuer spaeter erhalten, sind fuer diesen Release aber in UI und schreibenden API-Pfaden zu deaktivieren. **Noch nicht technisch umgesetzt.** Nachfolgende Beschreibungen des bisherigen Vollumfangs sind keine aktuelle Release-Freigabe. Massgeblich ist der [Release-Zuschnitt](release-zuschnitt.md); offene Fachfragen bleiben offen.
+
 Stand: 2026-09-19  
 Status: **offen, keine Fachentscheidung getroffen.** Diese Vorlage beschreibt Ist-Stand, Optionen und Empfehlungen; alle Kontraktaenderungen in Abschnitt 5 sind **Vorschlaege** und werden erst nach fachlicher Bestaetigung durch SAP-MM und Einkauf umgesetzt. Bis dahin bleibt O4 offen und der Code unveraendert.  
 Bezug: offene Entscheidung O4 in `entscheidungen-v0.1.md`, Audit-Befund 34 in `audit-2026-09-03.md`, Story XTS-061A in `backlog-v0.1.md`, Entscheidung 9 (Beleg- und Wertefluss), Konzept §5.6, §10, §11.3 (`Z_XTS_RETRY_GR`) und §16 Nr. 1 und 4.

@@ -1,5 +1,7 @@
 # xTS OData Contract Baseline
 
+> **Release-Abgrenzung 26.09.2026 (Entscheidung 23):** Im aktuellen Release erfasst xTS Leistungsstunden und zeigt SAP-Planung, Belege und Genehmigungsstatus nur lesend. Planung, Genehmigung/Rueckweisung, Beauftragung/BANF/Bestellung und WE erfolgen ausschliesslich in SAP. Die vorhandenen weitergehenden Frontend-Funktionen bleiben fuer spaeter erhalten, sind fuer diesen Release aber in UI und schreibenden API-Pfaden zu deaktivieren. **Noch nicht technisch umgesetzt.** Nachfolgende Beschreibungen des bisherigen Vollumfangs sind keine aktuelle Release-Freigabe. Massgeblich ist der [Release-Zuschnitt](release-zuschnitt.md); offene Fachfragen bleiben offen.
+
 Diese Datei beschreibt die fachlichen Service-Kontrakte fuer SAP-OData und die Mock-API. Die Mock-API liegt in `mock-api/` und bildet die wichtigsten Antwortformen fuer die Frontend-Entwicklung ab.
 
 ## Services
@@ -157,6 +159,12 @@ Regeln:
 - Der WebClient sendet `Accept: application/json`. Unbekannte Felder (`__metadata`) entfallen beim Dekodieren. Eine Antwort, die dem Kontrakt nicht entspricht (fehlendes Feld, falscher Typ, unbekannter Status), ergibt `INVALID_RESPONSE` mit Feldpfad in der Meldung statt stiller Fehlrechnung.
 - Unerwartete Serverfehler liefert die Mock-API als HTTP 500 `INTERNAL_ERROR` mit `message`.
 - Mit dem ersten echten Gateway-Service zu vereinbaren (aendert nur die Adapterschicht): CSRF-Token-Handshake (`x-csrf-token: fetch` vor `POST`), ETag/`If-Match` fuer optimistisches Sperren, Abbildung der benannten Filterparameter (`?month=`, `?extNr=`, `?from=`/`?to=`, `?detail=`) auf `$filter` oder Funktionsimporte. `$batch` wird nicht benoetigt.
+
+## Beschlossener Release-Schnitt, technische Vertragsaenderung ausstehend
+
+Entscheidung 23 vom 26.09.2026 legt fest: Nur Leistungsstunden werden in xTS erfasst/eingereicht; Planung, Genehmigung/Rueckweisung und Belegverarbeitung erfolgen ausschliesslich in SAP. Die unten dokumentierten Schreiboperationen fuer Planung, Beauftragungen/BANF sowie Genehmigung/WE sind Implementierungsbestand, **nicht fuer den aktuellen Release freigegeben**. Vor Auslieferung muessen die entsprechenden API-Pfade serverseitig gesperrt und die UI-Ausloeser deaktiviert sein, auch fuer direkte Aufrufe und Administratoren. Diese Aenderung ist noch nicht implementiert; die bestehenden Endpoint-Beschreibungen bleiben als Ist-Referenz erhalten.
+
+Der Folge-Kontrakt muss SAP-Statusmapping, Rueckweisungsgrund, Aktualitaet und Fehlerverhalten sowie den nur lesenden Plan-/Belegzugriff beschreiben. Ein erfolgreicher Erfassungsrequest ist keine Genehmigung; xTS darf keine Genehmigungs- oder WE-Werte selbst erzeugen. Transportweg der Statusrueckmeldung und Fehlercodes fuer gesperrte Operationen werden erst im technischen Zuschnitt festgelegt. Details und Negativtests: [Release-Zuschnitt](release-zuschnitt.md). Die folgenden unbestaetigten Fachfragen sind davon getrennt.
 
 ## Anstehende, noch nicht freigegebene Aenderungen (Hinweis, nicht geltend)
 

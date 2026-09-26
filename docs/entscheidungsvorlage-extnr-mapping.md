@@ -1,5 +1,7 @@
 # Entscheidungsvorlage: AD/OAuth-Attribut fuer das EXTNR-Mapping (XTS-050)
 
+> **Release-Abgrenzung 26.09.2026 (Entscheidung 23):** Im aktuellen Release erfasst xTS Leistungsstunden und zeigt SAP-Planung, Belege und Genehmigungsstatus nur lesend. Planung, Genehmigung/Rueckweisung, Beauftragung/BANF/Bestellung und WE erfolgen ausschliesslich in SAP. Die vorhandenen weitergehenden Frontend-Funktionen bleiben fuer spaeter erhalten, sind fuer diesen Release aber in UI und schreibenden API-Pfaden zu deaktivieren. **Noch nicht technisch umgesetzt.** Nachfolgende Beschreibungen des bisherigen Vollumfangs sind keine aktuelle Release-Freigabe. Massgeblich ist der [Release-Zuschnitt](release-zuschnitt.md); offene Fachfragen bleiben offen.
+
 Stand: 2026-09-02  
 Status: **entschieden am 2026-09-02 fuer Option B** (Entra `oid` als `AAD_OID`, `AAD_UPN` als Fallback). Umsetzung im WebClient und in der Mock-API abgeschlossen (siehe Abschnitt "Umsetzungsstand" und [entra-anbindung.md](entra-anbindung.md)); SAP-seitig stehen DDIC-Erweiterung und Token-Validierung aus.  
 Bezug: Entscheidung 6 in `entscheidungen-v0.1.md`, Story XTS-050 in `backlog-v0.1.md`

@@ -1,5 +1,7 @@
 # Klaerungsliste O4 und ADR-0012: Fragen an SAP-MM und Einkauf
 
+> **Release-Abgrenzung 26.09.2026 (Entscheidung 23):** Im aktuellen Release erfasst xTS Leistungsstunden und zeigt SAP-Planung, Belege und Genehmigungsstatus nur lesend. Planung, Genehmigung/Rueckweisung, Beauftragung/BANF/Bestellung und WE erfolgen ausschliesslich in SAP. Die vorhandenen weitergehenden Frontend-Funktionen bleiben fuer spaeter erhalten, sind fuer diesen Release aber in UI und schreibenden API-Pfaden zu deaktivieren. **Noch nicht technisch umgesetzt.** Nachfolgende Beschreibungen des bisherigen Vollumfangs sind keine aktuelle Release-Freigabe. Massgeblich ist der [Release-Zuschnitt](release-zuschnitt.md); offene Fachfragen bleiben offen.
+
 Stand: 2026-09-20  
 Zweck: **reine Terminvorbereitung** fuer die gemeinsame Klaerung von O4 (WE-Buchung zur Bestellposition) und den offenen Fragen der ADR-0012 (SAP-Zieltabellen). Die Liste fasst die Fragen aus `entscheidungsvorlage-we-bestellposition.md` (O4) und `adr/0012-sap-zieltabellen-zpot-time.md` (ADR) zusammen, ordnet sie nach Themen und nennt je Frage Entscheider, Quellenabschnitt, die benoetigte Entscheidung und die Auswirkung bei ausbleibender Antwort.  
 Nicht-Ziele: keine Vorwegnahme von Entscheidungen, keine Code- oder Kontraktaenderung. Empfehlungen stehen ausschliesslich in den Quelldokumenten. O4 und O13 bleiben offen, bis die dort dokumentierten Annahmekriterien erfuellt und bestaetigt sind; eine neue ADR-Fassung (v6) bedeutet fuer sich genommen keinen Statuswechsel.

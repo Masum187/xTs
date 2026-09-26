@@ -1,5 +1,7 @@
 # xTS MVP Backlog v0.1
 
+> **Release-Abgrenzung 26.09.2026 (Entscheidung 23):** Im aktuellen Release erfasst xTS Leistungsstunden und zeigt SAP-Planung, Belege und Genehmigungsstatus nur lesend. Planung, Genehmigung/Rueckweisung, Beauftragung/BANF/Bestellung und WE erfolgen ausschliesslich in SAP. Die vorhandenen weitergehenden Frontend-Funktionen bleiben fuer spaeter erhalten, sind fuer diesen Release aber in UI und schreibenden API-Pfaden zu deaktivieren. **Noch nicht technisch umgesetzt.** Nachfolgende Beschreibungen des bisherigen Vollumfangs sind keine aktuelle Release-Freigabe. Massgeblich ist der [Release-Zuschnitt](release-zuschnitt.md); offene Fachfragen bleiben offen.
+
 Stand: 2026-05-08 (Baseline; Umsetzungsstand siehe unten)
 
 ## Umsetzungsstand (2026-09-09)
@@ -10,6 +12,21 @@ Stand: 2026-05-08 (Baseline; Umsetzungsstand siehe unten)
 - Stabilisierung (Audit-Schritte 1 bis 10) ist umgesetzt; Restbefunde und Reihenfolge: `audit-2026-09-03.md`, Abschnitt "Restbefunde nach der Stabilisierung". Neue Stories aus den Entscheidungen 18 und 19: XTS-056 (umgesetzt im Mock und WebClient, PR #28), XTS-014 und XTS-063 (umgesetzt, PR #29); XTS-064 bleibt Ausbaustufe. Offene Entscheidungen O4 bis O7: `entscheidungen-v0.1.md`.
 
 ## Priorisierung
+
+### Vorrang fuer den aktuellen Release (26.09.2026)
+
+Entscheidung 23 trennt Implementierungsbestand und Release-Umfang. Historische "umgesetzt"- oder "freigegeben"-Vermerke unten sind keine Freigabe, ausgeschlossene Schreibaktionen im aktuellen Release anzubieten.
+
+| Bestehende Stories                                      | Release-Einordnung                                                                                                        |
+| ------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------- |
+| XTS-021, XTS-023                                        | Planstunden speichern und Planfreigabe nur SAP; Frontend-Implementierung fuer spaeter erhalten und aktuell deaktivieren   |
+| XTS-031, XTS-032                                        | Beauftragung/BANF aus Frontend nicht verfuegbar; einschliesslich BANF-Textpflege und schreibender Schnittstellen          |
+| XTS-061, XTS-062, XTS-061A                              | Genehmigung, Rueckweisung und WE nur SAP; xTS zeigt Rueckmeldungen, keine Ausloeser                                       |
+| XTS-020, XTS-060, XTS-063, XTS-070 bis XTS-072, XTS-157 | Lesende Ansichten und Berechtigungen erhalten; Daten-/Statusquelle auf SAP abgleichen                                     |
+| XTS-033, XTS-084                                        | Jobstart nicht als blosser Status-Refresh behandeln; lesende Aktualisierung und SAP-seitigen Job separat abgrenzen        |
+| XTS-151, XTS-152, XTS-153                               | Design bleibt, schreibende Bedienelemente releaseabhaengig deaktivieren; Erhaltungspflicht ist keine Aktivierungsfreigabe |
+
+Neue lokale Arbeitspakete RLS-01 bis RLS-05 stehen mit Abnahmekriterien im [Release-Zuschnitt](release-zuschnitt.md). Noch keine Jira-Anlage oder Code-Umsetzung beauftragt. Die offene Admin-Unterseite XTS-024, XTS-073/074/083/084 und XTS-158/159 bleiben unfreigegeben. Fuer Stammdaten-/Regelwerkspflege ist der auszuliefernde Zugang separat festzulegen.
 
 | Prioritaet | Bedeutung                          |
 | ---------- | ---------------------------------- |

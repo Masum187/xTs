@@ -1,6 +1,21 @@
 # xTS Monorepo
 
-xTS ist das interne System fuer Ressourcenplanung, Beauftragung, Stundenschreibung, Genehmigung und Reporting externer Ressourcen.
+> **Release-Abgrenzung 26.09.2026 (Entscheidung 23):** Im aktuellen Release erfasst xTS Leistungsstunden und zeigt SAP-Planung, Belege und Genehmigungsstatus nur lesend. Planung, Genehmigung/Rueckweisung, Beauftragung/BANF/Bestellung und WE erfolgen ausschliesslich in SAP. Die vorhandenen weitergehenden Frontend-Funktionen bleiben fuer spaeter erhalten, sind fuer diesen Release aber in UI und schreibenden API-Pfaden zu deaktivieren. **Noch nicht technisch umgesetzt.** Nachfolgende Beschreibungen des bisherigen Vollumfangs sind keine aktuelle Release-Freigabe. Massgeblich ist der [Release-Zuschnitt](docs/release-zuschnitt.md); offene Fachfragen bleiben offen.
+
+xTS ist im aktuellen Release das Portal zur Erfassung von Leistungsstunden und zur lesenden Anzeige von SAP-Planung, SAP-Belegen und Genehmigungsstatus. Die Planung, Genehmigung und Belegverarbeitung finden ausschliesslich in SAP statt.
+
+## Aktueller Release und spaeterer Ausbau
+
+| Bereich                            | Aktueller Release                                    | Spaeterer Release                                                  |
+| ---------------------------------- | ---------------------------------------------------- | ------------------------------------------------------------------ |
+| Stundenerfassung                   | In xTS erfassen und einreichen                       | Weiterentwicklung nach Freigabe                                    |
+| Planung                            | SAP pflegt; xTS zeigt an                             | Vorhandene Frontend-Bearbeitung erhalten, aktuell deaktivieren     |
+| Genehmigung                        | SAP genehmigt; xTS zeigt zurueckgemeldeten Status    | Vorhandene Frontend-Aktionen erhalten, aktuell deaktivieren        |
+| Beauftragung, BANF, Bestellung, WE | Ausschliesslich SAP; xTS zeigt Belegkette und Status | Vorhandene weitergehende Funktionen erhalten, aktuell deaktivieren |
+
+Beschlossen am 26.09.2026, **Umsetzung noch ausstehend**. Der bestehende Mock-/Frontend-Vollumfang ist noch nicht entsprechend eingeschraenkt. Nicht nur Buttons, sondern auch schreibende API-Ausloeser sind zu sperren. Keine bestehende Funktion wird fuer diesen Zuschnitt geloescht. Zieltermin und Freigabe des spaeteren Ausbaus sind offen.
+
+Einstieg: [Release-Zuschnitt und Abnahme](docs/release-zuschnitt.md), [Entwickler-Uebergabe](docs/entwickler-uebergabe.md), [Entscheidungslog](docs/entscheidungen-v0.1.md). Die nachfolgende Bestandsbeschreibung dokumentiert, was bereits implementiert ist, nicht was im aktuellen Release aktiviert werden darf.
 
 Dieses Repository ist als Monorepo aufgebaut, damit Konzept, SAP-Artefakte, OData-Kontrakte, Mock-API und Angular WebClient gemeinsam versioniert und durch eine CI/CD-Pipeline geprueft werden.
 
@@ -90,5 +105,5 @@ npm run test:smoke:v2   # gleiche Specs gegen die SAP-OData-V2-Antwortform (lauf
 - Angular bleibt Frontend-Technologie fuer alle Screens; das Konzept v0.1 sah SAP-Dynpros fuer Admin, Planung, Beauftragung, Genehmigung und Reporting vor (siehe Umsetzungsstand im Konzept).
 - SAP bleibt fuehrend fuer Kontierung, BANF, Bestellung und Wertefluss.
 - WebClient-Authentifizierung erfolgt ueber Entra ID; Mapping auf `ZXTS_WIW_T-EXTNR` ueber `AAD_OID` mit `AAD_UPN` als Fallback.
-- xTS legt MM-BANF aktiv an, liest MM-Bestellungen per Job nach und bucht nach Genehmigung synchron den Wareneingang.
+- Aktueller Release: SAP plant, genehmigt und verarbeitet BANF, Bestellung und WE; xTS liest diese Daten und erfasst Leistungsstunden. Die bisher implementierten xTS-Ausloeser sind bis zur spaeteren Freigabe zu deaktivieren (Entscheidung 23).
 - Fuehrender Service-Kontrakt fuer SAP und Mock-API ist `docs/odata-contracts.md`; die Pfade in Konzept §8 sind die urspruengliche Skizze.
