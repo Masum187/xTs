@@ -45,7 +45,7 @@ Konzept, Audit, Design-Baseline, alte Stories und Protokolle bleiben als Impleme
 
 Die Kennungen RLS-01 bis RLS-05 sind lokale Vorschlaege, keine angelegten Jira-Stories. Bestaetigt ist der Release-Umfang; konkreter technischer Zuschnitt, Reihenfolge und Code-PRs sind noch abzustimmen. Dieser Auftrag betrifft Dokumentation, nicht die Ausfuehrung dieser Pakete.
 
-Zuschnitt RLS-01 zur Pruefung (ohne Umsetzungsfreigabe): [RLS-01: Release-Steuerung und serverseitige Schreibsperren](rls-01-zuschnitt.md). Die Sperre gilt fuer Zugriffe aus xTS; produktiv gehoert sie in die Middleware, der Mock ist die Referenz.
+Zuschnitt RLS-01 zur Pruefung (ohne Umsetzungsfreigabe): [RLS-01: Release-Steuerung und serverseitige Schreibsperren](rls-01-zuschnitt.md). Die Sperre gilt fuer Zugriffe aus xTS; produktiv gehoert sie in die Middleware, der Mock ist die Referenz. Die offene Entscheidung zu Klasse C (Regeln, Stammdaten, Testdaten-Reset) ist Voraussetzung fuer die Umsetzung.
 
 | Paket  | Inhalt                                                 | Abnahmekriterien                                                                                                                                                                                                   |
 | ------ | ------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
